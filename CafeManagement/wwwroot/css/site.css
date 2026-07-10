@@ -1,0 +1,21 @@
+body {
+    background-color: #faf6f1;
+}
+
+.navbar-brand {
+    letter-spacing: 0.5px;
+}
+
+.card {
+    border: none;
+    border-radius: 0.75rem;
+}
+
+.table-status-Trong { color: #198754; font-weight: 600; }
+.table-status-DaDat { color: #fd7e14; font-weight: 600; }
+.table-status-DangPhucVu { color: #dc3545; font-weight: 600; }
+.table-status-BaoTri { color: #6c757d; font-weight: 600; }
+
+.footer {
+    background-color: #fff;
+}

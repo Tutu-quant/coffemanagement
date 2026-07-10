@@ -1,0 +1,92 @@
+@model Booking
+@{
+    ViewData["Title"] = "Đặt bàn";
+    var tables = (IEnumerable<RestaurantTable>)ViewBag.Tables;
+    decimal depositPerSeat = ViewBag.DepositPerSeat;
+}
+
+<h2 class="mb-4">Đặt bàn / Đặt ghế</h2>
+
+<div class="row">
+    <div class="col-md-7">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form asp-action="Create" method="post">
+                    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="TableId" class="form-label">Chọn bàn</label>
+                        <select asp-for="TableId" class="form-select" id="tableSelect">
+                            <option value="">-- Chọn bàn --</option>
+                            @foreach (var t in tables)
+                            {
+                                <option value="@t.Id" data-capacity="@t.Capacity" disabled="@(t.Status == TableStatus.BaoTri)">
+                                    @t.TableName (@t.Capacity ghế) - @t.Location - @t.Status
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label asp-for="CustomerName" class="form-label"></label>
+                            <input asp-for="CustomerName" class="form-control" />
+                            <span asp-validation-for="CustomerName" class="text-danger"></span>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label asp-for="PhoneNumber" class="form-label"></label>
+                            <input asp-for="PhoneNumber" class="form-control" />
+                            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label asp-for="BookingTime" class="form-label"></label>
+                            <input asp-for="BookingTime" type="datetime-local" class="form-control" />
+                            <span asp-validation-for="BookingTime" class="text-danger"></span>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label asp-for="NumberOfGuests" class="form-label">Số lượng ghế cần đặt</label>
+                            <input asp-for="NumberOfGuests" type="number" min="1" class="form-control" id="guestsInput" />
+                            <span asp-validation-for="NumberOfGuests" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Note" class="form-label"></label>
+                        <textarea asp-for="Note" class="form-control" rows="2"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Xác nhận đặt bàn</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card shadow-sm bg-light">
+            <div class="card-body">
+                <h5>Ước tính tiền cọc</h5>
+                <p class="text-muted small">Tiền cọc = Số ghế x @depositPerSeat.ToString("N0") VNĐ/ghế. Tiền cọc sẽ được trừ vào hoá đơn khi thanh toán.</p>
+                <h3 class="text-primary" id="depositEstimate">0 VNĐ</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const depositPerSeat = @depositPerSeat;
+        const guestsInput = document.getElementById('guestsInput');
+        const depositEl = document.getElementById('depositEstimate');
+        function updateDeposit() {
+            const guests = parseInt(guestsInput.value) || 0;
+            const total = guests * depositPerSeat;
+            depositEl.textContent = total.toLocaleString('vi-VN') + ' VNĐ';
+        }
+        guestsInput.addEventListener('input', updateDeposit);
+        updateDeposit();
+    </script>
+}

@@ -1,0 +1,39 @@
+@model IEnumerable<Product>
+@{
+    ViewData["Title"] = "Thực đơn";
+    var categories = (IEnumerable<Category>)ViewBag.Categories;
+    int? selectedId = ViewBag.SelectedCategoryId;
+}
+
+<h2 class="mb-4">Thực đơn</h2>
+
+<div class="mb-4">
+    <a class="btn btn-sm @(selectedId == null ? "btn-primary" : "btn-outline-primary")" asp-action="Index">Tất cả</a>
+    @foreach (var c in categories)
+    {
+        <a class="btn btn-sm @(selectedId == c.Id ? "btn-primary" : "btn-outline-primary")" asp-action="Index" asp-route-categoryId="@c.Id">@c.Name</a>
+    }
+</div>
+
+<div class="row g-3">
+    @foreach (var p in Model)
+    {
+        <div class="col-md-4 col-sm-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">@p.Name</h5>
+                    <p class="text-muted small mb-1">@p.Category?.Name</p>
+                    @if (!string.IsNullOrWhiteSpace(p.Description))
+                    {
+                        <p class="small">@p.Description</p>
+                    }
+                    <p class="fw-bold text-primary fs-5">@p.Price.ToString("N0") VNĐ</p>
+                </div>
+            </div>
+        </div>
+    }
+    @if (!Model.Any())
+    {
+        <p class="text-muted">Chưa có món nào trong danh mục này.</p>
+    }
+</div>

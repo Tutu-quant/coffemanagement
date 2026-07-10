@@ -1,0 +1,74 @@
+@{
+    ViewData["Title"] = "Quản lý bàn / Order";
+    var tables = (IEnumerable<RestaurantTable>)ViewBag.Tables;
+    var pendingBookings = (IEnumerable<Booking>)ViewBag.PendingBookings;
+    var openOrders = (IEnumerable<Order>)ViewBag.OpenOrders;
+}
+
+<h2 class="mb-4">Quản lý bàn / Order</h2>
+
+<h4>Đặt bàn chờ xác nhận</h4>
+@if (!pendingBookings.Any())
+{
+    <p class="text-muted">Không có đặt bàn nào đang chờ.</p>
+}
+else
+{
+    <div class="table-responsive mb-4">
+        <table class="table table-bordered bg-white shadow-sm">
+            <thead>
+                <tr>
+                    <th>Khách hàng</th><th>SĐT</th><th>Bàn</th><th>Thời gian</th><th>Số ghế</th><th>Tiền cọc</th><th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var b in pendingBookings)
+                {
+                    <tr>
+                        <td>@b.CustomerName</td>
+                        <td>@b.PhoneNumber</td>
+                        <td>@b.Table?.TableName</td>
+                        <td>@b.BookingTime.ToString("dd/MM HH:mm")</td>
+                        <td>@b.NumberOfGuests</td>
+                        <td>@b.DepositAmount.ToString("N0") VNĐ</td>
+                        <td class="text-nowrap">
+                            <form asp-action="ConfirmBooking" asp-route-id="@b.Id" method="post" class="d-inline">
+                                <button class="btn btn-sm btn-success">Xác nhận</button>
+                            </form>
+                            <form asp-action="RejectBooking" asp-route-id="@b.Id" method="post" class="d-inline" onsubmit="return confirm('Từ chối đặt bàn này?');">
+                                <button class="btn btn-sm btn-outline-danger">Từ chối</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<h4>Sơ đồ bàn</h4>
+<div class="row g-3 mb-4">
+    @foreach (var t in tables)
+    {
+        var openOrder = openOrders.FirstOrDefault(o => o.TableId == t.Id);
+        <div class="col-md-3 col-sm-4 col-6">
+            <div class="card shadow-sm text-center p-3">
+                <h5>@t.TableName</h5>
+                <p class="small text-muted mb-1">@t.Capacity ghế - @t.Location</p>
+                <p class="table-status-@t.Status mb-2">@t.Status</p>
+
+                @if (openOrder != null)
+                {
+                    <a class="btn btn-sm btn-primary" asp-action="Details" asp-route-id="@openOrder.Id">Xem order</a>
+                }
+                else if (t.Status == TableStatus.DaDat || t.Status == TableStatus.Trong)
+                {
+                    <form asp-action="StartOrder" method="post">
+                        <input type="hidden" name="tableId" value="@t.Id" />
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Mở order</button>
+                    </form>
+                }
+            </div>
+        </div>
+    }
+</div>
