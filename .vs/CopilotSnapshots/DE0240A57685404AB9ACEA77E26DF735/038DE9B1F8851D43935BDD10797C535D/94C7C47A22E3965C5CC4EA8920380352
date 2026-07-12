@@ -1,13 +1,13 @@
-using CafeManagement.Data;
+﻿using CafeManagement.Data;
 using CafeManagement.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Database (SQL Server)
+// Database (SQLite - đơn giản, không cần cài SQL Server)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Identity: đăng ký / đăng nhập / phân quyền theo Role
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>

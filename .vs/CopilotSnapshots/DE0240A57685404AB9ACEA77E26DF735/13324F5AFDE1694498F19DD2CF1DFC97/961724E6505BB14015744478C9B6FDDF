@@ -1,6 +1,6 @@
-{
+﻿{
   "ConnectionStrings": {
-    "DefaultConnection": "Server=DESKTOP-S70PDKD\\SQLEXPRESS;Database=cong_nghe_phan_mem;Trusted_Connection=true;TrustServerCertificate=true;"
+    "DefaultConnection": "Data Source=cafe.db"
   },
   "Logging": {
     "LogLevel": {
