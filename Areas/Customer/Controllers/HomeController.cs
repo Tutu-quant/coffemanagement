@@ -1,6 +1,14 @@
-﻿namespace Quản_lý_quán_cafe.Areas.Customer.Controllers
+// Customer Area - Home Controller
+namespace CafeManagement.Areas.Customer.Controllers
 {
-    public class HomeController
+    using Microsoft.AspNetCore.Mvc;
+
+    [Area("Customer")]
+    public class HomeController : Controller
     {
+        public IActionResult Index()
+        {
+            return View();
+        }
     }
 }

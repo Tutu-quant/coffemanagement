@@ -1,11 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
-
-namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
+// Cashier Area - Orders Controller
+namespace CafeManagement.Areas.Cashier.Controllers
 {
+    using Microsoft.AspNetCore.Mvc;
+
     [Area("Cashier")]
     public class OrdersController : Controller
     {
-        [HttpGet]
         public IActionResult Index()
         {
             return View();

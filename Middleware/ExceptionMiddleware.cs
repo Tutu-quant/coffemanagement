@@ -1,15 +1,16 @@
-﻿namespace Quản_lý_quán_cafe.Middleware
+using System.Net;
+using System.Text.Json;
+
+namespace CafeManagement.Middleware
 {
     public class ExceptionMiddleware
     {
         private readonly RequestDelegate _next;
-        private readonly IWebHostEnvironment _environment;
         private readonly ILogger<ExceptionMiddleware> _logger;
 
-        public ExceptionMiddleware(RequestDelegate next, IWebHostEnvironment environment, ILogger<ExceptionMiddleware> logger)
+        public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
         {
             _next = next;
-            _environment = environment;
             _logger = logger;
         }
 
@@ -19,32 +20,26 @@
             {
                 await _next(context);
             }
-            catch (Exception ex)
+            catch (Exception exception)
             {
-                await HandleExceptionAsync(context, ex);
+                _logger.LogError(exception, "An unhandled exception has occurred");
+                await HandleExceptionAsync(context, exception);
             }
         }
 
-        private Task HandleExceptionAsync(HttpContext context, Exception exception)
+        private static Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
-            _logger.LogError(exception, "An unhandled exception occurred");
-
             context.Response.ContentType = "application/json";
+
+            var response = new
+            {
+                message = exception.Message,
+                statusCode = context.Response.StatusCode
+            };
+
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
-            if (_environment.IsDevelopment())
-            {
-                return context.Response.WriteAsJsonAsync(new
-                {
-                    message = "Internal server error",
-                    exception = exception.GetType().Name,
-                    detail = exception.Message,
-                    stackTrace = exception.StackTrace,
-                    innerException = exception.InnerException?.Message
-                });
-            }
-
-            return context.Response.WriteAsJsonAsync(new { message = "Internal server error" });
+            return context.Response.WriteAsJsonAsync(response);
         }
     }
 }

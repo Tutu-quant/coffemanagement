@@ -1,33 +1,20 @@
-﻿namespace Quản_lý_quán_cafe.Models.Entities
+namespace CafeManagement.Models.Entities
 {
     public class Reservation
     {
-        public int ReservationID { get; set; }
-
-        public int CustomerID { get; set; }
-
-        public int TableID { get; set; }
-
-        public DateTime ReservationDate { get; set; }
-
-        public DateTime? CheckinTime { get; set; }
-
-        public DateTime? CheckoutTime { get; set; }
-
+        public int Id { get; set; }
+        public string ReservationCode { get; set; }
+        public string CustomerId { get; set; }
+        public int TableId { get; set; }
+        public DateTime ReservationTime { get; set; }
         public int NumberOfGuests { get; set; }
-
-        public string ReservationStatus { get; set; } = "Pending";
-
-        public string? Notes { get; set; }
-
-        public DateTime CreatedAt { get; set; }
-
+        public string Status { get; set; } = "Pending";
+        public string Notes { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
 
-        public bool IsDeleted { get; set; }
-
-        // Navigation Properties
-        public virtual Customer? Customer { get; set; }
-        public virtual RestaurantTable? Table { get; set; }
+        // Relationships
+        public virtual Customer Customer { get; set; }
+        public virtual RestaurantTable Table { get; set; }
     }
 }

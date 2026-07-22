@@ -1,6 +1,11 @@
-﻿namespace Quản_lý_quán_cafe.Models.Enums
+namespace CafeManagement.Models.Enums
 {
-    public class BookingStatus
+    public enum BookingStatus
     {
+        Pending = 0,
+        Confirmed = 1,
+        Completed = 2,
+        Cancelled = 3,
+        NoShow = 4
     }
 }

@@ -1,29 +1,14 @@
-﻿namespace Quản_lý_quán_cafe.Models.Entities
+namespace CafeManagement.Models.Entities
 {
     public class PointHistory
     {
-        public int PointHistoryID { get; set; }
-
-        public int CustomerID { get; set; }
-
+        public int Id { get; set; }
+        public string CustomerId { get; set; }
         public int Points { get; set; }
+        public string Reason { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        public string TransactionType { get; set; } = string.Empty;
-
-        public string? Description { get; set; }
-
-        public int? OrderID { get; set; }
-
-        public DateTime TransactionDate { get; set; }
-
-        public DateTime CreatedAt { get; set; }
-
-        public DateTime? UpdatedAt { get; set; }
-
-        public bool IsDeleted { get; set; }
-
-        // Navigation Properties
-        public virtual Customer? Customer { get; set; }
-        public virtual Order? Order { get; set; }
+        // Relationships
+        public virtual Customer Customer { get; set; }
     }
 }

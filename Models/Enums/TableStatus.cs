@@ -1,6 +1,10 @@
-﻿namespace Quản_lý_quán_cafe.Models.Enums
+namespace CafeManagement.Models.Enums
 {
-    public class TableStatus
+    public enum TableStatus
     {
+        Available = 0,
+        Occupied = 1,
+        Reserved = 2,
+        Maintenance = 3
     }
 }

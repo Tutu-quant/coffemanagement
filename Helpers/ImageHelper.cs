@@ -1,6 +1,18 @@
-﻿namespace Quản_lý_quán_cafe.Helpers
+// Helpers - Image Helper
+namespace CafeManagement.Helpers
 {
-    public class ImageHelper
+    public static class ImageHelper
     {
+        public static string GetImagePath(string fileName)
+        {
+            return $"/uploads/{fileName}";
+        }
+
+        public static bool IsValidImageExtension(string fileName)
+        {
+            var validExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            var extension = Path.GetExtension(fileName).ToLower();
+            return validExtensions.Contains(extension);
+        }
     }
 }
