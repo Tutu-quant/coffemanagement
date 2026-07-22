@@ -1,17 +1,22 @@
-namespace CafeManagement.Models.Entities
+﻿namespace Quản_lý_quán_cafe.Models.Entities
 {
     public class Category
     {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public string Icon { get; set; }
-        public int DisplayOrder { get; set; }
+        public int CategoryID { get; set; }
+
+        public string CategoryName { get; set; } = string.Empty;
+
+        public string? Description { get; set; }
+
         public bool IsActive { get; set; } = true;
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public DateTime CreatedAt { get; set; }
+
         public DateTime? UpdatedAt { get; set; }
 
-        // Relationships
-        public virtual ICollection<Product> Products { get; set; }
+        public bool IsDeleted { get; set; }
+
+        // Navigation Properties
+        public virtual ICollection<Product> Products { get; set; } = new List<Product>();
     }
 }

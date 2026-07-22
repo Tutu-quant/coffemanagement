@@ -1,0 +1,39 @@
+@model CategoryDetailViewModel
+
+@{
+    ViewData["Title"] = "Xóa danh mục";
+    ViewData["PageTitle"] = "Xóa danh mục";
+    ViewData["PageBreadcrumb"] = "<span class='breadcrumb-item'><a href='" + Url.Action("Index", "Categories", new { area = "Admin" }) + "'><i class='bi bi-tag'></i> Danh mục</a></span><span class='breadcrumb-item'>Xóa</span>";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <a href="@Url.Action("Index")" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+</div>
+
+<div class="card" style="max-width: 500px;">
+    <div class="card-body" style="text-align: center; padding: 40px 24px;">
+        <div style="margin-bottom: 24px;">
+            <i class="bi bi-exclamation-triangle" style="font-size: 48px; color: #ffc107;"></i>
+        </div>
+
+        <h4 style="margin-bottom: 12px;">Xác nhận xóa danh mục</h4>
+        <p style="color: var(--text-light); margin-bottom: 24px;">
+            Bạn chắc chắn muốn xóa danh mục <strong>@Model?.Name</strong>? Hành động này không thể hoàn tác.
+        </p>
+
+        <form method="post" asp-action="DeleteConfirmed" style="display: inline;">
+            <input type="hidden" asp-for="Id" />
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <a href="@Url.Action("Index")" class="btn btn-secondary">
+                    <i class="bi bi-x-lg"></i> Hủy
+                </a>
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-trash"></i> Xóa
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

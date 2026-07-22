@@ -1,0 +1,68 @@
+@using Quản_lý_quán_cafe.Models.ViewModels.RestaurantTable
+@model RestaurantTableDetailViewModel
+
+@{
+    ViewData["Title"] = "Xóa bàn";
+    ViewData["PageTitle"] = "Xóa bàn";
+    ViewData["PageBreadcrumb"] = "<span class='breadcrumb-item'><a href='" + Url.Action("Index") + "'><i class='bi bi-grid-3x3'></i> Bàn</a></span><span class='breadcrumb-item'><i class='bi bi-trash'></i> Xóa</span>";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <div>
+        <p style="color: var(--text-light); margin: 0; font-size: 14px;">BrewPoint Cafe · Quản trị</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mx-auto">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white" style="border-bottom: 1px solid #dc3545;">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Xác nhận xóa bàn</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger" role="alert">
+                    <strong>Cảnh báo!</strong> Bạn sắp xóa bàn <strong>@Model.TableNumber</strong>. Hành động này không thể hoàn tác.
+                </div>
+
+                <div class="table-info mb-4">
+                    <p><strong>Mã bàn:</strong> @Model.TableNumber</p>
+                    <p><strong>Sức chứa:</strong> @Model.Capacity người</p>
+                    <p><strong>Khu vực:</strong> @(string.IsNullOrEmpty(Model.Location) ? "-- Không xác định --" : Model.Location)</p>
+                    <p><strong>Trạng thái:</strong> 
+                        @if (Model.TableStatus == "Available")
+                        {
+                            <span class="badge bg-success">Trống</span>
+                        }
+                        else if (Model.TableStatus == "Occupied")
+                        {
+                            <span class="badge bg-danger">Có khách</span>
+                        }
+                        else if (Model.TableStatus == "WaitingPayment")
+                        {
+                            <span class="badge bg-warning text-dark">Chờ thanh toán</span>
+                        }
+                        else if (Model.TableStatus == "Maintenance")
+                        {
+                            <span class="badge bg-secondary">Bảo trì</span>
+                        }
+                    </p>
+                </div>
+
+                <form method="post" action="@Url.Action("DeleteConfirmed")">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    @Html.AntiForgeryToken()
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-check-lg"></i> Xóa
+                        </button>
+                        <a href="@Url.Action("Index")" class="btn btn-secondary">
+                            <i class="bi bi-x-lg"></i> Hủy
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

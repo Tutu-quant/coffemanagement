@@ -1,0 +1,92 @@
+@using Quản_lý_quán_cafe.Models.ViewModels.Customer
+@model CustomerDetailViewModel
+
+@{
+    ViewData["Title"] = "Xóa khách hàng";
+    ViewData["PageTitle"] = "Xóa khách hàng";
+    ViewData["PageBreadcrumb"] = "<span class='breadcrumb-item'><a href='" + Url.Action("Index") + "'><i class='bi bi-people'></i> Khách hàng</a></span><span class='breadcrumb-item'><i class='bi bi-trash'></i> Xóa</span>";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <div>
+        <p style="color: var(--text-light); margin: 0; font-size: 14px;">BrewPoint Cafe · Quản trị</p>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-exclamation-triangle"></i> Xác nhận xóa khách hàng
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning mb-4">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Lưu ý:</strong> Khách hàng sẽ bị xóa mềm (soft delete) - các dữ liệu đơn hàng sẽ được giữ lại cho mục đích thống kê.
+                </div>
+
+                <div class="customer-info mb-4 p-3" style="background: #f8f9fa; border-radius: 8px;">
+                    <div class="row">
+                        <div class="col-3 text-center">
+                            <div class="avatar-circle">
+                                @Model?.AvatarInitials
+                            </div>
+                        </div>
+                        <div class="col-9">
+                            <p class="mb-2">
+                                <strong>Họ tên:</strong> @Model?.Name
+                            </p>
+                            <p class="mb-2">
+                                <strong>Số điện thoại:</strong> @Model?.Phone
+                            </p>
+                            <p class="mb-2">
+                                <strong>Email:</strong> @Model?.Email
+                            </p>
+                            <p class="mb-0">
+                                <strong>Hạng thành viên:</strong>
+                                @{
+                                    var tierClass = Model?.MembershipTier switch
+                                    {
+                                        "VIP" => "badge-vip",
+                                        "Diamond" => "badge-diamond",
+                                        "Gold" => "badge-gold",
+                                        "Silver" => "badge-silver",
+                                        _ => "badge-member"
+                                    };
+                                }
+                                <span class="badge @tierClass">@Model?.MembershipTier</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-danger mb-4">
+                    Bạn có chắc chắn muốn xóa khách hàng này không?
+                </p>
+
+                <form method="post" asp-action="DeleteConfirmed" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model?.Id">
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger flex-grow-1">
+                            <i class="bi bi-trash"></i>
+                            Xóa khách hàng
+                        </button>
+                        <a href="@Url.Action("Index")" class="btn btn-secondary flex-grow-1">
+                            <i class="bi bi-x-lg"></i>
+                            Hủy
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Head {
+    <link rel="stylesheet" href="~/css/customers.css" asp-append-version="true" />
+}

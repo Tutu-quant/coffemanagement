@@ -1,0 +1,365 @@
+@using Quản_lý_quán_cafe.Models.ViewModels.RestaurantTable
+@model RestaurantTableListViewModel
+
+@{
+    ViewData["Title"] = "Quản lý bàn";
+    ViewData["PageTitle"] = "Bàn";
+    ViewData["PageBreadcrumb"] = "<span class='breadcrumb-item'><i class='bi bi-grid-3x3'></i> Bàn</span>";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <div>
+        <p style="color: var(--text-light); margin: 0; font-size: 14px;">BrewPoint Cafe · Quản trị</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="javascript:void(0)" class="btn btn-outline-secondary" onclick="showLocationModal()">
+            <i class="bi bi-geo-alt"></i>
+            Khu vực
+        </a>
+        <a href="@Url.Action("Create")" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i>
+            Thêm bàn
+        </a>
+    </div>
+</div>
+
+<!-- Dashboard Statistics -->
+<div class="row mb-4">
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="bi bi-grid-3x3"></i>
+            </div>
+            <div class="stat-content">
+                <p class="stat-label">Tổng bàn</p>
+                <p class="stat-value">@Model?.TotalTables</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #4CAF50 0%, #81C784 100%);">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <div class="stat-content">
+                <p class="stat-label">Trống</p>
+                <p class="stat-value">@Model?.AvailableTables</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #FF6B6B 0%, #FF8E72 100%);">
+                <i class="bi bi-person"></i>
+            </div>
+            <div class="stat-content">
+                <p class="stat-label">Có khách</p>
+                <p class="stat-value">@Model?.OccupiedTables</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #FFA500 0%, #FFD700 100%);">
+                <i class="bi bi-clock"></i>
+            </div>
+            <div class="stat-content">
+                <p class="stat-label">Chờ TT</p>
+                <p class="stat-value">@Model?.WaitingPaymentTables</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #9C27B0 0%, #E91E63 100%);">
+                <i class="bi bi-tools"></i>
+            </div>
+            <div class="stat-content">
+                <p class="stat-label">Bảo trì</p>
+                <p class="stat-value">@Model?.MaintenanceTables</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert -->
+<div class="alert alert-info border-0 d-flex align-items-center gap-3 mb-4" style="background-color: #E3F2FD; color: #1565C0;">
+    <i class="bi bi-lightbulb" style="font-size: 24px;"></i>
+    <div>
+        <strong>Chú ý:</strong> Quản trị viên không thể thay đổi trạng thái bàn ở đây. Trạng thái bàn được cập nhật tự động từ Hệ thống Bán hàng.
+    </div>
+</div>
+
+<!-- Search & Filter Bar -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="search-filter-bar">
+            <div class="search-input-group">
+                <i class="bi bi-search"></i>
+                <input type="text" class="form-control" name="search" placeholder="Tìm bàn..." value="@Model?.SearchTerm">
+            </div>
+
+            <select class="form-select" name="location">
+                <option value="">Tất cả khu vực</option>
+                @if (Model?.Locations?.Count > 0)
+                {
+                    @foreach (var loc in Model.Locations)
+                    {
+                        @if (Model?.SelectedLocation == loc)
+                        {
+                            <option value="@loc" selected>@loc</option>
+                        }
+                        else
+                        {
+                            <option value="@loc">@loc</option>
+                        }
+                    }
+                }
+            </select>
+
+            <select class="form-select" name="status">
+                <option value="">Tất cả trạng thái</option>
+                @if (Model?.SelectedStatus == "Available")
+                {
+                    <option value="Available" selected>Trống</option>
+                }
+                else
+                {
+                    <option value="Available">Trống</option>
+                }
+                @if (Model?.SelectedStatus == "Occupied")
+                {
+                    <option value="Occupied" selected>Có khách</option>
+                }
+                else
+                {
+                    <option value="Occupied">Có khách</option>
+                }
+                @if (Model?.SelectedStatus == "WaitingPayment")
+                {
+                    <option value="WaitingPayment" selected>Chờ thanh toán</option>
+                }
+                else
+                {
+                    <option value="WaitingPayment">Chờ thanh toán</option>
+                }
+                @if (Model?.SelectedStatus == "Maintenance")
+                {
+                    <option value="Maintenance" selected>Bảo trì</option>
+                }
+                else
+                {
+                    <option value="Maintenance">Bảo trì</option>
+                }
+            </select>
+
+            <select class="form-select" name="sort">
+                <option value="">Sắp xếp mặc định</option>
+                @if (Model?.SortBy == "name_asc")
+                {
+                    <option value="name_asc" selected>Tên A-Z</option>
+                }
+                else
+                {
+                    <option value="name_asc">Tên A-Z</option>
+                }
+                @if (Model?.SortBy == "name_desc")
+                {
+                    <option value="name_desc" selected>Tên Z-A</option>
+                }
+                else
+                {
+                    <option value="name_desc">Tên Z-A</option>
+                }
+                @if (Model?.SortBy == "capacity_asc")
+                {
+                    <option value="capacity_asc" selected>Sức chứa tăng</option>
+                }
+                else
+                {
+                    <option value="capacity_asc">Sức chứa tăng</option>
+                }
+                @if (Model?.SortBy == "capacity_desc")
+                {
+                    <option value="capacity_desc" selected>Sức chứa giảm</option>
+                }
+                else
+                {
+                    <option value="capacity_desc">Sức chứa giảm</option>
+                }
+                @if (Model?.SortBy == "date_newest")
+                {
+                    <option value="date_newest" selected>Ngày tạo mới nhất</option>
+                }
+                else
+                {
+                    <option value="date_newest">Ngày tạo mới nhất</option>
+                }
+            </select>
+
+            <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">Xóa bộ lọc</a>
+        </form>
+    </div>
+</div>
+
+<!-- Tables Grid -->
+<div class="card">
+    <div class="card-body">
+        @if (Model?.Tables?.Count > 0)
+        {
+            <div class="tables-grid">
+                @foreach (var table in Model.Tables)
+                {
+                    <div class="table-card @GetTableStatusClass(table.TableStatus)">
+                        <div class="table-card-header">
+                            <div class="table-number">
+                                <span class="badge" style="background-color: @GetStatusColor(table.TableStatus);">
+                                    @GetStatusLabel(table.TableStatus)
+                                </span>
+                            </div>
+                            <div class="table-actions-mini">
+                                <a href="@Url.Action("Details", new { id = table.Id })" class="btn-action-mini" title="Xem">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="@Url.Action("Edit", new { id = table.Id })" class="btn-action-mini" title="Sửa">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="@Url.Action("Delete", new { id = table.Id })" class="btn-action-mini btn-danger-mini" title="Xóa">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="table-card-body">
+                            <h5 class="table-name">@table.TableNumber</h5>
+                            <p class="table-info">
+                                <i class="bi bi-people"></i>
+                                <span>@table.Capacity người</span>
+                            </p>
+                            @if (!string.IsNullOrEmpty(table.Location))
+                            {
+                                <p class="table-info">
+                                    <i class="bi bi-geo-alt"></i>
+                                    <span>@table.Location</span>
+                                </p>
+                            }
+                            <p class="table-created">
+                                <small>Tạo lúc: @table.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                            </p>
+                        </div>
+
+
+                    </div>
+                }
+            </div>
+
+            <!-- Pagination -->
+            @if (Model.TotalPages > 1)
+            {
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        @if (Model.PageNumber > 1)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = 1, search = Model.SearchTerm, location = Model.SelectedLocation, status = Model.SelectedStatus, sort = Model.SortBy })">
+                                    <i class="bi bi-chevron-bar-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.PageNumber - 1, search = Model.SearchTerm, location = Model.SelectedLocation, status = Model.SelectedStatus, sort = Model.SortBy })">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                        }
+
+                        @for (int i = Math.Max(1, Model.PageNumber - 2); i <= Math.Min(Model.TotalPages, Model.PageNumber + 2); i++)
+                        {
+                            @if (i == Model.PageNumber)
+                            {
+                                <li class="page-item active">
+                                    <span class="page-link">@i</span>
+                                </li>
+                            }
+                            else
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="@Url.Action("Index", new { pageNumber = i, search = Model.SearchTerm, location = Model.SelectedLocation, status = Model.SelectedStatus, sort = Model.SortBy })">@i</a>
+                                </li>
+                            }
+                        }
+
+                        @if (Model.PageNumber < Model.TotalPages)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.PageNumber + 1, search = Model.SearchTerm, location = Model.SelectedLocation, status = Model.SelectedStatus, sort = Model.SortBy })">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.TotalPages, search = Model.SearchTerm, location = Model.SelectedLocation, status = Model.SelectedStatus, sort = Model.SortBy })">
+                                    <i class="bi bi-chevron-bar-right"></i>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            }
+        }
+        else
+        {
+            <div style="text-align: center; padding: 60px 20px;">
+                <i class="bi bi-inbox" style="font-size: 48px; color: var(--text-light); margin-bottom: 16px; display: block;"></i>
+                <p style="color: var(--text-light); font-size: 16px;">Không có bàn nào</p>
+                <a href="@Url.Action("Create")" class="btn btn-primary" style="margin-top: 16px;">
+                    <i class="bi bi-plus-lg"></i> Thêm bàn
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+@section Head {
+    <link rel="stylesheet" href="~/css/tables.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script>
+        function showLocationModal() {
+            alert('Chức năng quản lý khu vực sẽ được cập nhật sớm!');
+        }
+    </script>
+}
+
+@functions {
+    private string GetTableStatusClass(string status) {
+        return status switch {
+            "Available" => "available",
+            "Occupied" => "occupied",
+            "WaitingPayment" => "waiting-payment",
+            "Maintenance" => "maintenance",
+            _ => ""
+        };
+    }
+
+    private string GetStatusColor(string status) {
+        return status switch {
+            "Available" => "#4CAF50",
+            "Occupied" => "#FF6B6B",
+            "WaitingPayment" => "#FFA500",
+            "Maintenance" => "#9C27B0",
+            _ => "#999"
+        };
+    }
+
+    private string GetStatusLabel(string status) {
+        return status switch {
+            "Available" => "Trống",
+            "Occupied" => "Có khách",
+            "WaitingPayment" => "Chờ TT",
+            "Maintenance" => "Bảo trì",
+            _ => status
+        };
+    }
+}

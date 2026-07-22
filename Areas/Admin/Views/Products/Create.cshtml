@@ -1,0 +1,292 @@
+﻿@model ProductCreateViewModel
+
+@{
+    ViewData["Title"] = "Thêm sản phẩm";
+    ViewData["PageTitle"] = "Thêm sản phẩm mới";
+    ViewData["PageBreadcrumb"] = "<span class='breadcrumb-item'><a href='" + Url.Action("Index", "Products", new { area = "Admin" }) + "'><i class='bi bi-cup'></i> Sản phẩm</a></span><span class='breadcrumb-item'>Thêm mới</span>";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <a href="@Url.Action("Index")" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+</div>
+
+<div class="card" style="max-width: 800px;">
+    <div class="card-body">
+        <form method="post" asp-action="Create" enctype="multipart/form-data" id="createForm">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="Name" class="form-label">
+                            <i class="bi bi-asterisk" style="color: #dc3545; font-size: 8px; margin-right: 4px;"></i>
+                            Tên sản phẩm
+                        </label>
+                        <input type="text" class="form-control @(ViewData.ModelState.ContainsKey("Name") && !ViewData.ModelState["Name"].Errors.Count.Equals(0) ? "is-invalid" : "")" 
+                               asp-for="Name" placeholder="Nhập tên sản phẩm" maxlength="100">
+                        <span asp-validation-for="Name" class="invalid-feedback"></span>
+                        <small class="text-muted d-block mt-1">Tối đa 100 ký tự</small>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="CategoryId" class="form-label">
+                            <i class="bi bi-asterisk" style="color: #dc3545; font-size: 8px; margin-right: 4px;"></i>
+                            Danh mục
+                        </label>
+                        <select class="form-select @(ViewData.ModelState.ContainsKey("CategoryId") && !ViewData.ModelState["CategoryId"].Errors.Count.Equals(0) ? "is-invalid" : "")" 
+                                asp-for="CategoryId">
+                            <option value="">-- Chọn danh mục --</option>
+                            @foreach (var category in ViewBag.Categories ?? new List<CategorySelectViewModel>())
+                            {
+                                <option value="@category.Id">@category.Name</option>
+                            }
+                        </select>
+                        <span asp-validation-for="CategoryId" class="invalid-feedback"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="Price" class="form-label">
+                            <i class="bi bi-asterisk" style="color: #dc3545; font-size: 8px; margin-right: 4px;"></i>
+                            Giá (đ)
+                        </label>
+                        <input type="number" class="form-control @(ViewData.ModelState.ContainsKey("Price") && !ViewData.ModelState["Price"].Errors.Count.Equals(0) ? "is-invalid" : "")" 
+                               asp-for="Price" placeholder="0" min="1" step="1000">
+                        <span asp-validation-for="Price" class="invalid-feedback"></span>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">Trạng thái</label>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="isAvailable" asp-for="IsAvailable" checked>
+                            <label class="form-check-label" for="isAvailable">
+                                Sản phẩm này đang bán
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Description" class="form-label">Mô tả</label>
+                <textarea class="form-control" asp-for="Description" placeholder="Nhập mô tả sản phẩm" rows="4"></textarea>
+                <small class="text-muted d-block mt-1">Không bắt buộc</small>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="ImageFile" class="form-label">Ảnh sản phẩm</label>
+                <div class="image-upload-wrapper">
+                    <div class="image-input-group">
+                        <i class="bi bi-cloud-upload"></i>
+                        <p class="mb-1">Tải ảnh lên hoặc kéo thả</p>
+                        <small class="text-muted">JPG, PNG, WebP (Tối đa 5MB)</small>
+                        <input type="file" class="form-control image-input @(ViewData.ModelState.ContainsKey("ImageFile") && !ViewData.ModelState["ImageFile"].Errors.Count.Equals(0) ? "is-invalid" : "")" 
+                               asp-for="ImageFile" accept=".jpg,.jpeg,.png,.webp" id="imageInput">
+                    </div>
+                    <div id="imagePreview" class="image-preview" style="display: none;">
+                        <img id="previewImage" src="" alt="Preview">
+                        <button type="button" class="btn-remove-image" onclick="removeImage()">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="ImageFile" class="invalid-feedback d-block"></span>
+                </div>
+            </div>
+
+            <div style="margin-top: 32px; display: flex; gap: 12px; justify-content: flex-end;">
+                <a href="@Url.Action("Index")" class="btn btn-secondary">
+                    <i class="bi bi-x-lg"></i> Hủy
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> Lưu sản phẩm
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .image-upload-wrapper {
+        position: relative;
+    }
+
+    .image-input-group {
+        border: 2px dashed var(--border-color);
+        border-radius: 8px;
+        padding: 40px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .image-input-group:hover {
+        border-color: var(--coffee-brown);
+        background-color: rgba(139, 111, 71, 0.05);
+    }
+
+    .image-input-group i {
+        font-size: 32px;
+        color: var(--coffee-light);
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    .image-input-group p {
+        color: var(--text-dark);
+        font-weight: 500;
+    }
+
+    .image-input {
+        display: none;
+    }
+
+    .image-preview {
+        position: relative;
+        width: 100%;
+        max-width: 300px;
+        margin-top: 16px;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .image-preview img {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+
+    .btn-remove-image {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: rgba(0, 0, 0, 0.6);
+        border: none;
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+    }
+
+    .btn-remove-image:hover {
+        background-color: rgba(0, 0, 0, 0.8);
+    }
+</style>
+
+@section Scripts {
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImage = document.getElementById('previewImage');
+        const imageInputGroup = document.querySelector('.image-input-group');
+
+        // Handle file selection
+        imageInput.addEventListener('change', handleImageSelection);
+        imageInputGroup.addEventListener('click', () => imageInput.click());
+
+        // Prevent default drag behavior
+        document.addEventListener('dragover', e => e.preventDefault());
+        document.addEventListener('drop', e => e.preventDefault());
+
+        // Handle drag and drop
+        imageInputGroup.addEventListener('dragover', e => {
+            e.preventDefault();
+            imageInputGroup.style.borderColor = 'var(--coffee-brown)';
+            imageInputGroup.style.backgroundColor = 'rgba(139, 111, 71, 0.1)';
+        });
+
+        imageInputGroup.addEventListener('dragleave', () => {
+            imageInputGroup.style.borderColor = 'var(--border-color)';
+            imageInputGroup.style.backgroundColor = '';
+        });
+
+        imageInputGroup.addEventListener('drop', e => {
+            e.preventDefault();
+            imageInputGroup.style.borderColor = 'var(--border-color)';
+            imageInputGroup.style.backgroundColor = '';
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                imageInput.files = files;
+                handleImageSelection();
+            }
+        });
+
+        function handleImageSelection() {
+            const file = imageInput.files[0];
+            if (!file) return;
+
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('Định dạng ảnh không hợp lệ. Chỉ chấp nhận: JPG, PNG, WebP');
+                imageInput.value = '';
+                imagePreview.style.display = 'none';
+                return;
+            }
+
+            // Validate file size (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Kích thước ảnh không được vượt quá 5MB');
+                imageInput.value = '';
+                imagePreview.style.display = 'none';
+                return;
+            }
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = e => {
+                previewImage.src = e.target.result;
+                imagePreview.style.display = 'block';
+                imageInputGroup.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeImage() {
+            imageInput.value = '';
+            imagePreview.style.display = 'none';
+            imageInputGroup.style.display = 'block';
+        }
+
+        // Form validation
+        document.getElementById('createForm').addEventListener('submit', function(e) {
+            const nameInput = document.querySelector('input[name="Name"]');
+            const categorySelect = document.querySelector('select[name="CategoryId"]');
+            const priceInput = document.querySelector('input[name="Price"]');
+
+            if (!nameInput.value.trim()) {
+                e.preventDefault();
+                alert('Vui lòng nhập tên sản phẩm');
+                nameInput.focus();
+                return false;
+            }
+
+            if (!categorySelect.value) {
+                e.preventDefault();
+                alert('Vui lòng chọn danh mục');
+                categorySelect.focus();
+                return false;
+            }
+
+            if (!priceInput.value || parseFloat(priceInput.value) <= 0) {
+                e.preventDefault();
+                alert('Vui lòng nhập giá hợp lệ');
+                priceInput.focus();
+                return false;
+            }
+        });
+    </script>
+}
+

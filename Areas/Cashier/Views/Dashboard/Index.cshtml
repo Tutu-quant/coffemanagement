@@ -1,0 +1,146 @@
+@model Quản_lý_quán_cafe.Areas.Cashier.ViewModels.CashierDashboardViewModel
+
+@{
+    ViewData["Title"] = "Tổng quan";
+    ViewData["PageTitle"] = "Tổng quan";
+    ViewData["PageBreadcrumb"] = "<span class='breadcrumb-item'><i class='bi bi-speedometer2'></i> Tổng quan</span>";
+}
+
+<div class="page-header-cashier">
+    <h1 class="page-title">📊 Tổng quan hôm nay</h1>
+    <div>
+        <span class="text-muted" id="current-time">@DateTime.Now.ToString("HH:mm:ss")</span>
+    </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="stat-cards">
+    <div class="stat-card">
+        <div class="stat-card-content">
+            <h3>Bàn đang hoạt động</h3>
+            <p class="stat-card-value">@Model.ActiveTablesCount</p>
+        </div>
+        <div class="stat-card-icon">
+            <i class="bi bi-door-open"></i>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-card-content">
+            <h3>Đơn hôm nay</h3>
+            <p class="stat-card-value">@Model.TodayOrdersCount</p>
+        </div>
+        <div class="stat-card-icon">
+            <i class="bi bi-receipt"></i>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-card-content">
+            <h3>Chờ thanh toán</h3>
+            <p class="stat-card-value">@Model.WaitingPaymentCount</p>
+        </div>
+        <div class="stat-card-icon">
+            <i class="bi bi-cash-coin"></i>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-card-content">
+            <h3>Doanh thu hôm nay</h3>
+            <p class="stat-card-value">@Model.TodayRevenue.ToString("N0")đ</p>
+        </div>
+        <div class="stat-card-icon">
+            <i class="bi bi-graph-up"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Floor Map -->
+<div class="floor-map">
+    <h2 class="floor-map-title">📍 Sơ đồ bàn</h2>
+    <div class="tables-grid">
+        @foreach (var table in Model.Tables)
+        {
+            var statusClass = table.Status.ToLower() switch
+            {
+                "occupied" => "occupied",
+                "waitingpayment" => "waiting",
+                "reserved" => "reserved",
+                _ => "empty"
+            };
+
+            <a href="~/Cashier/POS?tableId=@table.TableID" 
+               class="table-item @statusClass"
+               title="@table.StatusLabel">
+                <div class="table-name">
+                    <i class="bi bi-table"></i> @table.TableName
+                </div>
+                <div class="table-info">
+                    @if (table.Status == "Occupied" && table.GuestCount.HasValue)
+                    {
+                        <span>👥 @table.GuestCount khách</span>
+                    }
+                    else if (table.Status == "WaitingPayment")
+                    {
+                        <span style="color: #FF6B6B; font-weight: 600;">⏳ @table.TotalAmount?.ToString("N0")đ</span>
+                    }
+                    else
+                    {
+                        <span>Trống</span>
+                    }
+                </div>
+                @if (!string.IsNullOrEmpty(table.OrderCode))
+                {
+                    <div class="table-info" style="margin-top: 0.5rem;">
+                        <span style="background: rgba(139, 69, 19, 0.1); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 11px;">
+                            #@table.OrderCode
+                        </span>
+                    </div>
+                }
+            </a>
+        }
+    </div>
+</div>
+
+<!-- Recent Orders -->
+@if (Model.RecentOrders.Any())
+{
+    <div class="order-panel" style="margin-top: 2rem;">
+        <h3 class="order-panel-title">
+            <i class="bi bi-clock-history"></i>
+            Đơn gần đây
+        </h3>
+        <div class="order-list">
+            @foreach (var order in Model.RecentOrders)
+            {
+                <a href="~/Cashier/POS?orderId=@order.OrderID" class="order-item">
+                    <div class="order-item-code">
+                        Order #@order.OrderCode
+                    </div>
+                    <div class="order-item-table">
+                        📍 @order.TableName - @order.CreatedAt.ToString("HH:mm")
+                    </div>
+                    <div class="order-item-amount">
+                        @order.TotalAmount.ToString("N0")đ (@order.ItemCount) món
+                    </div>
+                </a>
+            }
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        // Update time every second
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleTimeString('vi-VN');
+        }, 1000);
+
+        // Auto-refresh dashboard every 30 seconds (realtime table status)
+        setInterval(() => {
+            location.reload();
+        }, 30000);
+    </script>
+}

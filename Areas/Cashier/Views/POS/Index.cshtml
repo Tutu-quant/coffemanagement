@@ -1,0 +1,111 @@
+@model Quản_lý_quán_cafe.Areas.Cashier.ViewModels.POSViewModel
+
+@{
+    ViewData["Title"] = "POS - Bán hàng";
+    Layout = "~/Areas/Cashier/Views/Shared/_POSLayout.cshtml";
+}
+
+@section Head {
+    <link rel="stylesheet" href="~/css/pos.css" asp-append-version="true" />
+}
+
+<div class="pos-page">
+    <div class="pos-wrapper">
+        <!-- Cột trái -->
+        @await Html.PartialAsync("_TableList", Model.OpenTables)
+
+        <!-- Cột giữa -->
+        @await Html.PartialAsync("_OrderDetails", Model)
+
+        <!-- Cột phải -->
+        @await Html.PartialAsync("_PaymentSummary", Model)
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentTableId = @(Model.CurrentTable?.TableID ?? 0);
+        let currentDiscountType = 'none';
+
+        function selectTable(tableId) {
+            fetch(`/Cashier/POS/SelectTable?tableId=${tableId}`)
+                .then(r => r.json())
+                .then(data => {
+                    currentTableId = tableId;
+                    // Update UI with new table data
+                    location.reload(); // TODO: Implement AJAX update instead
+                });
+        }
+
+        function increaseQty(orderDetailId) {
+            fetch(`/Cashier/POS/UpdateItem`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderDetailId, quantity: 1 }) // TODO: Get current qty + 1
+            }).then(r => r.json()).then(data => {
+                if (data.success) calculateTotal();
+            });
+        }
+
+        function decreaseQty(orderDetailId) {
+            // Similar to increaseQty
+        }
+
+        function removeItem(orderDetailId) {
+            if (!confirm('Xóa món này?')) return;
+            fetch(`/Cashier/POS/RemoveItem`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderDetailId })
+            }).then(r => r.json()).then(data => {
+                if (data.success) location.reload();
+            });
+        }
+
+        function searchCustomer() {
+            const phone = document.getElementById('customerPhone').value;
+            fetch(`/Cashier/POS/SearchCustomer?phone=${phone}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.found) {
+                        // TODO: Update customer info display
+                    } else {
+                        alert('Không tìm thấy khách hàng');
+                    }
+                });
+        }
+
+        function setDiscountType(type) {
+            currentDiscountType = type;
+            document.querySelectorAll('.discount-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function calculateTotal() {
+            // TODO: Calculate based on order items and discount
+        }
+
+        function calculateChange() {
+            // TODO: Calculate change from paid amount
+        }
+
+        function selectPaymentMethod(method) {
+            document.querySelectorAll('.method-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.method-btn').classList.add('active');
+        }
+
+        function proceedCheckout() {
+            if (currentTableId === 0) {
+                alert('Vui lòng chọn bàn');
+                return;
+            }
+            // TODO: Implement checkout logic
+            alert('Chuyển sang thanh toán...');
+        }
+
+        function closeTable() {
+            currentTableId = 0;
+            location.reload();
+        }
+    </script>
+}

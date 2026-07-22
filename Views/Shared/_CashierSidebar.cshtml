@@ -1,0 +1,59 @@
+<!-- Cashier Sidebar Navigation -->
+<aside class="admin-sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo">
+            <i class="bi bi-cup-hot"></i>
+            <span>BrewPoint</span>
+        </div>
+        <p class="sidebar-tagline">Point Of Sale</p>
+    </div>
+
+    <nav class="sidebar-nav">
+        <ul class="nav-menu">
+            <li class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active" : "")">
+                <a href="@Url.Action("Index", "Dashboard", new { area = "Cashier" })" class="nav-link">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Tổng quan</span>
+                </a>
+            </li>
+            <li class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "POS" ? "active" : "")">
+                <a href="@Url.Action("Index", "POS", new { area = "Cashier" })" class="nav-link">
+                    <i class="bi bi-shop"></i>
+                    <span>POS</span>
+                </a>
+            </li>
+            <li class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Orders" ? "active" : "")">
+                <a href="@Url.Action("Index", "Orders", new { area = "Cashier" })" class="nav-link">
+                    <i class="bi bi-receipt"></i>
+                    <span>Đơn hàng</span>
+                </a>
+            </li>
+            <li class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Payments" ? "active" : "")">
+                <a href="@Url.Action("Index", "Payments", new { area = "Cashier" })" class="nav-link">
+                    <i class="bi bi-cash-coin"></i>
+                    <span>Thanh toán</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="@Url.Action("Index", "Dashboard", new { area = "Admin" })" class="nav-link">
+                    <i class="bi bi-box-arrow-left"></i>
+                    <span>Quay lại Admin</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="user-profile">
+            <div class="user-avatar">@(Context.Session.GetString("FullName")?.Substring(0, 1).ToUpper() ?? "A")</div>
+            <div class="user-info">
+                <p class="user-name">@Context.Session.GetString("FullName")</p>
+                <p class="user-role">Thu ngân</p>
+            </div>
+        </div>
+        <a href="@Url.Action("Logout", "Account", new { area = "" })" class="btn-logout">
+            <i class="bi bi-box-arrow-right"></i>
+            Đăng xuất
+        </a>
+    </div>
+</aside>

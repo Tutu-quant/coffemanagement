@@ -1,0 +1,62 @@
+@model Quản_lý_quán_cafe.Areas.Cashier.ViewModels.POSViewModel
+
+<!-- Cột phải: Tổng kết & Thanh toán -->
+<div class="pos-payment">
+    <div class="payment-header">Tổng kết</div>
+
+    <!-- Tính toán -->
+    <div class="payment-summary">
+        <div class="summary-row">
+            <span>Tạm tính:</span>
+            <span id="subtotalDisplay">0đ</span>
+        </div>
+        <div class="summary-row">
+            <span>Giảm giá:</span>
+            <span id="discountDisplay">0đ</span>
+        </div>
+        <div class="summary-row total">
+            <span>Tổng cộng:</span>
+            <span id="totalDisplay">0đ</span>
+        </div>
+    </div>
+
+    <div class="payment-divider"></div>
+
+    <!-- Khách tích thêm điểm -->
+    @if (Model.Customer?.CustomerID.HasValue == true)
+    {
+        <div class="customer-reward">
+            <i class="bi bi-gift"></i>
+            <span>Khách tích thêm +@Model.PointsToAdd điểm</span>
+        </div>
+    }
+
+    <!-- Phương thức thanh toán -->
+    <div class="payment-methods">
+        <div class="payment-header-small">PHƯƠNG THỨC THANH TOÁN</div>
+        <div class="method-buttons">
+            <button class="method-btn active" onclick="selectPaymentMethod('cash')">
+                <i class="bi bi-wallet2"></i> Tiền mặt
+            </button>
+            <button class="method-btn" onclick="selectPaymentMethod('qr')">
+                <i class="bi bi-qr-code"></i> QR Pay
+            </button>
+        </div>
+    </div>
+
+    <!-- Nhập tiền khách đưa -->
+    <div class="payment-input">
+        <label>Tiền khách đưa (ngàn đồng)</label>
+        <input type="number" class="form-control" placeholder="VD: 200" id="paidAmount" onchange="calculateChange()" />
+    </div>
+
+    <!-- Nút thanh toán -->
+    <div class="payment-actions">
+        <button class="btn-checkout" id="btnCheckout" onclick="proceedCheckout()">
+            <i class="bi bi-credit-card"></i> Xác nhận thanh toán
+        </button>
+        <button class="btn-print">
+            <i class="bi bi-printer"></i> In hóa đơn
+        </button>
+    </div>
+</div>

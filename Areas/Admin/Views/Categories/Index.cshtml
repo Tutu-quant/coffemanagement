@@ -1,0 +1,152 @@
+@model CategoryListViewModel
+
+@{
+    ViewData["Title"] = "Danh mục sản phẩm";
+    ViewData["PageTitle"] = "Danh mục sản phẩm";
+    ViewData["PageBreadcrumb"] = "<span class='breadcrumb-item'><i class='bi bi-tag'></i> Danh mục</span>";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <div>
+        <p style="color: var(--text-light); margin: 0; font-size: 14px;">Tính năng này sẽ sắn sàng để triển khai</p>
+    </div>
+    <a href="@Url.Action("Create")" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i>
+        Thêm danh mục
+    </a>
+</div>
+
+<!-- Search Bar -->
+<div class="card">
+    <div class="card-body">
+        <form method="get" class="search-bar">
+            <div class="search-input-group">
+                <i class="bi bi-search"></i>
+                <input type="text" class="form-control" name="search" placeholder="Tìm kiếm danh mục..." value="@Model?.SearchTerm">
+            </div>
+            <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">Xóa bộ lọc</a>
+        </form>
+    </div>
+</div>
+
+<!-- Categories Table -->
+<div class="card">
+    <div class="card-body">
+        @if (Model?.Categories?.Count > 0)
+        {
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">ID</th>
+                            <th>Tên danh mục</th>
+                            <th>Mô tả</th>
+                            <th style="width: 100px;">Trạng thái</th>
+                            <th style="width: 80px;">Ngày tạo</th>
+                            <th style="width: 150px;">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var category in Model.Categories)
+                        {
+                            <tr>
+                                <td>@category.Id</td>
+                                <td>
+                                    <span class="fw-500">@category.Name</span>
+                                </td>
+                                <td>
+                                    <span class="text-muted">@(string.IsNullOrEmpty(category.Description) ? "---" : category.Description.Substring(0, Math.Min(50, category.Description.Length)) + "...")</span>
+                                </td>
+                                <td>
+                                    @if (category.IsActive)
+                                    {
+                                        <span class="badge badge-active">
+                                            <i class="bi bi-check-circle"></i> Hoạt động
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-inactive">
+                                            <i class="bi bi-x-circle"></i> Không hoạt động
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <small class="text-muted">@category.CreatedAt.ToString("dd/MM/yyyy")</small>
+                                </td>
+                                <td>
+                                    <div class="table-actions">
+                                        <a href="@Url.Action("Details", new { id = category.Id })" class="btn-action btn-view" title="Xem">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="@Url.Action("Edit", new { id = category.Id })" class="btn-action btn-edit" title="Sửa">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="@Url.Action("Delete", new { id = category.Id })" class="btn-action btn-delete" title="Xóa">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            @if (Model.TotalPages > 1)
+            {
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        @if (Model.PageNumber > 1)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = 1, search = Model.SearchTerm })">
+                                    <i class="bi bi-chevron-bar-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.PageNumber - 1, search = Model.SearchTerm })">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                        }
+
+                        @for (int i = Math.Max(1, Model.PageNumber - 2); i <= Math.Min(Model.TotalPages, Model.PageNumber + 2); i++)
+                        {
+                            <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = i, search = Model.SearchTerm })">@i</a>
+                            </li>
+                        }
+
+                        @if (Model.PageNumber < Model.TotalPages)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.PageNumber + 1, search = Model.SearchTerm })">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.TotalPages, search = Model.SearchTerm })">
+                                    <i class="bi bi-chevron-bar-right"></i>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            }
+        }
+        else
+        {
+            <div style="text-align: center; padding: 60px 20px;">
+                <i class="bi bi-inbox" style="font-size: 48px; color: var(--text-light); margin-bottom: 16px; display: block;"></i>
+                <p style="color: var(--text-light); font-size: 16px;">Không có danh mục nào</p>
+                <a href="@Url.Action("Create")" class="btn btn-primary" style="margin-top: 16px;">
+                    <i class="bi bi-plus-lg"></i> Thêm danh mục
+                </a>
+            </div>
+        }
+    </div>
+</div>

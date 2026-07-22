@@ -1,0 +1,13 @@
+@{
+    Layout = "~/Views/Shared/_UnifiedLayout.cshtml";
+}
+
+@RenderBody()
+
+@section Head {
+    @await RenderSectionAsync("Head", required: false)
+}
+
+@section Scripts {
+    @await RenderSectionAsync("Scripts", required: false)
+}

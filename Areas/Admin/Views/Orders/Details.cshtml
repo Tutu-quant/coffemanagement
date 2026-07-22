@@ -1,0 +1,434 @@
+@model OrderDetailViewModel
+
+@{
+    ViewData["Title"] = $"Chi tiết đơn hàng #{Model.OrderCode}";
+    ViewData["PageTitle"] = "Chi tiết đơn hàng";
+    ViewData["PageBreadcrumb"] = "<span class='breadcrumb-item'><i class='bi bi-receipt'></i> <a href='" + Url.Action("Index", "Orders") + "'>Đơn hàng</a></span><span class='breadcrumb-item active'>" + Model.OrderCode + "</span>";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header mb-4">
+    <div>
+        <p style="color: var(--text-light); margin: 0; font-size: 14px;">BrewPoint Cafe · Quản trị</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Quay lại
+        </a>
+    </div>
+</div>
+
+<!-- Order Info Cards Grid -->
+<div class="row mb-4">
+    <!-- Order Info Card -->
+    <div class="col-lg-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-receipt"></i> Thông tin đơn hàng
+            </div>
+            <div class="card-body">
+                <div class="info-row">
+                    <label>Mã đơn:</label>
+                    <strong style="color: var(--coffee-brown);">@Model.OrderCode</strong>
+                </div>
+                <div class="info-row">
+                    <label>Trạng thái:</label>
+                    <span class="badge @GetStatusBadgeClass(Model.OrderStatus)">@GetStatusDisplay(Model.OrderStatus)</span>
+                </div>
+                <div class="info-row">
+                    <label>Ngày tạo:</label>
+                    <span>@Model.OrderDate.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                </div>
+                @if (Model.CompletedDate.HasValue)
+                {
+                    <div class="info-row">
+                        <label>Ngày hoàn thành:</label>
+                        <span>@Model.CompletedDate.Value.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Notes))
+                {
+                    <div class="info-row">
+                        <label>Ghi chú:</label>
+                        <span>@Model.Notes</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Info Card -->
+    <div class="col-lg-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-person"></i> Thông tin khách hàng
+            </div>
+            <div class="card-body">
+                @if (Model.CustomerId.HasValue)
+                {
+                    <div class="info-row">
+                        <label>Tên:</label>
+                        <span>@Model.CustomerName</span>
+                    </div>
+                    <div class="info-row">
+                        <label>Điện thoại:</label>
+                        <span>
+                            @if (!string.IsNullOrEmpty(Model.CustomerPhone))
+                            {
+                                <a href="tel:@Model.CustomerPhone">@Model.CustomerPhone</a>
+                            }
+                            else
+                            {
+                                <span class="text-muted">-</span>
+                            }
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <label>Email:</label>
+                        <span>
+                            @if (!string.IsNullOrEmpty(Model.CustomerEmail))
+                            {
+                                <a href="mailto:@Model.CustomerEmail">@Model.CustomerEmail</a>
+                            }
+                            else
+                            {
+                                <span class="text-muted">-</span>
+                            }
+                        </span>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">Khách lẻ - Không có thông tin</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Info Card -->
+    <div class="col-lg-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-grid-3x3"></i> Thông tin bàn
+            </div>
+            <div class="card-body">
+                @if (Model.TableId.HasValue && !string.IsNullOrEmpty(Model.TableNumber))
+                {
+                    <div class="info-row">
+                        <label>Số bàn:</label>
+                        <strong style="color: var(--coffee-brown);">@Model.TableNumber</strong>
+                    </div>
+                    <div class="info-row">
+                        <label>Sức chứa:</label>
+                        <span>@Model.TableCapacity người</span>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">Đơn hàng mang đi</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Info Card -->
+    <div class="col-lg-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-credit-card"></i> Thông tin thanh toán
+            </div>
+            <div class="card-body">
+                <div class="info-row">
+                    <label>Tổng tiền:</label>
+                    <strong style="color: var(--coffee-brown); font-size: 18px;">@Model.TotalAmount.ToString("C")</strong>
+                </div>
+                <div class="info-row">
+                    <label>Đã thanh toán:</label>
+                    <span style="color: #28a745;">@Model.PaidAmount.ToString("C")</span>
+                </div>
+                <div class="info-row">
+                    <label>Còn lại:</label>
+                    <span style="color: @(Model.RemainingAmount > 0 ? "#ffc107" : "#28a745");">@Model.RemainingAmount.ToString("C")</span>
+                </div>
+                <div class="info-row">
+                    <label>Trạng thái:</label>
+                    <span class="badge @GetPaymentBadgeClass(Model.PaymentStatus)">@GetPaymentDisplay(Model.PaymentStatus)</span>
+                </div>
+                @if (Model.PaidDate.HasValue)
+                {
+                    <div class="info-row">
+                        <label>Ngày thanh toán:</label>
+                        <span>@Model.PaidDate.Value.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Items Section -->
+@if (Model.Items.Any())
+{
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="bi bi-cup"></i> Danh sách món
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tên món</th>
+                            <th style="text-align: right;">Đơn giá</th>
+                            <th style="text-align: center;">Số lượng</th>
+                            <th style="text-align: right;">Thành tiền</th>
+                            <th>Ghi chú</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td><strong>@item.ProductName</strong></td>
+                                <td style="text-align: right;">@item.UnitPrice.ToString("C")</td>
+                                <td style="text-align: center;">
+                                    <span class="badge bg-light text-dark">@item.Quantity</span>
+                                </td>
+                                <td style="text-align: right;"><strong>@item.TotalPrice.ToString("C")</strong></td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(item.Notes))
+                                    {
+                                        <span>@item.Notes</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Timeline Section -->
+@if (Model.Timeline.Any())
+{
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="bi bi-clock-history"></i> Lịch sử / Timeline
+        </div>
+        <div class="card-body">
+            <div class="timeline">
+                @foreach (var timelineEvent in Model.Timeline)
+                {
+                    <div class="timeline-item">
+                        <div class="timeline-marker">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-time">
+                                @timelineEvent.EventDate.ToString("dd/MM/yyyy HH:mm:ss")
+                            </div>
+                            <div class="timeline-event">
+                                <strong>@timelineEvent.EventType</strong>
+                            </div>
+                            @if (!string.IsNullOrEmpty(timelineEvent.EventDescription))
+                            {
+                                <div class="timeline-description">
+                                    @timelineEvent.EventDescription
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(timelineEvent.EventDetails))
+                            {
+                                <div class="timeline-details">
+                                    @timelineEvent.EventDetails
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Error Alert -->
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger" role="alert">
+        <strong>Lỗi:</strong> @TempData["Error"]
+    </div>
+}
+
+<style>
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 14px;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-row label {
+        font-weight: 600;
+        color: var(--text-light);
+        flex: 0 0 30%;
+    }
+
+    .info-row span,
+    .info-row strong,
+    .info-row a {
+        flex: 1;
+        text-align: right;
+    }
+
+    .info-row a {
+        color: var(--coffee-brown);
+        text-decoration: none;
+    }
+
+    .info-row a:hover {
+        text-decoration: underline;
+    }
+
+    /* Timeline Styles */
+    .timeline {
+        position: relative;
+        padding: 20px 0;
+    }
+
+    .timeline-item {
+        display: flex;
+        margin-bottom: 30px;
+        position: relative;
+    }
+
+    .timeline-item:not(:last-child)::before {
+        content: '';
+        position: absolute;
+        left: 11px;
+        top: 40px;
+        bottom: -30px;
+        width: 2px;
+        background-color: var(--border-color);
+    }
+
+    .timeline-marker {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background-color: var(--coffee-brown);
+        color: white;
+        font-size: 12px;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    .timeline-content {
+        margin-left: 20px;
+        flex: 1;
+    }
+
+    .timeline-time {
+        font-size: 12px;
+        color: var(--text-light);
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .timeline-event {
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+
+    .timeline-description,
+    .timeline-details {
+        font-size: 13px;
+        color: var(--text-light);
+        margin-top: 4px;
+    }
+
+    .card-header {
+        background-color: var(--cream);
+        border-bottom: 1px solid var(--border-color);
+        padding: 16px;
+        font-weight: 600;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .card-header i {
+        color: var(--coffee-brown);
+    }
+</style>
+
+@functions {
+    private string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Pending" => "bg-warning text-dark",
+            "Preparing" => "bg-info text-white",
+            "Ready" => "bg-success text-white",
+            "WaitingPayment" => "bg-danger text-white",
+            "Completed" => "bg-success text-white",
+            "Cancelled" => "bg-dark text-white",
+            _ => "bg-secondary text-white"
+        };
+    }
+
+    private string GetStatusDisplay(string status)
+    {
+        return status switch
+        {
+            "Pending" => "Chờ xác nhận",
+            "Preparing" => "Đang pha chế",
+            "Ready" => "Sẵn sàng",
+            "WaitingPayment" => "Chờ thanh toán",
+            "Completed" => "Hoàn thành",
+            "Cancelled" => "Hủy",
+            _ => status
+        };
+    }
+
+    private string GetPaymentBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Pending" => "bg-warning text-dark",
+            "Processing" => "bg-info text-white",
+            "Completed" => "bg-success text-white",
+            "Failed" => "bg-danger text-white",
+            "Refunded" => "bg-secondary text-white",
+            _ => "bg-secondary text-white"
+        };
+    }
+
+    private string GetPaymentDisplay(string status)
+    {
+        return status switch
+        {
+            "Pending" => "Chờ xử lý",
+            "Processing" => "Đang xử lý",
+            "Completed" => "Đã thanh toán",
+            "Failed" => "Thất bại",
+            "Refunded" => "Hoàn tiền",
+            _ => status
+        };
+    }
+}

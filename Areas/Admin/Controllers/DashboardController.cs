@@ -1,14 +1,6 @@
-// Admin Area - Dashboard Controller
-namespace CafeManagement.Areas.Admin.Controllers
+﻿namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
 {
-    using Microsoft.AspNetCore.Mvc;
-
-    [Area("Admin")]
-    public class DashboardController : Controller
+    public class DashboardController
     {
-        public IActionResult Index()
-        {
-            return View();
-        }
     }
 }

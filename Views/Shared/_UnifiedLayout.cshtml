@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - BrewPoint</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.0/dist/sweetalert2.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/tables.css" asp-append-version="true" />
+    @RenderSection("Head", required: false)
+</head>
+<body>
+    <div class="admin-wrapper">
+        <!-- Sidebar - Render based on Area -->
+        @{
+            var currentArea = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
+        }
+
+        @if (currentArea == "Cashier")
+        {
+            @await Html.PartialAsync("_CashierSidebar")
+        }
+        else
+        {
+            @await Html.PartialAsync("_AdminSidebar")
+        }
+
+        <!-- Main Content -->
+        <div class="admin-main">
+            <!-- Header -->
+            <header class="admin-header">
+                <div class="header-left">
+                    <button class="btn-sidebar-toggle" id="sidebarToggle">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <div class="header-title">
+                        <h1>@ViewData["PageTitle"]</h1>
+                        @if (ViewData["PageBreadcrumb"] != null)
+                        {
+                            <nav class="breadcrumb">
+                                <span class="breadcrumb-item">
+                                    @if (currentArea == "Cashier")
+                                    {
+                                        <a href="@Url.Action("Index", "Dashboard", new { area = "Cashier" })">
+                                            <i class="bi bi-house"></i> Tổng quan
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <a href="@Url.Action("Index", "Dashboard", new { area = "Admin" })">
+                                            <i class="bi bi-house"></i> Tổng quan
+                                        </a>
+                                    }
+                                </span>
+                                @Html.Raw(ViewData["PageBreadcrumb"])
+                            </nav>
+                        }
+                    </div>
+                </div>
+
+                <div class="header-right">
+                    <div class="header-user">
+                        <div class="user-avatar-small">
+                            @(Context.Session.GetString("FullName")?.Substring(0, 1).ToUpper() ?? "A")
+                        </div>
+                        <div class="user-info-small">
+                            <p class="user-name-small">@Context.Session.GetString("FullName")</p>
+                            <p class="user-role-small">@(currentArea == "Cashier" ? "Thu ngân" : Context.Session.GetString("RoleName"))</p>
+                        </div>
+                        <i class="bi bi-chevron-down"></i>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="admin-content">
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        @TempData["SuccessMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        @TempData["ErrorMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.0/dist/sweetalert2.min.js"></script>
+    <script src="~/js/admin.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

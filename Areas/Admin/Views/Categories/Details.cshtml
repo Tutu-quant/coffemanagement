@@ -1,0 +1,67 @@
+@model CategoryDetailViewModel
+
+@{
+    ViewData["Title"] = "Chi tiết danh mục";
+    ViewData["PageTitle"] = "Chi tiết danh mục";
+    ViewData["PageBreadcrumb"] = "<span class='breadcrumb-item'><a href='" + Url.Action("Index", "Categories", new { area = "Admin" }) + "'><i class='bi bi-tag'></i> Danh mục</a></span><span class='breadcrumb-item'>Chi tiết</span>";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <a href="@Url.Action("Index")" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+</div>
+
+<div class="card" style="max-width: 600px;">
+    <div class="card-body">
+        <div style="margin-bottom: 24px;">
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 600; color: var(--text-light); font-size: 12px; margin-bottom: 8px;">Tên danh mục</label>
+                <p style="margin: 0; font-size: 16px; font-weight: 500;">@Model?.Name</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 600; color: var(--text-light); font-size: 12px; margin-bottom: 8px;">Mô tả</label>
+                <p style="margin: 0; font-size: 14px;">@(string.IsNullOrEmpty(Model?.Description) ? "Không có mô tả" : Model.Description)</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 600; color: var(--text-light); font-size: 12px; margin-bottom: 8px;">Trạng thái</label>
+                <div>
+                    @if (Model?.IsActive ?? false)
+                    {
+                        <span class="badge badge-active">
+                            <i class="bi bi-check-circle"></i> Hoạt động
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-inactive">
+                            <i class="bi bi-x-circle"></i> Không hoạt động
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 600; color: var(--text-light); font-size: 12px; margin-bottom: 8px;">Ngày tạo</label>
+                <p style="margin: 0; font-size: 14px;">@Model?.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 600; color: var(--text-light); font-size: 12px; margin-bottom: 8px;">Ngày cập nhật</label>
+                <p style="margin: 0; font-size: 14px;">@(Model?.UpdatedAt?.ToString("dd/MM/yyyy HH:mm:ss") ?? "-")</p>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
+            <a href="@Url.Action("Index")" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Quay lại
+            </a>
+            <a href="@Url.Action("Edit", new { id = Model?.Id })" class="btn btn-primary">
+                <i class="bi bi-pencil"></i> Sửa
+            </a>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,66 @@
+@model CategoryCreateViewModel
+
+@{
+    ViewData["Title"] = "Thêm danh mục";
+    ViewData["PageTitle"] = "Thêm danh mục mới";
+    ViewData["PageBreadcrumb"] = "<span class='breadcrumb-item'><a href='" + Url.Action("Index", "Categories", new { area = "Admin" }) + "'><i class='bi bi-tag'></i> Danh mục</a></span><span class='breadcrumb-item'>Thêm mới</span>";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <a href="@Url.Action("Index")" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+</div>
+
+<div class="card" style="max-width: 600px;">
+    <div class="card-body">
+        <form method="post" asp-action="Create" id="createForm">
+            <div class="form-group">
+                <label asp-for="Name" class="form-label">
+                    <i class="bi bi-asterisk" style="color: #dc3545; font-size: 8px; margin-right: 4px;"></i>
+                    Tên danh mục
+                </label>
+                <input type="text" class="form-control @(ViewData.ModelState.ContainsKey("Name") && !ViewData.ModelState["Name"].Errors.Count.Equals(0) ? "is-invalid" : "")" 
+                       asp-for="Name" placeholder="Nhập tên danh mục">
+                <span asp-validation-for="Name" class="invalid-feedback"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Description" class="form-label">Mô tả</label>
+                <textarea class="form-control" asp-for="Description" placeholder="Nhập mô tả (không bắt buộc)" rows="4"></textarea>
+                <small class="text-muted">Tối đa 500 ký tự</small>
+            </div>
+
+            <div class="form-group">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="isActive" asp-for="IsActive" checked>
+                    <label class="form-check-label" for="isActive">
+                        Kích hoạt danh mục này
+                    </label>
+                </div>
+            </div>
+
+            <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
+                <a href="@Url.Action("Index")" class="btn btn-secondary">
+                    <i class="bi bi-x-lg"></i> Hủy
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> Lưu danh mục
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('createForm').addEventListener('submit', function(e) {
+            const nameInput = document.querySelector('input[name="Name"]');
+            if (!nameInput.value.trim()) {
+                e.preventDefault();
+                alert('Vui lòng nhập tên danh mục');
+            }
+        });
+    </script>
+}

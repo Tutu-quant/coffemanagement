@@ -1,0 +1,45 @@
+@model List<dynamic>
+
+@{
+    ViewData["Title"] = "Lịch sử";
+    ViewData["PageTitle"] = "Lịch sử giao dịch";
+    ViewData["PageBreadcrumb"] = "<span class='breadcrumb-item'><i class='bi bi-clock-history'></i> Lịch sử</span>";
+}
+
+<div class="page-header-cashier">
+    <h1 class="page-title">📜 Lịch sử giao dịch</h1>
+</div>
+
+<div class="alert alert-info" role="alert">
+    <i class="bi bi-info-circle"></i>
+    <strong>Thông báo:</strong> Trang lịch sử giao dịch đang phát triển. Vui lòng quay lại sau.
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Danh sách giao dịch hôm nay</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Thời gian</th>
+                        <th>Mã giao dịch</th>
+                        <th>Bàn</th>
+                        <th>Số tiền</th>
+                        <th>Phương thức thanh toán</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox"></i> Chưa có dữ liệu
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,129 @@
+@using Quản_lý_quán_cafe.Models.ViewModels.Account
+@model LoginViewModel
+
+@{
+    ViewData["Title"] = "Đăng nhập";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - BrewPoint</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="login-wrapper">
+        <!-- Left Side -->
+        <div class="login-left">
+            <div class="login-logo">
+                <div class="login-logo-icon">
+                    <i class="bi bi-cup-hot"></i>
+                </div>
+                <div class="login-logo-text">BrewPoint</div>
+            </div>
+
+            <div class="login-hero">
+                <div class="login-hero-image">
+                    <img src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=500&h=400&fit=crop" alt="Coffee" />
+                </div>
+
+                <div class="login-hero-text">
+                    <h1>
+                        Quán của bạn,<br>
+                        <span>Quản lý hoàn hảo.</span>
+                    </h1>
+                    <p class="login-hero-description">
+                        Đặt hàng QR, màn hình bếp theo thời gian thực, thu ngân POS và phân tích — tất cả trong một nơi.
+                    </p>
+                </div>
+
+                <div class="login-features">
+                    <div class="feature-pill">
+                        <i class="bi bi-qr-code"></i> Đặt hàng QR
+                    </div>
+                    <div class="feature-pill">
+                        <i class="bi bi-lightning-fill"></i> Theo dõi trực tiếp
+                    </div>
+                    <div class="feature-pill">
+                        <i class="bi bi-gift"></i> Tích điểm
+                    </div>
+                    <div class="feature-pill">
+                        <i class="bi bi-graph-up"></i> Phân tích
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side -->
+        <div class="login-right">
+            <div class="login-container">
+                <div class="login-header">
+                    <h2>Đăng nhập</h2>
+                    <h1>Trang đăng nhập</h1>
+                </div>
+
+                @if (ViewData.ModelState.Values.SelectMany(v => v.Errors).Any())
+                {
+                    <div class="alert alert-danger">
+                        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <div>@error.ErrorMessage</div>
+                        }
+                    </div>
+                }
+
+                <form method="post" asp-action="Login" id="loginForm">
+                    <!-- Username -->
+                    <div class="form-group">
+                        <label asp-for="Username" class="form-label">Email / Tên đăng nhập</label>
+                        <input type="text" asp-for="Username" class="form-control" placeholder="admin@brewpoint.vn" />
+                        <span asp-validation-for="Username" class="form-error-message"></span>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="form-group">
+                        <label asp-for="Password" class="form-label">Mật khẩu</label>
+                        <div class="password-input-group">
+                            <input type="password" id="password" asp-for="Password" class="form-control" placeholder="••••••••" />
+                            <button type="button" id="passwordToggle" class="password-toggle">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Password" class="form-error-message"></span>
+                    </div>
+
+                    <!-- Checkbox & Forgot Password -->
+                    <div class="form-check">
+                        <div class="form-check-left">
+                            <input type="checkbox" id="rememberMe" asp-for="RememberMe" class="form-check-input" />
+                            <label for="rememberMe" class="form-check-label">Ghi nhớ đăng nhập</label>
+                        </div>
+                        <a href="#" class="forgot-password-link">Quên mật khẩu?</a>
+                    </div>
+
+                    <!-- Login Button -->
+                    <button type="submit" class="login-btn">Đăng nhập</button>
+                </form>
+
+                <!-- Register Link -->
+                <div class="register-section">
+                    <p class="register-text">Hoặc</p>
+                    <a href="@Url.Action("Register", "Account")" class="register-link">
+                        <i class="bi bi-person-plus"></i> Đăng ký tài khoản
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/login.js" asp-append-version="true"></script>
+</body>
+</html>

@@ -1,0 +1,370 @@
+@model ProductListViewModel
+
+@{
+    ViewData["Title"] = "Sản phẩm";
+    ViewData["PageTitle"] = "Sản phẩm";
+    ViewData["PageBreadcrumb"] = "<span class='breadcrumb-item'><i class='bi bi-cup'></i> Sản phẩm</span>";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <div>
+        <p style="color: var(--text-light); margin: 0; font-size: 14px;">BrewPoint Cafe · Quản trị</p>
+    </div>
+    <a href="@Url.Action("Create")" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i>
+        Thêm
+    </a>
+</div>
+
+<!-- Search & Filter Bar -->
+<div class="card">
+    <div class="card-body">
+        <form method="get" class="search-filter-bar">
+            <div class="search-input-group">
+                <i class="bi bi-search"></i>
+                <input type="text" class="form-control" name="search" placeholder="Tìm sản phẩm..." value="@Model?.SearchTerm">
+            </div>
+
+            <select class="form-select" name="category">
+                <option value="">Tất cả danh mục</option>
+                @foreach (var cat in Model?.Categories ?? new List<CategorySelectViewModel>())
+                {
+                    @if (Model?.SelectedCategoryId == cat.Id)
+                    {
+                        <option value="@cat.Id" selected>@cat.Name</option>
+                    }
+                    else
+                    {
+                        <option value="@cat.Id">@cat.Name</option>
+                    }
+                }
+            </select>
+
+            <select class="form-select" name="sort">
+                <option value="">Sắp xếp mặc định</option>
+                @if (Model?.SortBy == "name_asc")
+                {
+                    <option value="name_asc" selected>Tên A-Z</option>
+                }
+                else
+                {
+                    <option value="name_asc">Tên A-Z</option>
+                }
+                @if (Model?.SortBy == "name_desc")
+                {
+                    <option value="name_desc" selected>Tên Z-A</option>
+                }
+                else
+                {
+                    <option value="name_desc">Tên Z-A</option>
+                }
+                @if (Model?.SortBy == "price_asc")
+                {
+                    <option value="price_asc" selected>Giá tăng</option>
+                }
+                else
+                {
+                    <option value="price_asc">Giá tăng</option>
+                }
+                @if (Model?.SortBy == "price_desc")
+                {
+                    <option value="price_desc" selected>Giá giảm</option>
+                }
+                else
+                {
+                    <option value="price_desc">Giá giảm</option>
+                }
+                @if (Model?.SortBy == "date_newest")
+                {
+                    <option value="date_newest" selected>Ngày tạo mới nhất</option>
+                }
+                else
+                {
+                    <option value="date_newest">Ngày tạo mới nhất</option>
+                }
+            </select>
+
+            <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">Xóa bộ lọc</a>
+        </form>
+    </div>
+</div>
+
+<!-- Products Table -->
+<div class="card">
+    <div class="card-body">
+        @if (Model?.Products?.Count > 0)
+        {
+            <div class="table-responsive">
+                <table class="table table-products">
+                    <thead>
+                        <tr>
+                            <th style="width: 300px;">Tên sản phẩm</th>
+                            <th style="width: 150px;">Danh mục</th>
+                            <th style="width: 100px; text-align: right;">Giá</th>
+                            <th style="width: 100px; text-align: center;">Đã bán</th>
+                            <th style="width: 120px; text-align: center;">Trạng thái</th>
+                            <th style="width: 150px; text-align: center;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var product in Model.Products)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="product-name-cell">
+                                        @if (!string.IsNullOrEmpty(product.ImageUrl))
+                                        {
+                                            <img src="/uploads/products/@product.ImageUrl" alt="@product.Name" class="product-thumbnail">
+                                        }
+                                        else
+                                        {
+                                            <div class="product-thumbnail-placeholder">
+                                                <i class="bi bi-cup-hot"></i>
+                                            </div>
+                                        }
+                                        <span class="fw-500">@product.Name</span>
+                                    </div>
+                                </td>
+                                <td>@product.CategoryName</td>
+                                <td style="text-align: right;" class="price-cell">@product.Price.ToString("N0")đ</td>
+                                <td style="text-align: center;">
+                                    <div class="sales-count">
+                                        <i class="bi bi-star-fill"></i> @product.SalesCount
+                                    </div>
+                                </td>
+                                <td style="text-align: center;">
+                                    @if (product.IsAvailable)
+                                    {
+                                        <span class="badge badge-success">
+                                            <i class="bi bi-check-circle"></i> Đang bán
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-warning">
+                                            <i class="bi bi-exclamation-circle"></i> Tạm dừng
+                                        </span>
+                                    }
+                                </td>
+                                <td style="text-align: center;">
+                                    <div class="table-actions">
+                                        <a href="@Url.Action("Details", new { id = product.Id })" class="btn-action btn-view" title="Xem">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="@Url.Action("Edit", new { id = product.Id })" class="btn-action btn-edit" title="Sửa">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="@Url.Action("Delete", new { id = product.Id })" class="btn-action btn-delete" title="Xóa">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Table Footer -->
+            <div class="table-footer">
+                <span class="footer-info">Hiển thị @(((Model.PageNumber - 1) * Model.PageSize + 1)) đến @(Math.Min(Model.PageNumber * Model.PageSize, Model.TotalItems)) / @(Model.TotalItems) sản phẩm</span>
+
+                @if (Model.TotalPages > 1)
+                {
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination">
+                            @if (Model.PageNumber > 1)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="@Url.Action("Index", new { pageNumber = 1, search = Model.SearchTerm, category = Model.SelectedCategoryId, status = Model.SelectedStatus, sort = Model.SortBy })">
+                                        <i class="bi bi-chevron-bar-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.PageNumber - 1, search = Model.SearchTerm, category = Model.SelectedCategoryId, status = Model.SelectedStatus, sort = Model.SortBy })">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </a>
+                                </li>
+                            }
+
+                            @for (int i = Math.Max(1, Model.PageNumber - 2); i <= Math.Min(Model.TotalPages, Model.PageNumber + 2); i++)
+                            {
+                                <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                                    <a class="page-link" href="@Url.Action("Index", new { pageNumber = i, search = Model.SearchTerm, category = Model.SelectedCategoryId, status = Model.SelectedStatus, sort = Model.SortBy })">@i</a>
+                                </li>
+                            }
+
+                            @if (Model.PageNumber < Model.TotalPages)
+                            {
+                                <li class="page-item">
+                                    <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.PageNumber + 1, search = Model.SearchTerm, category = Model.SelectedCategoryId, status = Model.SelectedStatus, sort = Model.SortBy })">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.TotalPages, search = Model.SearchTerm, category = Model.SelectedCategoryId, status = Model.SelectedStatus, sort = Model.SortBy })">
+                                        <i class="bi bi-chevron-bar-right"></i>
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
+                }
+            </div>
+        }
+        else
+        {
+            <div style="text-align: center; padding: 60px 20px;">
+                <i class="bi bi-inbox" style="font-size: 48px; color: var(--text-light); margin-bottom: 16px; display: block;"></i>
+                <p style="color: var(--text-light); font-size: 16px;">Không có sản phẩm nào</p>
+                <a href="@Url.Action("Create")" class="btn btn-primary" style="margin-top: 16px;">
+                    <i class="bi bi-plus-lg"></i> Thêm sản phẩm
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .search-filter-bar {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .search-input-group {
+        flex: 1;
+        min-width: 300px;
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .search-input-group i {
+        position: absolute;
+        left: 12px;
+        color: var(--text-light);
+        pointer-events: none;
+    }
+
+    .search-input-group .form-control {
+        padding-left: 36px;
+    }
+
+    .form-select {
+        min-width: 150px;
+    }
+
+    .product-name-cell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .product-thumbnail {
+        width: 40px;
+        height: 40px;
+        border-radius: 6px;
+        object-fit: cover;
+    }
+
+    .product-thumbnail-placeholder {
+        width: 40px;
+        height: 40px;
+        border-radius: 6px;
+        background-color: var(--coffee-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--white);
+        font-size: 20px;
+    }
+
+    .price-cell {
+        font-weight: 600;
+        color: var(--coffee-brown);
+    }
+
+    .sales-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--coffee-brown);
+    }
+
+    .sales-count i {
+        color: #ffc107;
+    }
+
+    .table-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 16px;
+        border-top: 1px solid var(--border-color);
+        margin-top: 16px;
+    }
+
+    .footer-info {
+        color: var(--text-light);
+        font-size: 14px;
+    }
+
+    .badge-success {
+        background-color: #4CAF50;
+        color: white;
+    }
+
+    .badge-warning {
+        background-color: #FFC107;
+        color: #333;
+    }
+
+    .table-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+    }
+
+    .btn-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 16px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-view {
+        color: #0066cc;
+        background-color: rgba(0, 102, 204, 0.1);
+    }
+
+    .btn-view:hover {
+        background-color: rgba(0, 102, 204, 0.2);
+    }
+
+    .btn-edit {
+        color: #ff9800;
+        background-color: rgba(255, 152, 0, 0.1);
+    }
+
+    .btn-edit:hover {
+        background-color: rgba(255, 152, 0, 0.2);
+    }
+
+    .btn-delete {
+        color: #d32f2f;
+        background-color: rgba(211, 47, 47, 0.1);
+    }
+
+    .btn-delete:hover {
+        background-color: rgba(211, 47, 47, 0.2);
+    }
+</style>

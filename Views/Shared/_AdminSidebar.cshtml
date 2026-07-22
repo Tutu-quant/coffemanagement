@@ -1,0 +1,83 @@
+<!-- Admin Sidebar Navigation -->
+<aside class="admin-sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo">
+            <i class="bi bi-cup-hot"></i>
+            <span>BrewPoint</span>
+        </div>
+        <p class="sidebar-tagline">Bằng quản trị</p>
+    </div>
+
+    <nav class="sidebar-nav">
+        <ul class="nav-menu">
+            <li class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active" : "")">
+                <a href="@Url.Action("Index", "Dashboard", new { area = "Admin" })" class="nav-link">
+                    <i class="bi bi-grid-3x3-gap"></i>
+                    <span>Tổng quan</span>
+                </a>
+            </li>
+            <li class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Categories" ? "active" : "")">
+                <a href="@Url.Action("Index", "Categories", new { area = "Admin" })" class="nav-link">
+                    <i class="bi bi-tag"></i>
+                    <span>Danh mục</span>
+                </a>
+            </li>
+            <li class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Products" ? "active" : "")">
+                <a href="@Url.Action("Index", "Products", new { area = "Admin" })" class="nav-link">
+                    <i class="bi bi-cup"></i>
+                    <span>Sản phẩm</span>
+                </a>
+            </li>
+            <li class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Employees" ? "active" : "")">
+                <a href="@Url.Action("Index", "Employees", new { area = "Admin" })" class="nav-link">
+                    <i class="bi bi-people"></i>
+                    <span>Nhân viên</span>
+                </a>
+            </li>
+            <li class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Customers" ? "active" : "")">
+                <a href="@Url.Action("Index", "Customers", new { area = "Admin" })" class="nav-link">
+                    <i class="bi bi-person-vcard"></i>
+                    <span>Khách hàng</span>
+                </a>
+            </li>
+            <li class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reservations" ? "active" : "")">
+                <a href="@Url.Action("Index", "Reservations", new { area = "Admin" })" class="nav-link">
+                    <i class="bi bi-calendar-event"></i>
+                    <span>Đặt bàn</span>
+                </a>
+            </li>
+            <li class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "RestaurantTables" ? "active" : "")">
+                <a href="@Url.Action("Index", "RestaurantTables", new { area = "Admin" })" class="nav-link">
+                    <i class="bi bi-grid-3x3"></i>
+                    <span>Bàn</span>
+                </a>
+            </li>
+            <li class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Orders" ? "active" : "")">
+                <a href="@Url.Action("Index", "Orders", new { area = "Admin" })" class="nav-link">
+                    <i class="bi bi-receipt"></i>
+                    <span>Đơn hàng</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" disabled>
+                    <i class="bi bi-bar-chart"></i>
+                    <span>Báo cáo</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="user-profile">
+            <div class="user-avatar">@(Context.Session.GetString("FullName")?.Substring(0, 1).ToUpper() ?? "A")</div>
+            <div class="user-info">
+                <p class="user-name">@Context.Session.GetString("FullName")</p>
+                <p class="user-role">@Context.Session.GetString("RoleName")</p>
+            </div>
+        </div>
+        <a href="@Url.Action("Logout", "Account", new { area = "" })" class="btn-logout">
+            <i class="bi bi-box-arrow-right"></i>
+            Đăng xuất
+        </a>
+    </div>
+</aside>

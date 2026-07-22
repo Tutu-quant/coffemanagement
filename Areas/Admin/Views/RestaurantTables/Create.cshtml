@@ -1,0 +1,89 @@
+@using Quản_lý_quán_cafe.Models.ViewModels.RestaurantTable
+@model RestaurantTableCreateViewModel
+
+@{
+    ViewData["Title"] = "Thêm bàn";
+    ViewData["PageTitle"] = "Thêm bàn";
+    ViewData["PageBreadcrumb"] = "<span class='breadcrumb-item'><a href='" + Url.Action("Index") + "'><i class='bi bi-grid-3x3'></i> Bàn</a></span><span class='breadcrumb-item'><i class='bi bi-plus-lg'></i> Thêm bàn</span>";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <div>
+        <p style="color: var(--text-light); margin: 0; font-size: 14px;">BrewPoint Cafe · Quản trị</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mx-auto">
+        <div class="card">
+            <div class="card-header" style="border-bottom: 1px solid #e9ecef;">
+                <h5 class="mb-0">Thông tin bàn</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" class="form-horizontal">
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <strong>Lỗi!</strong> Vui lòng kiểm tra lại thông tin nhập vào.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <div class="form-group mb-3">
+                        <label class="form-label" for="TableNumber">Mã bàn <span class="text-danger">*</span></label>
+                        <input class="form-control @(ViewData.ModelState.ContainsKey("TableNumber") && ViewData.ModelState["TableNumber"].Errors.Count > 0 ? "is-invalid" : "")" 
+                               id="TableNumber" 
+                               asp-for="TableNumber" 
+                               placeholder="Ví dụ: Bàn 1"
+                               required>
+                        <span asp-validation-for="TableNumber" class="text-danger small"></span>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label" for="Capacity">Sức chứa (người) <span class="text-danger">*</span></label>
+                        <input class="form-control @(ViewData.ModelState.ContainsKey("Capacity") && ViewData.ModelState["Capacity"].Errors.Count > 0 ? "is-invalid" : "")" 
+                               id="Capacity" 
+                               asp-for="Capacity" 
+                               type="number"
+                               min="1"
+                               placeholder="Ví dụ: 4"
+                               required>
+                        <span asp-validation-for="Capacity" class="text-danger small"></span>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label class="form-label" for="Location">Khu vực</label>
+                        <select class="form-select" id="Location" asp-for="Location">
+                            <option value="">-- Chọn khu vực --</option>
+                            @if (ViewBag.Locations != null)
+                            {
+                                @foreach (var location in ViewBag.Locations)
+                                {
+                                    <option value="@location">@location</option>
+                                }
+                            }
+                            <option value="">-- Tạo khu vực mới --</option>
+                        </select>
+                        <small class="text-muted d-block mt-2">Hoặc nhập khu vực mới (nếu không chọn từ danh sách)</small>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i> Tạo bàn
+                        </button>
+                        <a href="@Url.Action("Index")" class="btn btn-secondary">
+                            <i class="bi bi-x-lg"></i> Hủy
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
