@@ -12,7 +12,6 @@
         // Cột giữa: Thông tin bàn hiện tại
         public POSTableViewModel CurrentTable { get; set; } = new();
         public List<POSOrderItemViewModel> OrderItems { get; set; } = new();
-        public List<POSProductOptionViewModel> AvailableProducts { get; set; } = new();
         public POSCustomerViewModel Customer { get; set; } = new();
         public string Notes { get; set; } = string.Empty;
 
@@ -31,14 +30,6 @@
         public string DiscountType { get; set; } = "None"; // None, Percent, Fixed
         public decimal DiscountValue { get; set; }
     }
-}
-
-/// <summary>Món có thể chọn trên màn hình POS.</summary>
-public class POSProductOptionViewModel
-{
-    public int ProductID { get; set; }
-    public string ProductName { get; set; } = string.Empty;
-    public decimal Price { get; set; }
 }
 
 /// <summary>

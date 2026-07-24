@@ -78,7 +78,7 @@ namespace Quản_lý_quán_cafe.Models.ViewModels.RestaurantTable
         public int Id { get; set; }
         public string TableNumber { get; set; } = string.Empty;
         public int Capacity { get; set; }
-        public string TableStatus { get; set; }
+        public string TableStatus { get; set; } = "Available";
         public string? Location { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

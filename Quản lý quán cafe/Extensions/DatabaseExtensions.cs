@@ -1,5 +1,4 @@
 ﻿using Quản_lý_quán_cafe.Data;
-using Microsoft.EntityFrameworkCore;
 
 namespace Quản_lý_quán_cafe.Extensions
 {
@@ -17,16 +16,5 @@ namespace Quản_lý_quán_cafe.Extensions
             }
         }
 
-        /// <summary>
-        /// Apply pending migrations and create database if not exists
-        /// </summary>
-        public static async Task MigrateDatabaseAsync(this IApplicationBuilder app)
-        {
-            using (var scope = app.ApplicationServices.CreateScope())
-            {
-                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                await context.Database.MigrateAsync();
-            }
-        }
     }
 }

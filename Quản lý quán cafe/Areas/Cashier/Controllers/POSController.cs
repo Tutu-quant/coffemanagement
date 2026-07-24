@@ -1,10 +1,7 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
 using Quản_lý_quán_cafe.Areas.Cashier.ViewModels;
 using Quản_lý_quán_cafe.Data;
-using Quản_lý_quán_cafe.Models.Entities;
-using Quản_lý_quán_cafe.Models.Enums;
-using Quản_lý_quán_cafe.Models.ViewModels.Order;
+using Microsoft.EntityFrameworkCore;
 
 namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
 {
@@ -13,237 +10,226 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
     {
         private readonly ApplicationDbContext _context;
 
-        public POSController(ApplicationDbContext context) => _context = context;
+        public POSController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
 
         [HttpGet]
-        public async Task<IActionResult> Index(int? tableId)
+        public async Task<IActionResult> Index()
         {
-            var tables = await _context.RestaurantTables
-                .Where(t => !t.IsDeleted)
-                .OrderBy(t => t.TableNumber)
+            if (!IsStaff()) return RedirectToAction("Login", "Account", new { area = "" });
+            var viewModel = new POSViewModel();
+
+            // Lấy danh sách bàn đang mở (Occupied hoặc WaitingPayment theo TableStatus)
+            var openTables = await _context.RestaurantTables
+                .Where(t => !t.IsDeleted && (t.TableStatus == "Occupied" || t.TableStatus == "WaitingPayment"))
                 .ToListAsync();
 
-            var activeOrders = await _context.Orders
-                .Include(o => o.OrderDetails)
-                .Where(o => !o.IsDeleted && o.TableID != null &&
-                    o.OrderStatus != OrderStatusConstants.Completed &&
-                    o.OrderStatus != OrderStatusConstants.Cancelled)
-                .ToListAsync();
-
-            var selectedTableId = tableId ?? tables.FirstOrDefault()?.TableID ?? 0;
-            var selectedOrder = activeOrders.FirstOrDefault(o => o.TableID == selectedTableId);
-            var selectedTable = tables.FirstOrDefault(t => t.TableID == selectedTableId);
-
-            var viewModel = new POSViewModel
+            viewModel.OpenTables = openTables.Select(t => new POSTableViewModel
             {
-                OpenTables = tables.Select(table =>
-                {
-                    var order = activeOrders.FirstOrDefault(o => o.TableID == table.TableID);
-                    return new POSTableViewModel
-                    {
-                        TableID = table.TableID,
-                        TableNumber = table.TableNumber,
-                        TableName = table.TableNumber,
-                        OrderCode = order == null ? "Đơn mới" : $"#{order.OrderID}",
-                        ItemCount = order?.OrderDetails.Sum(item => item.Quantity) ?? 0,
-                        TotalAmount = order?.TotalAmount ?? 0,
-                        Status = table.TableStatus.ToLowerInvariant(),
-                        StatusBadge = table.TableStatus == "WaitingPayment" ? "THANH TOÁN" : string.Empty
-                    };
-                }).ToList(),
-                AvailableProducts = await _context.Products
-                    .Where(p => !p.IsDeleted && p.IsActive)
-                    .OrderBy(p => p.ProductName)
-                    .Select(p => new POSProductOptionViewModel
-                    {
-                        ProductID = p.ProductID,
-                        ProductName = p.ProductName,
-                        Price = p.Price
-                    }).ToListAsync()
-            };
+                TableID = t.TableID,
+                TableNumber = t.TableNumber,
+                TableName = t.TableNumber, // TODO: Check if need separate TableName field
+                OrderCode = "#" + t.TableID, // TODO: Lấy từ Order.OrderCode thực tế
+                ItemCount = 0, // TODO: Tính từ OrderDetails
+                TotalAmount = 0, // TODO: Tính từ Order.Total
+                Status = t.TableStatus.ToLower(),
+                StatusBadge = t.TableStatus == "WaitingPayment" ? "THANH TOÁN" : ""
+            }).ToList();
 
-            if (selectedTable != null)
+            // Mặc định chọn bàn đầu tiên (hoặc từ session)
+            if (viewModel.OpenTables.Any())
             {
-                viewModel.CurrentTable = viewModel.OpenTables.First(t => t.TableID == selectedTable.TableID);
-                viewModel.Notes = selectedOrder?.Notes ?? string.Empty;
-
-                if (selectedOrder != null)
-                {
-                    var order = await _context.Orders
-                        .Include(o => o.Customer)
-                        .Include(o => o.OrderDetails).ThenInclude(item => item.Product)
-                        .SingleAsync(o => o.OrderID == selectedOrder.OrderID);
-
-                    viewModel.OrderItems = order.OrderDetails
-                        .Where(item => !item.IsDeleted)
-                        .Select(item => new POSOrderItemViewModel
-                        {
-                            OrderDetailID = item.OrderDetailID,
-                            ProductID = item.ProductID,
-                            ProductName = item.Product?.ProductName ?? "Món không xác định",
-                            Price = item.UnitPrice,
-                            Quantity = item.Quantity,
-                            Notes = item.Notes ?? string.Empty
-                        }).ToList();
-
-                    if (order.Customer != null)
-                    {
-                        viewModel.Customer = new POSCustomerViewModel
-                        {
-                            CustomerID = order.Customer.CustomerID,
-                            Name = order.Customer.CustomerName,
-                            Phone = order.Customer.Phone ?? string.Empty,
-                            RewardPoints = order.Customer.RewardPoints,
-                            MembershipTier = order.Customer.MembershipTier
-                        };
-                    }
-                }
+                var selectedTable = viewModel.OpenTables.First();
+                viewModel.CurrentTable = selectedTable;
+                // TODO: Lấy Order Items từ database
             }
 
-            viewModel.Subtotal = viewModel.OrderItems.Sum(item => item.Total);
-            viewModel.Total = viewModel.Subtotal;
             return View(viewModel);
         }
 
-        /// <summary>Tạo đơn hoặc thay thế danh sách món của đơn đang mở tại một bàn.</summary>
-        [HttpPost]
-        public async Task<IActionResult> SaveOrder([FromBody] CreateOrderViewModel model)
+        [HttpGet]
+        public async Task<IActionResult> SelectTable(int tableId)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(new { success = false, message = GetValidationMessage() });
-
-            if (model.TableId is null)
-                return BadRequest(new { success = false, message = "Vui lòng chọn bàn" });
-
+            if (!IsStaff()) return StatusCode(403);
             var table = await _context.RestaurantTables
-                .SingleOrDefaultAsync(t => t.TableID == model.TableId && !t.IsDeleted);
+                .FirstOrDefaultAsync(t => t.TableID == tableId && !t.IsDeleted);
+
             if (table == null)
-                return NotFound(new { success = false, message = "Không tìm thấy bàn" });
+                return NotFound();
 
-            if (model.CustomerId is not null && !await _context.Customers
-                    .AnyAsync(c => c.CustomerID == model.CustomerId && !c.IsDeleted))
-                return BadRequest(new { success = false, message = "Không tìm thấy khách hàng" });
+            // TODO: Lấy Order Items của bàn này
+            var orderItems = new List<POSOrderItemViewModel>();
 
-            var productIds = model.Items.Select(item => item.ProductId).Distinct().ToList();
-            var products = await _context.Products
-                .Where(product => productIds.Contains(product.ProductID) && !product.IsDeleted && product.IsActive)
-                .ToDictionaryAsync(product => product.ProductID);
-            if (products.Count != productIds.Count)
-                return BadRequest(new { success = false, message = "Một hoặc nhiều món không tồn tại hoặc đã ngừng bán" });
+            return Json(new
+            {
+                table = new
+                {
+                    tableID = table.TableID,
+                    tableName = table.TableNumber,
+                    orderCode = "#" + table.TableID,
+                    status = table.TableStatus.ToLower()
+                },
+                items = orderItems
+            });
+        }
 
-            await using var transaction = await _context.Database.BeginTransactionAsync();
+        [HttpPost]
+        public async Task<IActionResult> AddItem(int tableId, int productId, int quantity, string size = "M", string notes = "")
+        {
+            if (!IsStaff()) return StatusCode(403);
             try
             {
-                var order = await _context.Orders
-                    .Include(o => o.OrderDetails)
-                    .SingleOrDefaultAsync(o => o.TableID == model.TableId && !o.IsDeleted &&
-                        o.OrderStatus != OrderStatusConstants.Completed &&
-                        o.OrderStatus != OrderStatusConstants.Cancelled);
+                if (quantity < 1) return BadRequest(new { success = false, message = "Số lượng phải lớn hơn 0" });
+                var table = await _context.RestaurantTables.FirstOrDefaultAsync(t => t.TableID == tableId && !t.IsDeleted);
+                var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductID == productId && p.IsActive && !p.IsDeleted);
+                if (table == null || product == null) return NotFound(new { success = false, message = "Không tìm thấy bàn hoặc sản phẩm" });
+                if (product.Quantity < quantity) return Conflict(new { success = false, message = "Sản phẩm không đủ số lượng" });
 
-                var now = DateTime.UtcNow;
+                var order = await _context.Orders.Include(o => o.OrderDetails)
+                    .FirstOrDefaultAsync(o => o.TableID == tableId && !o.IsDeleted && o.OrderStatus == "Pending");
                 if (order == null)
                 {
-                    order = new Order
-                    {
-                        TableID = model.TableId,
-                        CustomerID = model.CustomerId,
-                        OrderStatus = OrderStatusConstants.Pending,
-                        OrderDate = now,
-                        CreatedAt = now
-                    };
+                    order = new Models.Entities.Order { TableID = tableId, OrderStatus = "Pending", OrderDate = DateTime.UtcNow, CreatedAt = DateTime.UtcNow };
                     _context.Orders.Add(order);
+                    await _context.SaveChangesAsync();
                 }
+
+                var detail = order.OrderDetails.FirstOrDefault(d => d.ProductID == productId && !d.IsDeleted && d.Notes == notes);
+                if (detail == null)
+                    _context.OrderDetails.Add(new Models.Entities.OrderDetail { OrderID = order.OrderID, ProductID = productId, Quantity = quantity, UnitPrice = product.Price, Subtotal = product.Price * quantity, Notes = notes, CreatedAt = DateTime.UtcNow });
                 else
                 {
-                    _context.OrderDetails.RemoveRange(order.OrderDetails.Where(item => !item.IsDeleted));
-                    order.CustomerID = model.CustomerId;
-                    order.UpdatedAt = now;
+                    detail.Quantity += quantity;
+                    detail.Subtotal = detail.Quantity * detail.UnitPrice;
+                    detail.UpdatedAt = DateTime.UtcNow;
                 }
-
-                order.Notes = model.Notes?.Trim();
-                order.OrderDetails = model.Items.Select(item => new OrderDetail
-                {
-                    ProductID = item.ProductId,
-                    Quantity = item.Quantity,
-                    UnitPrice = products[item.ProductId].Price,
-                    Subtotal = products[item.ProductId].Price * item.Quantity,
-                    Notes = item.Notes?.Trim(),
-                    CreatedAt = now
-                }).ToList();
-                order.TotalAmount = order.OrderDetails.Sum(item => item.Subtotal);
+                product.Quantity -= quantity;
                 table.TableStatus = "Occupied";
-                table.UpdatedAt = now;
-
+                order.TotalAmount = order.OrderDetails.Where(d => !d.IsDeleted).Sum(d => d.Subtotal) + (detail == null ? product.Price * quantity : 0);
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                return Ok(new { success = true, orderId = order.OrderID, totalAmount = order.TotalAmount });
+                return Json(new { success = true, message = "Đã thêm món", orderId = order.OrderID, totalAmount = order.TotalAmount });
             }
-            catch
+            catch (Exception ex)
             {
-                await transaction.RollbackAsync();
-                throw;
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateItem(int orderDetailId, int quantity)
+        {
+            if (!IsStaff()) return StatusCode(403);
+            try
+            {
+                var detail = await _context.OrderDetails.Include(d => d.Order)!.ThenInclude(o => o!.OrderDetails).Include(d => d.Product)
+                    .FirstOrDefaultAsync(d => d.OrderDetailID == orderDetailId && !d.IsDeleted);
+                if (detail == null || detail.Order?.OrderStatus != "Pending") return NotFound(new { success = false });
+                var difference = quantity - detail.Quantity;
+                if (quantity <= 0) detail.IsDeleted = true;
+                else
+                {
+                    if (difference > 0 && (detail.Product?.Quantity ?? 0) < difference) return Conflict(new { success = false, message = "Không đủ tồn kho" });
+                    detail.Quantity = quantity;
+                    detail.Subtotal = detail.UnitPrice * quantity;
+                }
+                if (detail.Product != null) detail.Product.Quantity -= difference;
+                detail.Order.TotalAmount = detail.Order.OrderDetails.Where(d => !d.IsDeleted).Sum(d => d.Subtotal);
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, totalAmount = detail.Order.TotalAmount });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RemoveItem(int orderDetailId)
+        {
+            if (!IsStaff()) return StatusCode(403);
+            try
+            {
+                var detail = await _context.OrderDetails.Include(d => d.Order)!.ThenInclude(o => o!.OrderDetails).Include(d => d.Product)
+                    .FirstOrDefaultAsync(d => d.OrderDetailID == orderDetailId && !d.IsDeleted);
+                if (detail == null || detail.Order?.OrderStatus != "Pending") return NotFound(new { success = false });
+                detail.IsDeleted = true;
+                if (detail.Product != null) detail.Product.Quantity += detail.Quantity;
+                detail.Order.TotalAmount = detail.Order.OrderDetails.Where(d => !d.IsDeleted).Sum(d => d.Subtotal);
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, totalAmount = detail.Order.TotalAmount });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
             }
         }
 
         [HttpGet]
         public async Task<IActionResult> SearchCustomer(string phone)
         {
-            var customer = await _context.Customers
-                .FirstOrDefaultAsync(c => c.Phone == phone && !c.IsDeleted);
-            if (customer == null) return Json(new { found = false });
-
-            return Json(new
+            if (!IsStaff()) return StatusCode(403);
+            try
             {
-                found = true,
-                customer = new
+                var customer = await _context.Customers
+                    .FirstOrDefaultAsync(c => c.Phone == phone && !c.IsDeleted);
+
+                if (customer == null)
+                    return Json(new { found = false });
+
+                return Json(new
                 {
-                    customerID = customer.CustomerID,
-                    name = customer.CustomerName,
-                    phone = customer.Phone,
-                    rewardPoints = customer.RewardPoints,
-                    membershipTier = customer.MembershipTier
-                }
-            });
+                    found = true,
+                    customer = new
+                    {
+                        customerID = customer.CustomerID,
+                        name = customer.CustomerName,
+                        phone = customer.Phone,
+                        rewardPoints = customer.RewardPoints,
+                        membershipTier = customer.MembershipTier
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
 
         [HttpPost]
-        public async Task<IActionResult> Checkout([FromBody] CheckoutRequest request)
+        public async Task<IActionResult> Checkout(int tableId, string paymentMethod, decimal paidAmount)
         {
-            var order = await _context.Orders
-                .SingleOrDefaultAsync(o => o.TableID == request.TableId && !o.IsDeleted &&
-                    o.OrderStatus != OrderStatusConstants.Completed && o.OrderStatus != OrderStatusConstants.Cancelled);
-            if (order == null) return BadRequest(new { success = false, message = "Không có đơn hàng đang mở tại bàn này" });
-            if (request.PaidAmount < order.TotalAmount) return BadRequest(new { success = false, message = "Số tiền khách đưa chưa đủ" });
-
-            var now = DateTime.UtcNow;
-            _context.Payments.Add(new Payment
+            if (!IsStaff()) return StatusCode(403);
+            try
             {
-                OrderID = order.OrderID,
-                Amount = order.TotalAmount,
-                PaymentMethod = request.PaymentMethod?.Equals("qr", StringComparison.OrdinalIgnoreCase) == true ? "QR" : "Cash",
-                PaymentStatus = PaymentStatusConstants.Completed,
-                PaymentDate = now,
-                CreatedAt = now
-            });
-            order.OrderStatus = OrderStatusConstants.Completed;
-            order.CompletedDate = now;
-            order.UpdatedAt = now;
-
-            var table = await _context.RestaurantTables.FindAsync(request.TableId);
-            if (table != null) { table.TableStatus = "Available"; table.UpdatedAt = now; }
-            await _context.SaveChangesAsync();
-            return Ok(new { success = true, changeAmount = request.PaidAmount - order.TotalAmount });
+                var order = await _context.Orders.Include(o => o.OrderDetails).Include(o => o.Table)
+                    .FirstOrDefaultAsync(o => o.TableID == tableId && !o.IsDeleted && o.OrderStatus == "Pending");
+                if (order == null || !order.OrderDetails.Any(d => !d.IsDeleted)) return Conflict(new { success = false, message = "Không có đơn hàng để thanh toán" });
+                order.TotalAmount = order.OrderDetails.Where(d => !d.IsDeleted).Sum(d => d.Subtotal);
+                if (paidAmount < order.TotalAmount) return BadRequest(new { success = false, message = "Số tiền thanh toán chưa đủ" });
+                var payment = new Models.Entities.Payment { OrderID = order.OrderID, Amount = order.TotalAmount, PaymentMethod = string.IsNullOrWhiteSpace(paymentMethod) ? "Cash" : paymentMethod, PaymentStatus = "Completed", PaymentDate = DateTime.UtcNow, CreatedAt = DateTime.UtcNow };
+                _context.Payments.Add(payment);
+                order.OrderStatus = "Completed";
+                order.CompletedDate = DateTime.UtcNow;
+                order.UpdatedAt = DateTime.UtcNow;
+                if (order.Table != null) { order.Table.TableStatus = "Available"; order.Table.UpdatedAt = DateTime.UtcNow; }
+                await _context.SaveChangesAsync();
+                order.PaymentID = payment.PaymentID;
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, message = "Thanh toán thành công", orderId = order.OrderID, amount = order.TotalAmount, change = paidAmount - order.TotalAmount });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
 
-        private string GetValidationMessage() => ModelState.Values.SelectMany(value => value.Errors)
-            .Select(error => error.ErrorMessage).FirstOrDefault(message => !string.IsNullOrWhiteSpace(message))
-            ?? "Dữ liệu đơn hàng không hợp lệ";
-
-        public class CheckoutRequest
+        private bool IsStaff()
         {
-            public int TableId { get; set; }
-            public string? PaymentMethod { get; set; }
-            public decimal PaidAmount { get; set; }
+            var role = HttpContext.Session.GetString("RoleName");
+            return role is "Admin" or "Cashier";
         }
     }
 }
+

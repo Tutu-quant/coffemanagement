@@ -1,62 +1,39 @@
-@model List<dynamic>
-
+@model IEnumerable<Quản_lý_quán_cafe.Models.Entities.RestaurantTable>
+@using TableStatuses = Quản_lý_quán_cafe.Models.Enums.TableStatus
 @{
     ViewData["Title"] = "Quản lý bàn";
-    ViewData["PageTitle"] = "Quản lý bàn";
-    ViewData["PageBreadcrumb"] = "<span class='breadcrumb-item'><i class='bi bi-grid-3x3'></i> Bàn</span>";
+    Layout = "~/Views/Shared/_UnifiedLayout.cshtml";
 }
 
-<div class="page-header-cashier">
-    <h1 class="page-title">🍽️ Quản lý bàn</h1>
+<div class="page-header-cashier"><h1 class="page-title">Quản lý bàn</h1></div>
+@if (TempData["SuccessMessage"] is not null) { <div class="alert alert-success">@TempData["SuccessMessage"]</div> }
+@if (TempData["ErrorMessage"] is not null) { <div class="alert alert-danger">@TempData["ErrorMessage"]</div> }
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3>@Model.Count(t => t.TableStatus == TableStatuses.Available)</h3><p class="mb-0">Bàn trống</p></div></div></div>
+    <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3>@Model.Count(t => t.TableStatus == TableStatuses.Occupied)</h3><p class="mb-0">Đang sử dụng</p></div></div></div>
+    <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3>@Model.Count(t => t.TableStatus == TableStatuses.WaitingPayment)</h3><p class="mb-0">Chờ thanh toán</p></div></div></div>
+    <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3>@Model.Count(t => t.TableStatus == TableStatuses.Reserved)</h3><p class="mb-0">Đã đặt trước</p></div></div></div>
 </div>
 
-<div class="alert alert-info" role="alert">
-    <i class="bi bi-info-circle"></i>
-    <strong>Thông báo:</strong> Trang quản lý bàn đang phát triển. Vui lòng quay lại sau.
-</div>
-
-<div class="row">
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3>0</h3>
-                <p class="text-muted">Bàn trống</p>
-            </div>
-        </div>
+<div class="row g-3">
+@foreach (var table in Model)
+{
+    <div class="col-lg-3 col-md-4 col-sm-6">
+        <div class="card h-100 shadow-sm"><div class="card-body">
+            <h5>@table.TableNumber</h5>
+            <p class="text-muted">@table.Capacity khách · @table.Location</p>
+            <form asp-action="UpdateStatus" method="post">
+                <input type="hidden" name="tableId" value="@table.TableID" />
+                <select name="status" class="form-select form-select-sm mb-2">
+                @foreach (var status in TableStatuses.All)
+                {
+                    <option value="@status" selected="@(status == table.TableStatus)">@status</option>
+                }
+                </select>
+                <button class="btn btn-sm btn-outline-primary w-100">Cập nhật trạng thái</button>
+            </form>
+        </div></div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3>0</h3>
-                <p class="text-muted">Bàn đang sử dụng</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3>0</h3>
-                <p class="text-muted">Chờ thanh toán</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3>0</h3>
-                <p class="text-muted">Bàn được đặt trước</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="card mt-4">
-    <div class="card-header">
-        <h5 class="mb-0">Sơ đồ bàn</h5>
-    </div>
-    <div class="card-body">
-        <div class="alert alert-secondary text-center py-4">
-            <i class="bi bi-inbox"></i> Chưa có dữ liệu bàn
-        </div>
-    </div>
+}
 </div>

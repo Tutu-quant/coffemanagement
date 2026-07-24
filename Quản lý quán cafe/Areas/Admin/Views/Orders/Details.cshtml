@@ -402,11 +402,11 @@
             "WaitingPayment" => "Chờ thanh toán",
             "Completed" => "Hoàn thành",
             "Cancelled" => "Hủy",
-            _ => status
+            _ => status ?? "Chưa thanh toán"
         };
     }
 
-    private string GetPaymentBadgeClass(string status)
+    private string GetPaymentBadgeClass(string? status)
     {
         return status switch
         {
@@ -419,7 +419,7 @@
         };
     }
 
-    private string GetPaymentDisplay(string status)
+    private string GetPaymentDisplay(string? status)
     {
         return status switch
         {
@@ -428,7 +428,7 @@
             "Completed" => "Đã thanh toán",
             "Failed" => "Thất bại",
             "Refunded" => "Hoàn tiền",
-            _ => status
+            _ => status ?? "Unknown"
         };
     }
 }

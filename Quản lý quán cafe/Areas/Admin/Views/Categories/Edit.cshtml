@@ -23,7 +23,7 @@
                     <i class="bi bi-asterisk" style="color: #dc3545; font-size: 8px; margin-right: 4px;"></i>
                     Tên danh mục
                 </label>
-                <input type="text" class="form-control @(ViewData.ModelState.ContainsKey("Name") && !ViewData.ModelState["Name"].Errors.Count.Equals(0) ? "is-invalid" : "")" 
+                <input type="text" class="form-control @(ViewData.ModelState["Name"]?.Errors.Count > 0 ? "is-invalid" : "")"
                        asp-for="Name" placeholder="Nhập tên danh mục">
                 <span asp-validation-for="Name" class="invalid-feedback"></span>
             </div>

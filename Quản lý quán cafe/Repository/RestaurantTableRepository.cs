@@ -111,7 +111,7 @@ namespace Quản_lý_quán_cafe.Repository
         {
             return await _context.RestaurantTables
                 .Where(t => !t.IsDeleted && t.Location != null)
-                .Select(t => t.Location)
+                .Select(t => t.Location!)
                 .Distinct()
                 .OrderBy(l => l)
                 .ToListAsync();

@@ -101,7 +101,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             {
                 Id = customer.Id,
                 Name = customer.Name,
-                Phone = customer.Phone,
+                Phone = customer.Phone ?? string.Empty,
                 Email = customer.Email,
                 Address = customer.Address,
                 RewardPoints = customer.RewardPoints,

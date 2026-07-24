@@ -32,7 +32,7 @@
 
                     <div class="form-group mb-3">
                         <label class="form-label" for="TableNumber">Mã bàn <span class="text-danger">*</span></label>
-                        <input class="form-control @(ViewData.ModelState.ContainsKey("TableNumber") && ViewData.ModelState["TableNumber"].Errors.Count > 0 ? "is-invalid" : "")" 
+                        <input class="form-control @(ViewData.ModelState["TableNumber"]?.Errors.Count > 0 ? "is-invalid" : "")"
                                id="TableNumber" 
                                asp-for="TableNumber" 
                                placeholder="Ví dụ: Bàn 1"
@@ -42,7 +42,7 @@
 
                     <div class="form-group mb-3">
                         <label class="form-label" for="Capacity">Sức chứa (người) <span class="text-danger">*</span></label>
-                        <input class="form-control @(ViewData.ModelState.ContainsKey("Capacity") && ViewData.ModelState["Capacity"].Errors.Count > 0 ? "is-invalid" : "")" 
+                        <input class="form-control @(ViewData.ModelState["Capacity"]?.Errors.Count > 0 ? "is-invalid" : "")"
                                id="Capacity" 
                                asp-for="Capacity" 
                                type="number"

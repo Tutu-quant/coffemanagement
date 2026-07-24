@@ -25,7 +25,7 @@
                             <i class="bi bi-asterisk" style="color: #dc3545; font-size: 8px; margin-right: 4px;"></i>
                             Tên sản phẩm
                         </label>
-                        <input type="text" class="form-control @(ViewData.ModelState.ContainsKey("Name") && !ViewData.ModelState["Name"].Errors.Count.Equals(0) ? "is-invalid" : "")" 
+                        <input type="text" class="form-control @(ViewData.ModelState["Name"]?.Errors.Count > 0 ? "is-invalid" : "")"
                                asp-for="Name" placeholder="Nhập tên sản phẩm" maxlength="100">
                         <span asp-validation-for="Name" class="invalid-feedback"></span>
                         <small class="text-muted d-block mt-1">Tối đa 100 ký tự</small>
@@ -38,7 +38,7 @@
                             <i class="bi bi-asterisk" style="color: #dc3545; font-size: 8px; margin-right: 4px;"></i>
                             Danh mục
                         </label>
-                        <select class="form-select @(ViewData.ModelState.ContainsKey("CategoryId") && !ViewData.ModelState["CategoryId"].Errors.Count.Equals(0) ? "is-invalid" : "")" 
+                        <select class="form-select @(ViewData.ModelState["CategoryId"]?.Errors.Count > 0 ? "is-invalid" : "")"
                                 asp-for="CategoryId">
                             <option value="">-- Chọn danh mục --</option>
                             @foreach (var category in ViewBag.Categories ?? new List<CategorySelectViewModel>())
@@ -58,7 +58,7 @@
                             <i class="bi bi-asterisk" style="color: #dc3545; font-size: 8px; margin-right: 4px;"></i>
                             Giá (đ)
                         </label>
-                        <input type="number" class="form-control @(ViewData.ModelState.ContainsKey("Price") && !ViewData.ModelState["Price"].Errors.Count.Equals(0) ? "is-invalid" : "")" 
+                        <input type="number" class="form-control @(ViewData.ModelState["Price"]?.Errors.Count > 0 ? "is-invalid" : "")"
                                asp-for="Price" placeholder="0" min="1" step="1000">
                         <span asp-validation-for="Price" class="invalid-feedback"></span>
                     </div>
@@ -114,7 +114,7 @@
                             </button>
                         </div>
                     }
-                    <input type="file" class="form-control image-input @(ViewData.ModelState.ContainsKey("ImageFile") && !ViewData.ModelState["ImageFile"].Errors.Count.Equals(0) ? "is-invalid" : "")" 
+                    <input type="file" class="form-control image-input @(ViewData.ModelState["ImageFile"]?.Errors.Count > 0 ? "is-invalid" : "")"
                            asp-for="ImageFile" accept=".jpg,.jpeg,.png,.webp" id="imageInput">
                     <span asp-validation-for="ImageFile" class="invalid-feedback d-block"></span>
                 </div>

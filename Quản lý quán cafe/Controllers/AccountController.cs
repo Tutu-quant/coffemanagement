@@ -57,9 +57,12 @@ namespace Quản_lý_quán_cafe.Controllers
             HttpContext.Session.SetString("FullName", user.Username);
 
             // Redirect based on role from database
-            return role.RoleName?.ToLower() == "admin" 
-                ? RedirectToAction("Index", "Dashboard", new { area = "Admin" })
-                : RedirectToAction("Index", "POS", new { area = "Cashier" });
+            return role.RoleName?.ToLowerInvariant() switch
+            {
+                "admin" => RedirectToAction("Index", "RestaurantTables", new { area = "Admin" }),
+                "customer" => RedirectToAction("Index", "Reservations", new { area = "Customer" }),
+                _ => RedirectToAction("Index", "POS", new { area = "Cashier" })
+            };
         }
 
         public IActionResult Register()

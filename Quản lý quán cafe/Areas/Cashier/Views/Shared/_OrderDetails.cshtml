@@ -17,16 +17,6 @@
 
         <!-- Danh sách món -->
         <div class="order-items-section">
-            <div class="d-flex gap-2 mb-3">
-                <select id="productSelect" class="form-select form-select-sm" aria-label="Chọn món">
-                    <option value="">Chọn món để thêm...</option>
-                    @foreach (var product in Model.AvailableProducts)
-                    {
-                        <option value="@product.ProductID" data-price="@product.Price">@product.ProductName — @product.Price.ToString("N0")đ</option>
-                    }
-                </select>
-                <button type="button" class="btn btn-sm btn-primary text-nowrap" onclick="addSelectedProduct()">Thêm món</button>
-            </div>
             <div class="section-header">
                 <div class="col-name">MÓN</div>
                 <div class="col-qty">SL</div>
@@ -100,7 +90,7 @@
             <!-- Ghi chú đơn hàng -->
             <div class="notes-part">
                 <label>Ghi chú:</label>
-                <textarea class="form-control form-control-sm" placeholder="Ghi chú cho đơn hàng..." rows="2" id="orderNotes">@Model.Notes</textarea>
+                <textarea class="form-control form-control-sm" placeholder="Ghi chú cho đơn hàng..." rows="2" id="orderNotes"></textarea>
             </div>
 
             <!-- Giảm giá -->

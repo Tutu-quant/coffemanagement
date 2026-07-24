@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Quản_lý_quán_cafe.Models.ViewModels.Product;
 using Quản_lý_quán_cafe.Services.Interfaces;
-using Quản_lý_quán_cafe.Helpers;
 using System.Security.Claims;
 
 namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
