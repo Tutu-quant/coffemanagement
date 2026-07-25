@@ -16,7 +16,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int? tableId = null)
         {
             if (!IsStaff()) return RedirectToAction("Login", "Account", new { area = "" });
             var viewModel = new POSViewModel();
@@ -24,16 +24,19 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             // Lấy danh sách bàn đang mở (Occupied hoặc WaitingPayment theo TableStatus)
             var openTables = await _context.RestaurantTables
                 .Where(t => !t.IsDeleted && (t.TableStatus == "Occupied" || t.TableStatus == "WaitingPayment"))
+                .Include(t => t.Orders.Where(o => !o.IsDeleted && o.OrderStatus == "Pending"))
+                    .ThenInclude(o => o.OrderDetails.Where(d => !d.IsDeleted))
                 .ToListAsync();
 
             viewModel.OpenTables = openTables.Select(t => new POSTableViewModel
             {
+                OrderID = t.Orders.FirstOrDefault()?.OrderID,
                 TableID = t.TableID,
                 TableNumber = t.TableNumber,
-                TableName = t.TableNumber, // TODO: Check if need separate TableName field
-                OrderCode = "#" + t.TableID, // TODO: Lấy từ Order.OrderCode thực tế
-                ItemCount = 0, // TODO: Tính từ OrderDetails
-                TotalAmount = 0, // TODO: Tính từ Order.Total
+                TableName = t.TableNumber,
+                OrderCode = t.Orders.Any() ? $"#{t.Orders.First().OrderID}" : string.Empty,
+                ItemCount = t.Orders.FirstOrDefault()?.OrderDetails.Sum(d => d.Quantity) ?? 0,
+                TotalAmount = t.Orders.FirstOrDefault()?.OrderDetails.Sum(d => d.Subtotal) ?? 0,
                 Status = t.TableStatus.ToLower(),
                 StatusBadge = t.TableStatus == "WaitingPayment" ? "THANH TOÁN" : ""
             }).ToList();
@@ -41,9 +44,10 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             // Mặc định chọn bàn đầu tiên (hoặc từ session)
             if (viewModel.OpenTables.Any())
             {
-                var selectedTable = viewModel.OpenTables.First();
+                var selectedTable = viewModel.OpenTables.FirstOrDefault(t => t.TableID == tableId)
+                    ?? viewModel.OpenTables.First();
                 viewModel.CurrentTable = selectedTable;
-                // TODO: Lấy Order Items từ database
+                await PopulateOrderAsync(viewModel, selectedTable.TableID);
             }
 
             return View(viewModel);
@@ -59,8 +63,12 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             if (table == null)
                 return NotFound();
 
-            // TODO: Lấy Order Items của bàn này
-            var orderItems = new List<POSOrderItemViewModel>();
+            var order = await _context.Orders
+                .AsNoTracking()
+                .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
+                    .ThenInclude(d => d.Product)
+                .FirstOrDefaultAsync(o => o.TableID == tableId && !o.IsDeleted && o.OrderStatus == "Pending");
+            var orderItems = order?.OrderDetails.Select(ToOrderItem).ToList() ?? new();
 
             return Json(new
             {
@@ -68,10 +76,11 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 {
                     tableID = table.TableID,
                     tableName = table.TableNumber,
-                    orderCode = "#" + table.TableID,
+                    orderCode = order == null ? string.Empty : $"#{order.OrderID}",
                     status = table.TableStatus.ToLower()
                 },
-                items = orderItems
+                items = orderItems,
+                subtotal = orderItems.Sum(i => i.Total)
             });
         }
 
@@ -198,7 +207,14 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Checkout(int tableId, string paymentMethod, decimal paidAmount)
+        public async Task<IActionResult> Checkout(
+            int tableId,
+            string paymentMethod,
+            decimal paidAmount,
+            int? customerId = null,
+            string discountType = "none",
+            decimal discountValue = 0,
+            string? notes = null)
         {
             if (!IsStaff()) return StatusCode(403);
             try
@@ -206,8 +222,25 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 var order = await _context.Orders.Include(o => o.OrderDetails).Include(o => o.Table)
                     .FirstOrDefaultAsync(o => o.TableID == tableId && !o.IsDeleted && o.OrderStatus == "Pending");
                 if (order == null || !order.OrderDetails.Any(d => !d.IsDeleted)) return Conflict(new { success = false, message = "Không có đơn hàng để thanh toán" });
-                order.TotalAmount = order.OrderDetails.Where(d => !d.IsDeleted).Sum(d => d.Subtotal);
+                var subtotal = order.OrderDetails.Where(d => !d.IsDeleted).Sum(d => d.Subtotal);
+                var discount = discountType.ToLowerInvariant() switch
+                {
+                    "percent" => subtotal * Math.Clamp(discountValue, 0, 100) / 100,
+                    "fixed" => Math.Clamp(discountValue, 0, subtotal),
+                    _ => 0
+                };
+                order.TotalAmount = subtotal - discount;
                 if (paidAmount < order.TotalAmount) return BadRequest(new { success = false, message = "Số tiền thanh toán chưa đủ" });
+                if (customerId.HasValue)
+                {
+                    var customer = await _context.Customers.FirstOrDefaultAsync(c => c.CustomerID == customerId && !c.IsDeleted);
+                    if (customer == null) return BadRequest(new { success = false, message = "Khách hàng không hợp lệ" });
+                    order.CustomerID = customer.CustomerID;
+                    customer.TotalSpent += order.TotalAmount;
+                    customer.RewardPoints += (int)(order.TotalAmount / 10000);
+                    customer.UpdatedAt = DateTime.UtcNow;
+                }
+                order.Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
                 var payment = new Models.Entities.Payment { OrderID = order.OrderID, Amount = order.TotalAmount, PaymentMethod = string.IsNullOrWhiteSpace(paymentMethod) ? "Cash" : paymentMethod, PaymentStatus = "Completed", PaymentDate = DateTime.UtcNow, CreatedAt = DateTime.UtcNow };
                 _context.Payments.Add(payment);
                 order.OrderStatus = "Completed";
@@ -230,6 +263,43 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             var role = HttpContext.Session.GetString("RoleName");
             return role is "Admin" or "Cashier";
         }
+
+        private async Task PopulateOrderAsync(POSViewModel viewModel, int tableId)
+        {
+            var order = await _context.Orders
+                .AsNoTracking()
+                .Include(o => o.Customer)
+                .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
+                    .ThenInclude(d => d.Product)
+                .FirstOrDefaultAsync(o => o.TableID == tableId && !o.IsDeleted && o.OrderStatus == "Pending");
+            if (order == null) return;
+
+            viewModel.OrderItems = order.OrderDetails.Select(ToOrderItem).ToList();
+            viewModel.Subtotal = viewModel.OrderItems.Sum(i => i.Total);
+            viewModel.Total = viewModel.Subtotal;
+            viewModel.Notes = order.Notes ?? string.Empty;
+            if (order.Customer != null)
+            {
+                viewModel.Customer = new POSCustomerViewModel
+                {
+                    CustomerID = order.Customer.CustomerID,
+                    Name = order.Customer.CustomerName,
+                    Phone = order.Customer.Phone ?? string.Empty,
+                    RewardPoints = order.Customer.RewardPoints,
+                    MembershipTier = order.Customer.MembershipTier
+                };
+            }
+        }
+
+        private static POSOrderItemViewModel ToOrderItem(Models.Entities.OrderDetail detail) => new()
+        {
+            OrderDetailID = detail.OrderDetailID,
+            ProductID = detail.ProductID,
+            ProductName = detail.Product?.ProductName ?? $"Sản phẩm #{detail.ProductID}",
+            Price = detail.UnitPrice,
+            Quantity = detail.Quantity,
+            Notes = detail.Notes ?? string.Empty
+        };
     }
 }
 

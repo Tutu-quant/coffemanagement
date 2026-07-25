@@ -90,16 +90,16 @@
             <!-- Ghi chú đơn hàng -->
             <div class="notes-part">
                 <label>Ghi chú:</label>
-                <textarea class="form-control form-control-sm" placeholder="Ghi chú cho đơn hàng..." rows="2" id="orderNotes"></textarea>
+                <textarea class="form-control form-control-sm" placeholder="Ghi chú cho đơn hàng..." rows="2" id="orderNotes">@Model.Notes</textarea>
             </div>
 
             <!-- Giảm giá -->
             <div class="discount-part">
                 <label>Giảm giá:</label>
                 <div class="discount-buttons">
-                    <button class="discount-btn active" onclick="setDiscountType('none')">Không</button>
-                    <button class="discount-btn" onclick="setDiscountType('percent')">% Giảm</button>
-                    <button class="discount-btn" onclick="setDiscountType('fixed')">Số tiền</button>
+                    <button class="discount-btn active" onclick="setDiscountType('none', this)">Không</button>
+                    <button class="discount-btn" onclick="setDiscountType('percent', this)">% Giảm</button>
+                    <button class="discount-btn" onclick="setDiscountType('fixed', this)">Số tiền</button>
                 </div>
                 <input type="number" class="form-control form-control-sm" placeholder="Nhập giá trị" id="discountValue" style="margin-top: 0.5rem;" onchange="calculateTotal()" />
             </div>

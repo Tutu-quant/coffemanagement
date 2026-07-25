@@ -11,13 +11,8 @@
 
 <div class="pos-page">
     <div class="pos-wrapper">
-        <!-- Cột trái -->
         @await Html.PartialAsync("_TableList", Model.OpenTables)
-
-        <!-- Cột giữa -->
         @await Html.PartialAsync("_OrderDetails", Model)
-
-        <!-- Cột phải -->
         @await Html.PartialAsync("_PaymentSummary", Model)
     </div>
 </div>
@@ -26,72 +21,104 @@
     <script>
         let currentTableId = @(Model.CurrentTable?.TableID ?? 0);
         let currentDiscountType = 'none';
+        let currentPaymentMethod = 'cash';
+        let currentCustomerId = @(Model.Customer?.CustomerID?.ToString() ?? "null");
+        const subtotal = @Model.Subtotal.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
         function selectTable(tableId) {
-            fetch(`/Cashier/POS/SelectTable?tableId=${tableId}`)
-                .then(r => r.json())
-                .then(data => {
-                    currentTableId = tableId;
-                    // Update UI with new table data
-                    location.reload(); // TODO: Implement AJAX update instead
-                });
+            window.location.href = `/Cashier/POS?tableId=${tableId}`;
         }
 
-        function increaseQty(orderDetailId) {
-            fetch(`/Cashier/POS/UpdateItem`, {
+        function postForm(url, values) {
+            return fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderDetailId, quantity: 1 }) // TODO: Get current qty + 1
-            }).then(r => r.json()).then(data => {
-                if (data.success) calculateTotal();
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: new URLSearchParams(values)
+            }).then(async response => {
+                const data = await response.json();
+                if (!response.ok || data.success === false) {
+                    throw new Error(data.message || 'Yêu cầu thất bại');
+                }
+                return data;
             });
         }
 
+        function getItemQuantity(orderDetailId) {
+            const item = document.querySelector(`[data-item-id="${orderDetailId}"]`);
+            return Number(item?.querySelector('.qty')?.textContent || 0);
+        }
+
+        function increaseQty(orderDetailId) {
+            postForm('/Cashier/POS/UpdateItem', {
+                orderDetailId,
+                quantity: getItemQuantity(orderDetailId) + 1
+            }).then(() => location.reload()).catch(error => alert(error.message));
+        }
+
         function decreaseQty(orderDetailId) {
-            // Similar to increaseQty
+            postForm('/Cashier/POS/UpdateItem', {
+                orderDetailId,
+                quantity: getItemQuantity(orderDetailId) - 1
+            }).then(() => location.reload()).catch(error => alert(error.message));
         }
 
         function removeItem(orderDetailId) {
             if (!confirm('Xóa món này?')) return;
-            fetch(`/Cashier/POS/RemoveItem`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderDetailId })
-            }).then(r => r.json()).then(data => {
-                if (data.success) location.reload();
-            });
+            postForm('/Cashier/POS/RemoveItem', { orderDetailId })
+                .then(() => location.reload()).catch(error => alert(error.message));
         }
 
         function searchCustomer() {
-            const phone = document.getElementById('customerPhone').value;
-            fetch(`/Cashier/POS/SearchCustomer?phone=${phone}`)
+            const phone = document.getElementById('customerPhone').value.trim();
+            fetch(`/Cashier/POS/SearchCustomer?phone=${encodeURIComponent(phone)}`)
                 .then(r => r.json())
                 .then(data => {
                     if (data.found) {
-                        // TODO: Update customer info display
+                        currentCustomerId = data.customer.customerID;
+                        alert(`Đã chọn ${data.customer.name} (${data.customer.rewardPoints} điểm)`);
                     } else {
                         alert('Không tìm thấy khách hàng');
                     }
                 });
         }
 
-        function setDiscountType(type) {
+        function setDiscountType(type, button) {
             currentDiscountType = type;
             document.querySelectorAll('.discount-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            button.classList.add('active');
+            calculateTotal();
+        }
+
+        function getDiscount() {
+            const value = Math.max(0, Number(document.getElementById('discountValue')?.value || 0));
+            if (currentDiscountType === 'percent') return subtotal * Math.min(value, 100) / 100;
+            if (currentDiscountType === 'fixed') return Math.min(value, subtotal);
+            return 0;
         }
 
         function calculateTotal() {
-            // TODO: Calculate based on order items and discount
+            const discount = getDiscount();
+            document.getElementById('subtotalDisplay').textContent = formatMoney(subtotal);
+            document.getElementById('discountDisplay').textContent = formatMoney(discount);
+            document.getElementById('totalDisplay').textContent = formatMoney(subtotal - discount);
+            calculateChange();
         }
 
         function calculateChange() {
-            // TODO: Calculate change from paid amount
+            const paid = Number(document.getElementById('paidAmount')?.value || 0) * 1000;
+            const change = Math.max(0, paid - subtotal + getDiscount());
+            const input = document.getElementById('paidAmount');
+            if (input) input.title = `Tiền thừa: ${formatMoney(change)}`;
         }
 
-        function selectPaymentMethod(method) {
+        function formatMoney(value) {
+            return new Intl.NumberFormat('vi-VN').format(value) + 'đ';
+        }
+
+        function selectPaymentMethod(method, button) {
+            currentPaymentMethod = method;
             document.querySelectorAll('.method-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.closest('.method-btn').classList.add('active');
+            button.classList.add('active');
         }
 
         function proceedCheckout() {
@@ -99,13 +126,25 @@
                 alert('Vui lòng chọn bàn');
                 return;
             }
-            // TODO: Implement checkout logic
-            alert('Chuyển sang thanh toán...');
+            const paidAmount = Number(document.getElementById('paidAmount')?.value || 0) * 1000;
+            postForm('/Cashier/POS/Checkout', {
+                tableId: currentTableId,
+                paymentMethod: currentPaymentMethod,
+                paidAmount,
+                customerId: currentCustomerId ?? '',
+                discountType: currentDiscountType,
+                discountValue: document.getElementById('discountValue')?.value || 0,
+                notes: document.getElementById('orderNotes')?.value || ''
+            }).then(data => {
+                alert(`Thanh toán thành công. Tiền thừa: ${formatMoney(data.change)}`);
+                window.location.href = '/Cashier/POS';
+            }).catch(error => alert(error.message));
         }
 
         function closeTable() {
-            currentTableId = 0;
-            location.reload();
+            window.location.href = '/Cashier/POS';
         }
+
+        calculateTotal();
     </script>
 }

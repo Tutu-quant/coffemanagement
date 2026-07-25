@@ -37,6 +37,7 @@
 /// </summary>
 public class POSTableViewModel
 {
+    public int? OrderID { get; set; }
     public int TableID { get; set; }
     public string TableNumber { get; set; } = string.Empty;
     public string TableName { get; set; } = string.Empty;
