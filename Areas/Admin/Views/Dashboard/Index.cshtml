@@ -1,8 +1,131 @@
+@model Quản_lý_quán_cafe.Areas.Admin.ViewModels.DashboardViewModel
+
 @{
     ViewData["Title"] = "Dashboard";
+    ViewData["PageTitle"] = "Tổng quan cửa hàng";
 }
 
-<div class="container-fluid">
-    <h1>Admin Dashboard</h1>
-    <!-- Dashboard content will go here -->
+@section Head {
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+}
+
+<div class="dashboard-heading">
+    <div>
+        <p class="dashboard-kicker">BREWPOINT ANALYTICS</p>
+        <h2>Chào ngày mới, @(Context.Session.GetString("FullName") ?? "Quản trị viên")</h2>
+        <p>Dữ liệu hoạt động được cập nhật trực tiếp từ hệ thống bán hàng.</p>
+    </div>
+    <div class="dashboard-date">
+        <i class="bi bi-calendar3"></i>
+        @DateTime.Today.ToString("dd/MM/yyyy")
+    </div>
 </div>
+
+<section class="metric-grid">
+    <article class="metric-card metric-primary">
+        <div class="metric-icon"><i class="bi bi-cash-stack"></i></div>
+        <div>
+            <span>Doanh thu hôm nay</span>
+            <strong>@Model.TodayRevenue.ToString("N0")đ</strong>
+            <small class="@(Model.RevenueGrowthPercent >= 0 ? "positive" : "negative")">
+                <i class="bi @(Model.RevenueGrowthPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
+                @Math.Abs(Model.RevenueGrowthPercent)% so với hôm qua
+            </small>
+        </div>
+    </article>
+    <article class="metric-card">
+        <div class="metric-icon amber"><i class="bi bi-receipt"></i></div>
+        <div><span>Đơn hôm nay</span><strong>@Model.TodayOrders</strong><small>Đơn hàng đã tạo</small></div>
+    </article>
+    <article class="metric-card">
+        <div class="metric-icon green"><i class="bi bi-grid-3x3-gap"></i></div>
+        <div><span>Bàn đang phục vụ</span><strong>@Model.ActiveTables</strong><small>@Model.PendingReservations lịch đặt hôm nay</small></div>
+    </article>
+    <article class="metric-card">
+        <div class="metric-icon blue"><i class="bi bi-people"></i></div>
+        <div><span>Khách hàng</span><strong>@Model.TotalCustomers</strong><small>@Model.LowStockProducts sản phẩm sắp hết</small></div>
+    </article>
+</section>
+
+<section class="dashboard-grid">
+    <article class="dashboard-panel revenue-panel">
+        <header>
+            <div><span class="panel-label">HIỆU SUẤT</span><h3>Doanh thu 7 ngày</h3></div>
+            <div class="month-revenue"><span>Tháng này</span><strong>@Model.MonthRevenue.ToString("N0")đ</strong></div>
+        </header>
+        <div class="revenue-chart">
+            @foreach (var point in Model.RevenueLast7Days)
+            {
+                var height = Model.MaxDailyRevenue == 0 ? 4 : Math.Max(4, (double)(point.Revenue / Model.MaxDailyRevenue * 100));
+                <div class="bar-column" title="@point.Revenue.ToString("N0")đ · @point.OrderCount đơn">
+                    <span class="bar-value">@((point.Revenue / 1000).ToString("N0"))k</span>
+                    <div class="bar-track"><div class="bar-fill" style="height:@height%"></div></div>
+                    <span>@point.Date.ToString("ddd", new System.Globalization.CultureInfo("vi-VN"))</span>
+                </div>
+            }
+        </div>
+    </article>
+
+    <article class="dashboard-panel">
+        <header><div><span class="panel-label">BÁN CHẠY</span><h3>Top sản phẩm tháng</h3></div></header>
+        <div class="rank-list">
+            @if (Model.BestSellers.Count == 0)
+            {
+                <div class="empty-dashboard">Chưa có dữ liệu bán hàng.</div>
+            }
+            @for (var i = 0; i < Model.BestSellers.Count; i++)
+            {
+                var item = Model.BestSellers[i];
+                <div class="rank-item">
+                    <span class="rank-number">@(i + 1)</span>
+                    <div><strong>@item.ProductName</strong><small>@item.Quantity sản phẩm</small></div>
+                    <span class="rank-revenue">@item.Revenue.ToString("N0")đ</span>
+                </div>
+            }
+        </div>
+    </article>
+</section>
+
+<section class="dashboard-grid lower-grid">
+    <article class="dashboard-panel">
+        <header>
+            <div><span class="panel-label">GẦN ĐÂY</span><h3>Đơn hàng mới nhất</h3></div>
+            <a asp-area="Admin" asp-controller="Orders" asp-action="Index" class="panel-link">Xem tất cả <i class="bi bi-arrow-right"></i></a>
+        </header>
+        <div class="table-responsive">
+            <table class="dashboard-table">
+                <thead><tr><th>Đơn</th><th>Bàn / Khách</th><th>Thời gian</th><th>Trạng thái</th><th class="text-end">Tổng tiền</th></tr></thead>
+                <tbody>
+                @foreach (var order in Model.RecentOrders)
+                {
+                    <tr>
+                        <td><a asp-area="Admin" asp-controller="Orders" asp-action="Details" asp-route-id="@order.OrderId">#@order.OrderId</a></td>
+                        <td><strong>@order.TableName</strong><small>@order.CustomerName</small></td>
+                        <td>@order.OrderDate.ToString("HH:mm · dd/MM")</td>
+                        <td><span class="status-pill status-@order.Status.ToLowerInvariant()">@order.Status</span></td>
+                        <td class="text-end"><strong>@order.TotalAmount.ToString("N0")đ</strong></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </article>
+
+    <article class="dashboard-panel stock-panel">
+        <header>
+            <div><span class="panel-label">TỒN KHO</span><h3>Cần nhập thêm</h3></div>
+            <a asp-area="Admin" asp-controller="Products" asp-action="Index" class="panel-link">Quản lý</a>
+        </header>
+        @if (Model.LowStockItems.Count == 0)
+        {
+            <div class="stock-ok"><i class="bi bi-check-circle"></i><span>Tồn kho đang ổn định</span></div>
+        }
+        @foreach (var product in Model.LowStockItems)
+        {
+            <div class="stock-item">
+                <div><strong>@product.ProductName</strong><small>Mã SP #@product.ProductId</small></div>
+                <span class="stock-count @(product.Quantity == 0 ? "out" : "")">@product.Quantity</span>
+            </div>
+        }
+    </article>
+</section>

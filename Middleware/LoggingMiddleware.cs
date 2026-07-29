@@ -1,4 +1,4 @@
-namespace CafeManagement.Middleware
+﻿namespace Quản_lý_quán_cafe.Middleware
 {
     public class LoggingMiddleware
     {
@@ -13,11 +13,8 @@ namespace CafeManagement.Middleware
 
         public async Task InvokeAsync(HttpContext context)
         {
-            var request = context.Request;
-            _logger.LogInformation("Request: {Method} {Path}", request.Method, request.Path);
-
+            _logger.LogInformation("Request: {Method} {Path}", context.Request.Method, context.Request.Path);
             await _next(context);
-
             _logger.LogInformation("Response: {StatusCode}", context.Response.StatusCode);
         }
     }

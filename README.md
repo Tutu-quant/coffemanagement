@@ -17,7 +17,7 @@ Khi quán không có bàn khả dụng, trang đặt bàn hiển thị “Quán 
 Yêu cầu [.NET 10 SDK](https://dotnet.microsoft.com/download).
 
 ```powershell
-cd "Quản lý quán cafe"
+cd "D:\cnpmandweb"
 dotnet restore
 dotnet run
 ```
@@ -32,4 +32,13 @@ dotnet run
 | Cashier | `cashier` | `123456` |
 | Customer | `customer` | `123456` |
 
-Chi tiết endpoint xem tại `Quản lý quán cafe/BACKEND_API.md`.
+Chi tiết endpoint xem tại `BACKEND_API.md`.
+
+## Cấu trúc
+
+Project đã được hợp nhất tại thư mục gốc. File solution và project:
+
+- `Quản lý quán cafe.slnx`
+- `Quản lý quán cafe.csproj`
+
+Dashboard quản trị khả dụng tại `/Admin/Dashboard` sau khi đăng nhập bằng tài khoản Admin.
