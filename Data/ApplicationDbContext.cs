@@ -43,10 +43,10 @@ namespace Quản_lý_quán_cafe.Data
                     .HasMaxLength(500);
 
                 entity.Property(e => e.CreatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.Property(e => e.UpdatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.HasMany(e => e.Users)
                     .WithOne(u => u.Role)
@@ -79,10 +79,10 @@ namespace Quản_lý_quán_cafe.Data
                     .HasPrecision(18, 2);
 
                 entity.Property(e => e.CreatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.Property(e => e.UpdatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.HasMany(e => e.Users)
                     .WithOne(u => u.Employee)
@@ -112,10 +112,10 @@ namespace Quản_lý_quán_cafe.Data
                     .HasMaxLength(100);
 
                 entity.Property(e => e.CreatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.Property(e => e.UpdatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.HasOne(e => e.Role)
                     .WithMany(r => r.Users)
@@ -141,10 +141,10 @@ namespace Quản_lý_quán_cafe.Data
                     .HasMaxLength(500);
 
                 entity.Property(e => e.CreatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.Property(e => e.UpdatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.HasMany(e => e.Products)
                     .WithOne(p => p.Category)
@@ -172,10 +172,10 @@ namespace Quản_lý_quán_cafe.Data
                     .HasMaxLength(500);
 
                 entity.Property(e => e.CreatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.Property(e => e.UpdatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.HasOne(e => e.Category)
                     .WithMany(c => c.Products)
@@ -234,10 +234,10 @@ namespace Quản_lý_quán_cafe.Data
                     .HasDefaultValue(true);
 
                 entity.Property(e => e.CreatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.Property(e => e.UpdatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.HasMany(e => e.Orders)
                     .WithOne(o => o.Customer)
@@ -280,10 +280,10 @@ namespace Quản_lý_quán_cafe.Data
                     .HasMaxLength(200);
 
                 entity.Property(e => e.CreatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.Property(e => e.UpdatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.HasMany(e => e.Orders)
                     .WithOne(o => o.Table)
@@ -312,10 +312,10 @@ namespace Quản_lý_quán_cafe.Data
                     .HasMaxLength(1000);
 
                 entity.Property(e => e.CreatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.Property(e => e.UpdatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.HasOne(e => e.Customer)
                     .WithMany(c => c.Orders)
@@ -353,10 +353,10 @@ namespace Quản_lý_quán_cafe.Data
                     .HasMaxLength(500);
 
                 entity.Property(e => e.CreatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.Property(e => e.UpdatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.HasOne(e => e.Order)
                     .WithMany(o => o.OrderDetails)
@@ -382,10 +382,10 @@ namespace Quản_lý_quán_cafe.Data
                     .HasMaxLength(1000);
 
                 entity.Property(e => e.CreatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.Property(e => e.UpdatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.HasOne(e => e.Customer)
                     .WithMany(c => c.Reservations)
@@ -421,10 +421,10 @@ namespace Quản_lý_quán_cafe.Data
                     .HasMaxLength(500);
 
                 entity.Property(e => e.CreatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.Property(e => e.UpdatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.HasOne(e => e.Order)
                     .WithOne(o => o.Payment)
@@ -456,10 +456,10 @@ namespace Quản_lý_quán_cafe.Data
                     .HasPrecision(18, 2);
 
                 entity.Property(e => e.CreatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.Property(e => e.UpdatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.HasOne(e => e.Product)
                     .WithMany(p => p.Promotions)
@@ -481,10 +481,10 @@ namespace Quản_lý_quán_cafe.Data
                     .HasMaxLength(1000);
 
                 entity.Property(e => e.CreatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.Property(e => e.UpdatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.HasOne(e => e.Product)
                     .WithMany(p => p.Reviews)
@@ -510,10 +510,10 @@ namespace Quản_lý_quán_cafe.Data
                     .HasMaxLength(500);
 
                 entity.Property(e => e.CreatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.Property(e => e.UpdatedAt)
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.HasOne(e => e.Customer)
                     .WithMany(c => c.PointHistories)
