@@ -24,7 +24,8 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             // Lấy danh sách bàn đang mở (Occupied hoặc WaitingPayment theo TableStatus)
             var openTables = await _context.RestaurantTables
                 .Where(t => !t.IsDeleted && (t.TableStatus == "Occupied" || t.TableStatus == "WaitingPayment"))
-                .Include(t => t.Orders.Where(o => !o.IsDeleted && o.OrderStatus == "Pending"))
+                .Include(t => t.Orders.Where(o => !o.IsDeleted &&
+                    (o.OrderStatus == "Pending" || o.OrderStatus == "WaitingPayment")))
                     .ThenInclude(o => o.OrderDetails.Where(d => !d.IsDeleted))
                 .ToListAsync();
 
@@ -67,7 +68,8 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 .AsNoTracking()
                 .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
                     .ThenInclude(d => d.Product)
-                .FirstOrDefaultAsync(o => o.TableID == tableId && !o.IsDeleted && o.OrderStatus == "Pending");
+                .FirstOrDefaultAsync(o => o.TableID == tableId && !o.IsDeleted &&
+                                          (o.OrderStatus == "Pending" || o.OrderStatus == "WaitingPayment"));
             var orderItems = order?.OrderDetails.Select(ToOrderItem).ToList() ?? new();
 
             return Json(new
@@ -217,11 +219,15 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             string? notes = null)
         {
             if (!IsStaff()) return StatusCode(403);
+            await using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                var order = await _context.Orders.Include(o => o.OrderDetails).Include(o => o.Table)
-                    .FirstOrDefaultAsync(o => o.TableID == tableId && !o.IsDeleted && o.OrderStatus == "Pending");
+                var order = await _context.Orders.Include(o => o.OrderDetails).Include(o => o.Table).Include(o => o.Payment)
+                    .FirstOrDefaultAsync(o => o.TableID == tableId && !o.IsDeleted &&
+                                              (o.OrderStatus == "Pending" || o.OrderStatus == "WaitingPayment"));
                 if (order == null || !order.OrderDetails.Any(d => !d.IsDeleted)) return Conflict(new { success = false, message = "Không có đơn hàng để thanh toán" });
+                if (order.Payment?.PaymentStatus == "Completed")
+                    return Conflict(new { success = false, message = "Đơn hàng đã được thanh toán" });
                 var subtotal = order.OrderDetails.Where(d => !d.IsDeleted).Sum(d => d.Subtotal);
                 var discount = discountType.ToLowerInvariant() switch
                 {
@@ -241,8 +247,17 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                     customer.UpdatedAt = DateTime.UtcNow;
                 }
                 order.Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
-                var payment = new Models.Entities.Payment { OrderID = order.OrderID, Amount = order.TotalAmount, PaymentMethod = string.IsNullOrWhiteSpace(paymentMethod) ? "Cash" : paymentMethod, PaymentStatus = "Completed", PaymentDate = DateTime.UtcNow, CreatedAt = DateTime.UtcNow };
-                _context.Payments.Add(payment);
+                var payment = order.Payment ?? new Models.Entities.Payment
+                {
+                    OrderID = order.OrderID,
+                    CreatedAt = DateTime.UtcNow
+                };
+                payment.Amount = order.TotalAmount;
+                payment.PaymentMethod = string.IsNullOrWhiteSpace(paymentMethod) ? "Cash" : paymentMethod;
+                payment.PaymentStatus = "Completed";
+                payment.PaymentDate = DateTime.UtcNow;
+                payment.UpdatedAt = DateTime.UtcNow;
+                if (order.Payment is null) _context.Payments.Add(payment);
                 order.OrderStatus = "Completed";
                 order.CompletedDate = DateTime.UtcNow;
                 order.UpdatedAt = DateTime.UtcNow;
@@ -250,10 +265,12 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 await _context.SaveChangesAsync();
                 order.PaymentID = payment.PaymentID;
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return Json(new { success = true, message = "Thanh toán thành công", orderId = order.OrderID, amount = order.TotalAmount, change = paidAmount - order.TotalAmount });
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 return Json(new { success = false, message = ex.Message });
             }
         }
@@ -271,7 +288,8 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 .Include(o => o.Customer)
                 .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
                     .ThenInclude(d => d.Product)
-                .FirstOrDefaultAsync(o => o.TableID == tableId && !o.IsDeleted && o.OrderStatus == "Pending");
+                .FirstOrDefaultAsync(o => o.TableID == tableId && !o.IsDeleted &&
+                                          (o.OrderStatus == "Pending" || o.OrderStatus == "WaitingPayment"));
             if (order == null) return;
 
             viewModel.OrderItems = order.OrderDetails.Select(ToOrderItem).ToList();

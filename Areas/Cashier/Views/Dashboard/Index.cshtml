@@ -56,6 +56,42 @@
     </div>
 </div>
 
+<!-- Quick billing -->
+<div class="order-panel" style="margin-top: 2rem;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h3 class="order-panel-title mb-0">
+            <i class="bi bi-calculator"></i>
+            Tính tiền nhanh
+        </h3>
+        <strong>Tạm tính: @Model.PendingPaymentTotal.ToString("N0")đ</strong>
+    </div>
+    @if (Model.PendingBills.Any())
+    {
+        <div class="order-list">
+            @foreach (var bill in Model.PendingBills)
+            {
+                <div class="order-item d-flex align-items-center justify-content-between gap-3">
+                    <div>
+                        <div class="order-item-code">Bàn @bill.TableName · #@bill.OrderCode</div>
+                        <div class="order-item-table">@bill.ItemCount món · vào lúc @bill.CreatedAt.ToString("HH:mm")</div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <strong class="order-item-amount">@bill.TotalAmount.ToString("N0")đ</strong>
+                        <a asp-area="Cashier" asp-controller="POS" asp-action="Index" asp-route-tableId="@bill.TableID"
+                           class="btn btn-success btn-sm">
+                            <i class="bi bi-cash-coin"></i> Tính tiền
+                        </a>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-muted text-center py-3">Không có hóa đơn đang chờ thanh toán.</div>
+    }
+</div>
+
 <!-- Floor Map -->
 <div class="floor-map">
     <h2 class="floor-map-title">📍 Sơ đồ bàn</h2>
