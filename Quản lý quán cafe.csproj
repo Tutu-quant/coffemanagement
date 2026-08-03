@@ -12,4 +12,8 @@
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.4" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Quản lý quán cafe\Models\" />
+  </ItemGroup>
+
 </Project>
