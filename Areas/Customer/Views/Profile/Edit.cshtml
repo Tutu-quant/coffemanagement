@@ -17,15 +17,15 @@
 
         <form asp-area="Customer" asp-controller="Profile" asp-action="Edit" method="post" class="card p-3">
             @Html.AntiForgeryToken()
-            <input asp-for="CustomerID" type="hidden" />
+            <input asp-for="Id" type="hidden" />
 
             <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
 
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label asp-for="CustomerName" class="form-label"></label>
-                    <input asp-for="CustomerName" class="form-control" />
-                    <span asp-validation-for="CustomerName" class="text-danger small"></span>
+                    <label asp-for="Name" class="form-label"></label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger small"></span>
                 </div>
 
                 <div class="col-md-6">
