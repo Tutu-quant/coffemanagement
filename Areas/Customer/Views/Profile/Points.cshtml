@@ -1,7 +1,11 @@
-@model IEnumerable<Quản_lý_quán_cafe.Models.Entities.Reservation>
+@model Quản_lý_quán_cafe.Models.Entities.Customer
+
+@section Head {
+    <link rel="stylesheet" href="~/css/customers.css" asp-append-version="true" />
+}
 
 @{
-    ViewData["Title"] = "Lịch sử đặt bàn";
+    ViewData["Title"] = "Điểm tích lũy";
     Layout = "_UnifiedLayout";
 }
 
@@ -11,52 +15,22 @@
     </aside>
 
     <main class="flex-grow-1 px-4 py-3">
-        <div class="page-header d-flex justify-content-between align-items-center mb-4">
-            <h4 class="m-0">Lịch sử đặt bàn</h4>
-            <a asp-area="Customer" asp-controller="Reservations" asp-action="Index" class="btn btn-outline-secondary btn-sm">Quay lại sơ đồ bàn</a>
+        <div class="page-header mb-4">
+            <h4 class="m-0">Điểm tích lũy</h4>
         </div>
 
-        @if (TempData["SuccessMessage"] != null)
-        {
-            <div class="alert alert-success">@TempData["SuccessMessage"]</div>
-        }
-
         <div class="card">
-            <div class="card-body p-0">
-                <table class="table mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="width:60px">#</th>
-                            <th>Bàn</th>
-                            <th>Thời gian</th>
-                            <th>Số khách</th>
-                            <th>Trạng thái</th>
-                            <th style="width:110px"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (!Model.Any())
-                        {
-                            <tr><td colspan="6" class="text-center py-4 text-muted">Không có đặt bàn nào.</td></tr>
-                        }
-                        else
-                        {
-                            foreach (var r in Model)
-                            {
-                                <tr>
-                                    <td>@r.ReservationID</td>
-                                    <td>@(r.Table?.TableNumber ?? r.TableID.ToString())</td>
-                                    <td>@r.ReservationDate.ToLocalTime().ToString("g")</td>
-                                    <td>@r.NumberOfGuests</td>
-                                    <td>@r.ReservationStatus</td>
-                                    <td>
-                                        <a asp-area="Customer" asp-controller="Reservations" asp-action="Details" asp-route-id="@r.ReservationID" class="btn btn-sm btn-outline-primary">Chi tiết</a>
-                                    </td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
+            <div class="card-body">
+                <p><strong>Họ và tên:</strong> @Model.CustomerName</p>
+                <p><strong>Điểm hiện có:</strong> @Model.RewardPoints</p>
+
+                <hr />
+
+                <p>Ví dụ hệ thống tích điểm: 1 điểm = 10.000đ. (Thông tin chi tiết do backend cung cấp)</p>
+
+                <div class="mt-3">
+                    <a asp-area="Customer" asp-controller="Profile" asp-action="Index" class="btn btn-secondary">Quay lại</a>
+                </div>
             </div>
         </div>
     </main>
