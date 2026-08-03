@@ -86,17 +86,35 @@
 @section Scripts {
 <script>
     const initialCart = @Html.Raw(string.IsNullOrWhiteSpace(Model.CartJson) ? "[]" : Model.CartJson);
-    const cart = new Map(initialCart.map(item => [item.productId ?? item.ProductId, item]));
-    const money = value => new Intl.NumberFormat('vi-VN').format(value) + 'đ';
+    const cart = new Map(Array.isArray(initialCart) ? initialCart.map(item => [Number(item.productId ?? item.ProductId), item]) : []);
+    const money = value => new Intl.NumberFormat('vi-VN').format(value || 0) + 'đ';
 
-    document.querySelectorAll('.add-product').forEach(button => button.addEventListener('click', () => {
-        const id = Number(button.dataset.id);
-        const existing = cart.get(id) || { productId: id, name: button.dataset.name, price: Number(button.dataset.price), quantity: 0, stock: Number(button.dataset.stock), notes: '' };
-        if (existing.quantity >= Number(button.dataset.stock)) return alert('Sản phẩm đã đạt số lượng tồn kho.');
-        existing.quantity++;
-        cart.set(id, existing);
-        renderCart();
-    }));
+    function createCartItem(button) {
+        return {
+            productId: Number(button.dataset.id),
+            name: button.dataset.name || 'Sản phẩm',
+            price: Number(button.dataset.price) || 0,
+            quantity: 0,
+            stock: Number(button.dataset.stock) || 0,
+            notes: ''
+        };
+    }
+
+    function attachAddHandlers() {
+        document.querySelectorAll('.add-product').forEach(button => {
+            button.onclick = () => {
+                const id = Number(button.dataset.id);
+                const existing = cart.get(id) || createCartItem(button);
+                if (existing.quantity >= Number(button.dataset.stock)) {
+                    alert('Sản phẩm đã đạt số lượng tồn kho.');
+                    return;
+                }
+                existing.quantity += 1;
+                cart.set(id, existing);
+                renderCart();
+            };
+        });
+    }
 
     function changeQuantity(id, change) {
         const item = cart.get(id);
@@ -129,9 +147,12 @@
     }
 
     function syncCart() {
-        document.getElementById('cartJson').value = JSON.stringify([...cart.values()].map(item => ({
-            productId: item.productId, quantity: item.quantity, notes: item.notes
-        })));
+        const cartJson = document.getElementById('cartJson');
+        if (cartJson) {
+            cartJson.value = JSON.stringify([...cart.values()].map(item => ({
+                productId: item.productId, quantity: item.quantity, notes: item.notes
+            })));
+        }
     }
 
     function escapeHtml(value) {
@@ -140,23 +161,39 @@
         return element.innerHTML;
     }
 
-    document.querySelectorAll('.category-tabs button').forEach(button => button.addEventListener('click', () => {
-        document.querySelectorAll('.category-tabs button').forEach(x => x.classList.remove('active'));
-        button.classList.add('active');
-        document.querySelectorAll('.menu-category').forEach(section => {
-            section.hidden = button.dataset.category !== 'all' && section.dataset.category !== button.dataset.category;
+    document.querySelectorAll('.category-tabs button').forEach(button => {
+        button.onclick = () => {
+            document.querySelectorAll('.category-tabs button').forEach(x => x.classList.remove('active'));
+            button.classList.add('active');
+            document.querySelectorAll('.menu-category').forEach(section => {
+                section.hidden = button.dataset.category !== 'all' && section.dataset.category !== button.dataset.category;
+            });
+        };
+    });
+
+    const searchInput = document.getElementById('menuSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', event => {
+            const query = event.target.value.trim().toLowerCase();
+            document.querySelectorAll('.menu-product').forEach(product => {
+                product.hidden = !product.dataset.name.includes(query);
+            });
         });
-    }));
+    }
 
-    document.getElementById('menuSearch').addEventListener('input', event => {
-        const query = event.target.value.trim().toLowerCase();
-        document.querySelectorAll('.menu-product').forEach(product => product.hidden = !product.dataset.name.includes(query));
-    });
+    const placeOrderForm = document.getElementById('placeOrderForm');
+    if (placeOrderForm) {
+        placeOrderForm.addEventListener('submit', event => {
+            if (cart.size === 0) {
+                event.preventDefault();
+                alert('Vui lòng chọn ít nhất một món.');
+            } else {
+                syncCart();
+            }
+        });
+    }
 
-    document.getElementById('placeOrderForm').addEventListener('submit', event => {
-        if (cart.size === 0) { event.preventDefault(); alert('Vui lòng chọn ít nhất một món.'); }
-        else syncCart();
-    });
+    attachAddHandlers();
     renderCart();
 </script>
 }

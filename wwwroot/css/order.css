@@ -3,13 +3,13 @@
    ==================================== */
 
 /* Compact Statistics Cards */
-.stat-cards-compact {
+body .admin-content .stat-cards-compact {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 12px;
 }
 
-.stat-card-compact {
+body .admin-content .stat-card-compact {
     background: var(--white);
     border: 1px solid var(--border-color);
     border-radius: 10px;
@@ -20,12 +20,12 @@
     transition: var(--transition);
 }
 
-.stat-card-compact:hover {
+body .admin-content .stat-card-compact:hover {
     box-shadow: var(--shadow-medium);
     border-color: var(--coffee-brown);
 }
 
-.stat-card-compact-icon {
+body .admin-content .stat-card-compact-icon {
     width: 50px;
     height: 50px;
     border-radius: 10px;
@@ -37,12 +37,12 @@
     flex-shrink: 0;
 }
 
-.stat-card-compact-content {
+body .admin-content .stat-card-compact-content {
     flex: 1;
     min-width: 0;
 }
 
-.stat-card-compact-label {
+body .admin-content .stat-card-compact-label {
     font-size: 12px;
     color: var(--text-light);
     font-weight: 500;
@@ -51,7 +51,7 @@
     letter-spacing: 0.5px;
 }
 
-.stat-card-compact-value {
+body .admin-content .stat-card-compact-value {
     font-size: 22px;
     font-weight: 700;
     color: var(--coffee-brown);
@@ -59,7 +59,7 @@
 }
 
 /* Compact Filter Bar */
-.filter-bar-compact {
+body .admin-content .filter-bar-compact {
     background: var(--white);
     border: 1px solid var(--border-color);
     border-radius: 10px;
@@ -74,13 +74,13 @@
     align-items: center;
 }
 
-.filter-input-group {
+body .admin-content .filter-input-group {
     position: relative;
     flex: 1;
     min-width: 200px;
 }
 
-.filter-input-group input {
+body .admin-content .filter-input-group input {
     width: 100%;
     border: 1px solid var(--border-color);
     border-radius: 6px;
@@ -88,7 +88,7 @@
     font-size: 13px;
 }
 
-.filter-input-group i {
+body .admin-content .filter-input-group i {
     position: absolute;
     left: 10px;
     top: 50%;
@@ -97,8 +97,8 @@
     font-size: 14px;
 }
 
-.form-control-compact,
-.form-select-compact {
+body .admin-content .form-control-compact,
+body .admin-content .form-select-compact {
     border: 1px solid var(--border-color);
     border-radius: 6px;
     padding: 8px 12px;
@@ -108,15 +108,15 @@
     min-width: 120px;
 }
 
-.form-control-compact:focus,
-.form-select-compact:focus {
+body .admin-content .form-control-compact:focus,
+body .admin-content .form-select-compact:focus {
     border-color: var(--coffee-brown);
     box-shadow: 0 0 0 2px rgba(139, 111, 71, 0.1);
     outline: none;
 }
 
-.btn-primary-compact,
-.btn-secondary-compact {
+body .admin-content .btn-primary-compact,
+body .admin-content .btn-secondary-compact {
     padding: 8px 12px;
     font-size: 13px;
     border-radius: 6px;
@@ -128,12 +128,12 @@
     gap: 6px;
 }
 
-.btn-primary-compact {
+body .admin-content .btn-primary-compact {
     background-color: var(--coffee-brown);
     color: white;
 }
 
-.btn-primary-compact:hover {
+body .admin-content .btn-primary-compact:hover {
     background-color: var(--coffee-dark);
 }
 
@@ -142,12 +142,12 @@
     color: var(--text-dark);
 }
 
-.btn-secondary-compact:hover {
+body .admin-content .btn-secondary-compact:hover {
     background-color: #d0c8bb;
 }
 
 /* Compact Table */
-.orders-card {
+body .admin-content .orders-card {
     border-radius: 12px;
     overflow: hidden;
 }
@@ -157,7 +157,7 @@
     font-size: 13px;
 }
 
-.table-compact thead th {
+body .admin-content .table-compact thead th {
     background-color: var(--cream);
     color: var(--text-dark);
     font-weight: 600;
@@ -173,7 +173,7 @@
     vertical-align: middle;
 }
 
-.table-compact tbody tr:hover {
+body .admin-content .table-compact tbody tr:hover {
     background-color: var(--cream);
 }
 
@@ -231,7 +231,7 @@
 }
 
 /* Compact Pagination */
-.pagination-compact {
+body .admin-content .pagination-compact {
     display: flex;
     justify-content: center;
     align-items: center;

@@ -4,7 +4,7 @@ using Quản_lý_quán_cafe.Models.Entities;
 using Quản_lý_quán_cafe.Models.Enums;
 using Quản_lý_quán_cafe.Repository.Interfaces;
 
-namespace Quản_lý_quán_cafe.Repository
+namespace Quản_lý_quán_cafe.Repository.Implementations
 {
     public class OrderRepository : IOrderRepository
     {
@@ -12,31 +12,60 @@ namespace Quản_lý_quán_cafe.Repository
 
         public OrderRepository(ApplicationDbContext context)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _context = context;
         }
 
-        #region Existing Methods (Không thay đổi)
+        #region CRUD
 
+       public async Task<List<Order>> GetByStatusesAsync(
+            string[] statuses,
+            int skip = 0,
+            int take = 50)
+        {
+            if (statuses == null || statuses.Length == 0)
+            {
+                return new List<Order>();
+            }
+
+            return await _context.Orders
+                .AsNoTracking()
+                .Include(o => o.Customer)
+                .Include(o => o.Table)
+                .Where(o =>
+                    !o.IsDeleted &&
+                    statuses.Contains(o.OrderStatus))
+                .OrderByDescending(o => o.OrderDate)
+                .Skip(skip)
+                .Take(take)
+                .ToListAsync();
+        }
         public async Task<Order?> GetByIdAsync(int id)
         {
             return await _context.Orders
                 .AsNoTracking()
                 .Include(o => o.Customer)
+                .Include(o => o.Employee)
                 .Include(o => o.Table)
+                .Include(o => o.Payment)
                 .Include(o => o.OrderDetails)
-                .ThenInclude(od => od.Product)
-                .FirstOrDefaultAsync(o => o.OrderID == id && !o.IsDeleted);
+                    .ThenInclude(od => od.Product)
+                .FirstOrDefaultAsync(o =>
+                    o.OrderID == id &&
+                    !o.IsDeleted);
         }
 
         public async Task<Order?> GetByIdForUpdateAsync(int id)
         {
             return await _context.Orders
-                // No AsNoTracking() - we want to track for updates
                 .Include(o => o.Customer)
+                .Include(o => o.Employee)
                 .Include(o => o.Table)
+                .Include(o => o.Payment)
                 .Include(o => o.OrderDetails)
-                .ThenInclude(od => od.Product)
-                .FirstOrDefaultAsync(o => o.OrderID == id && !o.IsDeleted);
+                    .ThenInclude(od => od.Product)
+                .FirstOrDefaultAsync(o =>
+                    o.OrderID == id &&
+                    !o.IsDeleted);
         }
 
         public async Task<List<Order>> GetAllAsync()
@@ -44,20 +73,60 @@ namespace Quản_lý_quán_cafe.Repository
             return await _context.Orders
                 .AsNoTracking()
                 .Include(o => o.Customer)
+                .Include(o => o.Employee)
                 .Include(o => o.Table)
-                .Include(o => o.OrderDetails)
-                .Where(o => !o.IsDeleted)
+                .Include(o => o.Payment)
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
         }
+
+        public async Task AddAsync(Order order)
+        {
+            order.CreatedAt = DateTime.UtcNow;
+            order.UpdatedAt = DateTime.UtcNow;
+
+            await _context.Orders.AddAsync(order);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task UpdateAsync(Order order)
+        {
+            order.UpdatedAt = DateTime.UtcNow;
+
+            _context.Orders.Update(order);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteAsync(int id)
+        {
+            var order = await GetByIdForUpdateAsync(id);
+
+            if (order == null)
+                throw new Exception("Không tìm thấy đơn hàng.");
+
+            order.IsDeleted = true;
+            order.UpdatedAt = DateTime.UtcNow;
+
+            _context.Orders.Update(order);
+            await _context.SaveChangesAsync();
+        }
+
+        #endregion
+
+        
+
+        /// <summary>
+        /// Lấy danh sách đơn hàng theo trạng thái
+        /// </summary>
+        #region Query Methods
 
         public async Task<List<Order>> GetByCustomerAsync(int customerId)
         {
             return await _context.Orders
                 .AsNoTracking()
-                .Include(o => o.Customer)
                 .Include(o => o.Table)
-                .Include(o => o.OrderDetails)
+                .Include(o => o.Employee)
+                .Include(o => o.Payment)
                 .Where(o => o.CustomerID == customerId && !o.IsDeleted)
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
@@ -68,170 +137,128 @@ namespace Quản_lý_quán_cafe.Repository
             return await _context.Orders
                 .AsNoTracking()
                 .Include(o => o.Customer)
-                .Include(o => o.Table)
+                .Include(o => o.Employee)
+                .Include(o => o.Payment)
                 .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.Product)
                 .Where(o => o.TableID == tableId && !o.IsDeleted)
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
         }
 
-        public async Task<List<Order>> SearchAsync(string searchTerm, int skip = 0, int take = 10)
+        public async Task<List<Order>> GetByStatusAsync(
+            string status,
+            int skip = 0,
+            int take = 50)
         {
-            var query = _context.Orders
+            return await _context.Orders
                 .AsNoTracking()
                 .Include(o => o.Customer)
                 .Include(o => o.Table)
-                .Include(o => o.OrderDetails)
-                .Where(o => !o.IsDeleted);
-
-            if (!string.IsNullOrWhiteSpace(searchTerm))
-            {
-                query = query.Where(o => o.OrderID.ToString().Contains(searchTerm) || 
-                                        (o.Notes != null && o.Notes.Contains(searchTerm)));
-            }
-
-            return await query
+                .Where(o => o.OrderStatus == status && !o.IsDeleted)
                 .OrderByDescending(o => o.OrderDate)
                 .Skip(skip)
                 .Take(take)
                 .ToListAsync();
         }
 
-        public async Task<int> GetCountAsync()
+        public async Task<List<Order>> SearchAsync(
+            string searchTerm,
+            int skip = 0,
+            int take = 10)
         {
-            return await _context.Orders
-                .Where(o => !o.IsDeleted)
-                .CountAsync();
-        }
+            searchTerm = searchTerm.Trim();
 
-        public async Task AddAsync(Order order)
-        {
-            order.CreatedAt = DateTime.UtcNow;
-            order.UpdatedAt = DateTime.UtcNow;
-            await _context.Orders.AddAsync(order);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task UpdateAsync(Order order)
-        {
-            order.UpdatedAt = DateTime.UtcNow;
-            _context.Orders.Update(order);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task DeleteAsync(int id)
-        {
-            var order = await GetByIdAsync(id);
-            if (order != null)
-            {
-                order.IsDeleted = true;
-                await UpdateAsync(order);
-            }
-        }
-
-        #endregion
-
-        #region New Methods for Admin Order Management
-
-        /// <summary>
-        /// Lấy danh sách đơn hàng theo trạng thái
-        /// </summary>
-        public async Task<List<Order>> GetByStatusAsync(string status, int skip = 0, int take = 50)
-        {
             return await _context.Orders
                 .AsNoTracking()
                 .Include(o => o.Customer)
                 .Include(o => o.Table)
-                .Include(o => o.OrderDetails)
-                .ThenInclude(od => od.Product)
-                .Where(o => !o.IsDeleted && o.OrderStatus == status)
+                .Include(o => o.Employee)
+                .Where(o =>
+                    !o.IsDeleted &&
+                    (
+                        o.OrderID.ToString().Contains(searchTerm) ||
+                        (o.Customer != null &&
+                         o.Customer.CustomerName.Contains(searchTerm)) ||
+                        (o.Table != null &&
+                         o.Table.TableNumber.Contains(searchTerm)) ||
+                        o.OrderStatus.Contains(searchTerm)
+                    ))
                 .OrderByDescending(o => o.OrderDate)
                 .Skip(skip)
                 .Take(take)
                 .ToListAsync();
         }
 
-        /// <summary>
-        /// Đếm số lượng đơn hàng theo trạng thái
-        /// </summary>
-        public async Task<int> GetCountByStatusAsync(string status)
+        public async Task<List<Order>> GetTodayOrdersAsync(
+            int skip = 0,
+            int take = 50)
         {
-            return await _context.Orders
-                .Where(o => !o.IsDeleted && o.OrderStatus == status)
-                .CountAsync();
-        }
-
-        /// <summary>
-        /// Lấy danh sách đơn hàng trong hôm nay
-        /// </summary>
-        public async Task<List<Order>> GetTodayOrdersAsync(int skip = 0, int take = 50)
-        {
-            var today = DateTime.UtcNow.Date;
-            var tomorrow = today.AddDays(1);
+            var today = DateTime.Today;
 
             return await _context.Orders
                 .AsNoTracking()
                 .Include(o => o.Customer)
                 .Include(o => o.Table)
-                .Include(o => o.OrderDetails)
-                .ThenInclude(od => od.Product)
-                .Where(o => !o.IsDeleted && 
-                           o.OrderDate >= today && 
-                           o.OrderDate < tomorrow)
+                .Where(o =>
+                    !o.IsDeleted &&
+                    o.OrderDate.Date == today)
                 .OrderByDescending(o => o.OrderDate)
                 .Skip(skip)
                 .Take(take)
                 .ToListAsync();
         }
 
-        /// <summary>
-        /// Lấy danh sách đơn hàng gần đây nhất
-        /// </summary>
         public async Task<List<Order>> GetRecentOrdersAsync(int take = 20)
         {
             return await _context.Orders
                 .AsNoTracking()
                 .Include(o => o.Customer)
                 .Include(o => o.Table)
-                .Include(o => o.OrderDetails)
-                .ThenInclude(od => od.Product)
+                .Include(o => o.Employee)
                 .Where(o => !o.IsDeleted)
-                .OrderByDescending(o => o.OrderDate)
+                .OrderByDescending(o => o.CreatedAt)
                 .Take(take)
                 .ToListAsync();
         }
 
+        #endregion
+
         /// <summary>
         /// Lấy danh sách đơn hàng trong khoảng thời gian
         /// </summary>
-        public async Task<List<Order>> GetByDateRangeAsync(DateTime startDate, DateTime endDate, int skip = 0, int take = 50)
+        #region Filter & Paging
+
+        public async Task<List<Order>> GetByDateRangeAsync(
+            DateTime startDate,
+            DateTime endDate,
+            int skip = 0,
+            int take = 50)
         {
             return await _context.Orders
                 .AsNoTracking()
                 .Include(o => o.Customer)
+                .Include(o => o.Employee)
                 .Include(o => o.Table)
-                .Include(o => o.OrderDetails)
-                .ThenInclude(od => od.Product)
-                .Where(o => !o.IsDeleted && 
-                           o.OrderDate >= startDate && 
-                           o.OrderDate <= endDate)
+                .Where(o =>
+                    !o.IsDeleted &&
+                    o.OrderDate >= startDate &&
+                    o.OrderDate <= endDate)
                 .OrderByDescending(o => o.OrderDate)
                 .Skip(skip)
                 .Take(take)
                 .ToListAsync();
         }
 
-        /// <summary>
-        /// Lấy danh sách đơn hàng có phân trang
-        /// </summary>
-        public async Task<(List<Order> Orders, int Total)> GetPagedOrdersAsync(int pageNumber = 1, int pageSize = 20)
+        public async Task<(List<Order> Orders, int Total)> GetPagedOrdersAsync(
+            int pageNumber = 1,
+            int pageSize = 20)
         {
             var query = _context.Orders
                 .AsNoTracking()
                 .Include(o => o.Customer)
+                .Include(o => o.Employee)
                 .Include(o => o.Table)
-                .Include(o => o.OrderDetails)
-                .ThenInclude(od => od.Product)
                 .Where(o => !o.IsDeleted);
 
             var total = await query.CountAsync();
@@ -245,47 +272,6 @@ namespace Quản_lý_quán_cafe.Repository
             return (orders, total);
         }
 
-        /// <summary>
-        /// Lấy thông tin tóm tắt đơn hàng (dùng cho dashboard)
-        /// Tối ưu: Load toàn bộ data một lần, sau đó LINQ to Objects
-        /// </summary>
-        public async Task<dynamic> GetOrderSummaryAsync()
-        {
-            var now = DateTime.UtcNow;
-            var today = now.Date;
-            var tomorrow = today.AddDays(1);
-
-            // Load all data in one query
-            var orders = await _context.Orders
-                .AsNoTracking()
-                .Where(o => !o.IsDeleted)
-                .ToListAsync();
-
-            // Process in-memory (LINQ to Objects)
-            var summary = new
-            {
-                TotalOrders = orders.Count,
-                TodayOrders = orders.Count(o => o.OrderDate >= today && o.OrderDate < tomorrow),
-                PendingOrders = orders.Count(o => o.OrderStatus == OrderStatusConstants.Pending),
-                PreparingOrders = orders.Count(o => o.OrderStatus == OrderStatusConstants.Preparing),
-                ReadyOrders = orders.Count(o => o.OrderStatus == OrderStatusConstants.Ready),
-                WaitingPaymentOrders = orders.Count(o => o.OrderStatus == OrderStatusConstants.WaitingPayment),
-                CompletedOrders = orders.Count(o => o.OrderStatus == OrderStatusConstants.Completed),
-                CancelledOrders = orders.Count(o => o.OrderStatus == OrderStatusConstants.Cancelled),
-                TotalRevenue = orders.Where(o => o.OrderStatus == OrderStatusConstants.Completed).Sum(o => o.TotalAmount),
-                TodayRevenue = orders
-                    .Where(o => o.OrderStatus == OrderStatusConstants.Completed && 
-                               o.OrderDate >= today && 
-                               o.OrderDate < tomorrow)
-                    .Sum(o => o.TotalAmount)
-            };
-
-            return summary;
-        }
-
-        /// <summary>
-        /// Lấy danh sách đơn hàng với lọc và tìm kiếm
-        /// </summary>
         public async Task<(List<Order> Orders, int Total)> GetFilteredOrdersAsync(
             string? searchTerm = null,
             string? status = null,
@@ -300,28 +286,34 @@ namespace Quản_lý_quán_cafe.Repository
             var query = _context.Orders
                 .AsNoTracking()
                 .Include(o => o.Customer)
+                .Include(o => o.Employee)
                 .Include(o => o.Table)
-                .Include(o => o.OrderDetails)
-                .ThenInclude(od => od.Product)
-                .Where(o => !o.IsDeleted);
+                .Where(o => !o.IsDeleted)
+                .AsQueryable();
 
-            // Apply search
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                query = query.Where(o => 
+                query = query.Where(o =>
                     o.OrderID.ToString().Contains(searchTerm) ||
-                    (o.Customer != null && o.Customer.CustomerName.Contains(searchTerm)) ||
-                    (o.Table != null && o.Table.TableNumber.Contains(searchTerm)) ||
-                    (o.Notes != null && o.Notes.Contains(searchTerm)));
+                    (o.Customer != null &&
+                     o.Customer.CustomerName.Contains(searchTerm)));
             }
 
-            // Apply status filter
             if (!string.IsNullOrWhiteSpace(status))
             {
                 query = query.Where(o => o.OrderStatus == status);
             }
 
-            // Apply date range filter
+            if (customerId.HasValue)
+            {
+                query = query.Where(o => o.CustomerID == customerId);
+            }
+
+            if (tableId.HasValue)
+            {
+                query = query.Where(o => o.TableID == tableId);
+            }
+
             if (startDate.HasValue)
             {
                 query = query.Where(o => o.OrderDate >= startDate.Value);
@@ -329,35 +321,19 @@ namespace Quản_lý_quán_cafe.Repository
 
             if (endDate.HasValue)
             {
-                var endOfDay = endDate.Value.AddDays(1).AddSeconds(-1);
-                query = query.Where(o => o.OrderDate <= endOfDay);
+                query = query.Where(o => o.OrderDate <= endDate.Value);
             }
 
-            // Apply customer filter
-            if (customerId.HasValue && customerId.Value > 0)
-            {
-                query = query.Where(o => o.CustomerID == customerId.Value);
-            }
-
-            // Apply table filter
-            if (tableId.HasValue && tableId.Value > 0)
-            {
-                query = query.Where(o => o.TableID == tableId.Value);
-            }
-
-            // Count total before paging
-            var total = await query.CountAsync();
-
-            // Apply sorting
             query = sortBy switch
             {
-                SortingConstants.DateAsc => query.OrderBy(o => o.OrderDate),
-                SortingConstants.AmountAsc => query.OrderBy(o => o.TotalAmount),
-                SortingConstants.AmountDesc => query.OrderByDescending(o => o.TotalAmount),
-                _ => query.OrderByDescending(o => o.OrderDate) // default: date_desc
+                "date_asc" => query.OrderBy(o => o.OrderDate),
+                "total_desc" => query.OrderByDescending(o => o.TotalAmount),
+                "total_asc" => query.OrderBy(o => o.TotalAmount),
+                _ => query.OrderByDescending(o => o.OrderDate)
             };
 
-            // Apply pagination
+            var total = await query.CountAsync();
+
             var orders = await query
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -366,117 +342,131 @@ namespace Quản_lý_quán_cafe.Repository
             return (orders, total);
         }
 
-        /// <summary>
-        /// Lấy danh sách đơn hàng theo nhiều trạng thái (dùng cho KDS)
-        /// </summary>
-        public async Task<List<Order>> GetByStatusesAsync(string[] statuses, int skip = 0, int take = 50)
-        {
-            if (statuses == null || statuses.Length == 0)
-                return new List<Order>();
+        #endregion
 
+        #region Count
+
+        public async Task<int> GetCountAsync()
+        {
+            return await _context.Orders
+                .CountAsync(o => !o.IsDeleted);
+        }
+
+        public async Task<int> GetCountByStatusAsync(string status)
+        {
+            return await _context.Orders
+                .CountAsync(o =>
+                    !o.IsDeleted &&
+                    o.OrderStatus == status);
+        }
+
+        #endregion
+
+        #region Payment
+
+        public async Task<List<Order>> GetUnpaidOrdersAsync(
+            int pageNumber = 1,
+            int pageSize = 20)
+        {
+            var skip = (pageNumber - 1) * pageSize;
             return await _context.Orders
                 .AsNoTracking()
                 .Include(o => o.Customer)
                 .Include(o => o.Table)
-                .Include(o => o.OrderDetails)
-                .ThenInclude(od => od.Product)
-                .Where(o => !o.IsDeleted && statuses.Contains(o.OrderStatus))
+                .Where(o =>
+                    !o.IsDeleted &&
+                    o.PaymentID == null)
                 .OrderByDescending(o => o.OrderDate)
                 .Skip(skip)
-                .Take(take)
+                .Take(pageSize)
                 .ToListAsync();
         }
 
-        /// <summary>
-        /// Lấy danh sách đơn hàng chưa thanh toán (dùng cho Payment)
-        /// </summary>
-        public async Task<List<Order>> GetUnpaidOrdersAsync(int skip = 0, int take = 50)
-        {
-            return await _context.Orders
-                .AsNoTracking()
-                .Include(o => o.Customer)
-                .Include(o => o.Table)
-                .Include(o => o.OrderDetails)
-                .ThenInclude(od => od.Product)
-                .Where(o => !o.IsDeleted && o.OrderStatus == OrderStatusConstants.WaitingPayment)
-                .OrderByDescending(o => o.OrderDate)
-                .Skip(skip)
-                .Take(take)
-                .ToListAsync();
-        }
-
-        /// <summary>
-        /// Lấy danh sách đơn hàng theo ID thanh toán (dùng cho Payment)
-        /// </summary>
         public async Task<List<Order>> GetByPaymentIdAsync(int paymentId)
         {
             return await _context.Orders
                 .AsNoTracking()
-                .Include(o => o.Customer)
-                .Include(o => o.Table)
-                .Include(o => o.OrderDetails)
-                .ThenInclude(od => od.Product)
-                .Where(o => !o.IsDeleted && o.PaymentID == paymentId)
-                .OrderByDescending(o => o.OrderDate)
+                .Include(o => o.Payment)
+                .Where(o =>
+                    !o.IsDeleted &&
+                    o.PaymentID == paymentId)
                 .ToListAsync();
         }
 
-        /// <summary>
-        /// Lấy doanh thu theo trạng thái (dùng cho Report)
-        /// </summary>
-        public async Task<dynamic> GetRevenueByStatusAsync()
+        public async Task<dynamic> GetOrderSummaryAsync()
         {
-            var orders = await _context.Orders
-                .AsNoTracking()
-                .Where(o => !o.IsDeleted && o.OrderStatus == OrderStatusConstants.Completed)
-                .ToListAsync();
+            var totalOrders = await _context.Orders.CountAsync(o => !o.IsDeleted);
+            var completedOrders = await _context.Orders.CountAsync(o => !o.IsDeleted && o.OrderStatus == OrderStatusConstants.Completed);
+            var pendingOrders = await _context.Orders.CountAsync(o => !o.IsDeleted && o.OrderStatus != OrderStatusConstants.Completed && o.OrderStatus != OrderStatusConstants.Cancelled);
+            var totalRevenue = await _context.Orders.Where(o => !o.IsDeleted).SumAsync(o => (decimal?)o.TotalAmount) ?? 0m;
 
-            var revenue = new
+            return new
             {
-                TotalRevenue = orders.Sum(o => o.TotalAmount),
-                CompletedOrders = orders.Count,
-                AverageOrderValue = orders.Any() ? orders.Average(o => o.TotalAmount) : 0m,
-                HighestOrderValue = orders.Any() ? orders.Max(o => o.TotalAmount) : 0m,
-                LowestOrderValue = orders.Any() ? orders.Min(o => o.TotalAmount) : 0m
+                TotalOrders = totalOrders,
+                CompletedOrders = completedOrders,
+                PendingOrders = pendingOrders,
+                TotalRevenue = totalRevenue
             };
-
-            return revenue;
         }
 
-        /// <summary>
-        /// Lấy doanh thu theo ngày (dùng cho Report/Dashboard)
-        /// </summary>
-        public async Task<dynamic> GetRevenueByDateAsync(DateTime startDate, DateTime endDate)
+        public async Task<dynamic> GetOrderSummaryByDateRangeAsync(DateTime startDate, DateTime endDate)
         {
             var orders = await _context.Orders
                 .AsNoTracking()
-                .Where(o => !o.IsDeleted && 
-                           o.OrderStatus == OrderStatusConstants.Completed &&
-                           o.OrderDate >= startDate && 
-                           o.OrderDate <= endDate)
+                .Where(o => !o.IsDeleted && o.OrderDate >= startDate && o.OrderDate <= endDate)
                 .ToListAsync();
-
-            // Group by date
-            var revenueByDate = orders
-                .GroupBy(o => o.OrderDate.Date)
-                .Select(g => new
-                {
-                    Date = g.Key,
-                    Revenue = g.Sum(o => o.TotalAmount),
-                    Orders = g.Count(),
-                    AverageOrderValue = g.Average(o => o.TotalAmount)
-                })
-                .OrderBy(x => x.Date)
-                .ToList();
 
             return new
             {
                 StartDate = startDate,
                 EndDate = endDate,
-                TotalRevenue = orders.Sum(o => o.TotalAmount),
                 TotalOrders = orders.Count,
-                AverageOrderValue = orders.Any() ? orders.Average(o => o.TotalAmount) : 0m,
-                DailyBreakdown = revenueByDate
+                CompletedOrders = orders.Count(o => o.OrderStatus == OrderStatusConstants.Completed),
+                TotalRevenue = orders.Sum(o => o.TotalAmount)
+            };
+        }
+
+        public async Task<dynamic> GetRevenueByStatusAsync()
+        {
+            var revenueByStatus = await _context.Orders
+                .AsNoTracking()
+                .Where(o => !o.IsDeleted)
+                .GroupBy(o => o.OrderStatus)
+                .Select(g => new
+                {
+                    Status = g.Key,
+                    Revenue = g.Sum(o => o.TotalAmount),
+                    OrderCount = g.Count()
+                })
+                .OrderByDescending(x => x.Revenue)
+                .ToListAsync();
+
+            return new
+            {
+                RevenueByStatus = revenueByStatus
+            };
+        }
+
+        public async Task<dynamic> GetRevenueByDateAsync(DateTime startDate, DateTime endDate)
+        {
+            var dailyRevenue = await _context.Orders
+                .AsNoTracking()
+                .Where(o => !o.IsDeleted && o.OrderDate >= startDate && o.OrderDate <= endDate)
+                .GroupBy(o => o.OrderDate.Date)
+                .Select(g => new
+                {
+                    Date = g.Key,
+                    Revenue = g.Sum(o => o.TotalAmount),
+                    OrderCount = g.Count()
+                })
+                .OrderBy(x => x.Date)
+                .ToListAsync();
+
+            return new
+            {
+                StartDate = startDate,
+                EndDate = endDate,
+                DailyRevenue = dailyRevenue
             };
         }
 

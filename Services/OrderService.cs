@@ -305,19 +305,7 @@ namespace Quản_lý_quán_cafe.Services
             }
             catch
             {
-                return new
-                {
-                    TotalOrders = 0,
-                    TodayOrders = 0,
-                    PendingOrders = 0,
-                    PreparingOrders = 0,
-                    ReadyOrders = 0,
-                    WaitingPaymentOrders = 0,
-                    CompletedOrders = 0,
-                    CancelledOrders = 0,
-                    TotalRevenue = 0m,
-                    TodayRevenue = 0m
-                };
+                return new { TotalOrders = 0, CompletedOrders = 0, PendingOrders = 0, TotalRevenue = 0m };
             }
         }
 
@@ -325,41 +313,13 @@ namespace Quản_lý_quán_cafe.Services
         {
             try
             {
-                if (endDate < startDate)
-                    endDate = startDate.AddDays(1);
-
-                var orders = await _repository.GetByDateRangeAsync(startDate, endDate, 0, int.MaxValue);
-
-                var summary = new
-                {
-                    TotalOrders = orders.Count,
-                    PendingOrders = orders.Count(o => o.OrderStatus == OrderStatusConstants.Pending),
-                    PreparingOrders = orders.Count(o => o.OrderStatus == OrderStatusConstants.Preparing),
-                    ReadyOrders = orders.Count(o => o.OrderStatus == OrderStatusConstants.Ready),
-                    WaitingPaymentOrders = orders.Count(o => o.OrderStatus == OrderStatusConstants.WaitingPayment),
-                    CompletedOrders = orders.Count(o => o.OrderStatus == OrderStatusConstants.Completed),
-                    CancelledOrders = orders.Count(o => o.OrderStatus == OrderStatusConstants.Cancelled),
-                    TotalRevenue = orders.Where(o => o.OrderStatus == OrderStatusConstants.Completed).Sum(o => o.TotalAmount)
-                };
-
-                return summary;
+                return await _repository.GetOrderSummaryByDateRangeAsync(startDate, endDate);
             }
             catch
             {
-                return new
-                {
-                    TotalOrders = 0,
-                    PendingOrders = 0,
-                    PreparingOrders = 0,
-                    ReadyOrders = 0,
-                    WaitingPaymentOrders = 0,
-                    CompletedOrders = 0,
-                    CancelledOrders = 0,
-                    TotalRevenue = 0m
-                };
+                return new { StartDate = startDate, EndDate = endDate, TotalOrders = 0, CompletedOrders = 0, TotalRevenue = 0m };
             }
         }
-
         #endregion
 
         #region Additional Methods for Other Modules
@@ -383,15 +343,19 @@ namespace Quản_lý_quán_cafe.Services
             }
         }
 
-        public async Task<List<Order>> GetUnpaidOrdersAsync(int pageNumber = 1, int pageSize = 20)
+        public async Task<List<Order>> GetUnpaidOrdersAsync(
+            int pageNumber = 1,
+            int pageSize = 20)
         {
             try
             {
-                if (pageNumber < 1) pageNumber = 1;
-                if (pageSize < 1 || pageSize > 100) pageSize = 20;
+                if (pageNumber < 1)
+                    pageNumber = 1;
 
-                var skip = (pageNumber - 1) * pageSize;
-                return await _repository.GetUnpaidOrdersAsync(skip, pageSize);
+                if (pageSize < 1 || pageSize > 100)
+                    pageSize = 20;
+
+                return await _repository.GetUnpaidOrdersAsync(pageNumber, pageSize);
             }
             catch
             {
@@ -422,14 +386,7 @@ namespace Quản_lý_quán_cafe.Services
             }
             catch
             {
-                return new
-                {
-                    TotalRevenue = 0m,
-                    CompletedOrders = 0,
-                    AverageOrderValue = 0m,
-                    HighestOrderValue = 0m,
-                    LowestOrderValue = 0m
-                };
+                return new { RevenueByStatus = new List<object>() };
             }
         }
 
@@ -437,25 +394,13 @@ namespace Quản_lý_quán_cafe.Services
         {
             try
             {
-                if (endDate < startDate)
-                    endDate = startDate.AddDays(1);
-
                 return await _repository.GetRevenueByDateAsync(startDate, endDate);
             }
             catch
             {
-                return new
-                {
-                    StartDate = startDate,
-                    EndDate = endDate,
-                    TotalRevenue = 0m,
-                    TotalOrders = 0,
-                    AverageOrderValue = 0m,
-                    DailyBreakdown = new List<dynamic>()
-                };
+                return new { StartDate = startDate, EndDate = endDate, DailyRevenue = new List<object>() };
             }
         }
-
         #endregion
     }
 }

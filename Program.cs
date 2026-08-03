@@ -3,6 +3,7 @@ using Quản_lý_quán_cafe.Data;
 using Quản_lý_quán_cafe.Extensions;
 using Quản_lý_quán_cafe.Middleware;
 using Quản_lý_quán_cafe.Repository;
+using Quản_lý_quán_cafe.Repository.Implementations;
 using Quản_lý_quán_cafe.Repository.Interfaces;
 using Quản_lý_quán_cafe.Services;
 using Quản_lý_quán_cafe.Services.Interfaces;
