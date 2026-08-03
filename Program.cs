@@ -52,7 +52,6 @@ else
 {
     app.UseMiddleware<ExceptionMiddleware>();
     app.UseHsts();
-    app.UseHttpsRedirection();
 }
 
 app.UseStaticFiles();

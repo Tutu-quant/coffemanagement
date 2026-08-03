@@ -32,7 +32,10 @@
                 <div class="product-grid">
                     @foreach (var product in category.Products)
                     {
-                        <article class="menu-product" data-name="@product.Name.ToLowerInvariant()">
+                        <article class="menu-product"
+                                 data-name="@product.Name.ToLowerInvariant()"
+                                 data-category="@categoryKey"
+                                 data-search="@($"{product.Name.ToLowerInvariant()} {product.Description.ToLowerInvariant()}")">
                             <div class="product-image">
                                 @if (!string.IsNullOrWhiteSpace(product.ImageUrl))
                                 {
@@ -67,7 +70,8 @@
     <aside class="cart-panel">
         <div class="cart-title"><div><span>ĐƠN CỦA BẠN</span><h3>Giỏ hàng</h3></div><span id="cartCount">0 món</span></div>
         <div id="cartItems" class="cart-items"><div class="empty-cart"><i class="bi bi-bag"></i><p>Chưa có món nào</p></div></div>
-        <form asp-action="Place" method="post" id="placeOrderForm">
+        <form asp-action="SubmitOrder" method="post" id="placeOrderForm">
+            @Html.AntiForgeryToken()
             <div asp-validation-summary="All" class="text-danger validation-summary"></div>
             <input asp-for="CartJson" type="hidden" id="cartJson" />
             <label asp-for="TableId">Bàn phục vụ</label>
@@ -100,18 +104,25 @@
         };
     }
 
+    function addProduct(button) {
+        const id = Number(button.dataset.id);
+        const existing = cart.get(id) || createCartItem(button);
+        if (existing.quantity >= Number(button.dataset.stock)) {
+            alert('Sản phẩm đã đạt số lượng tồn kho.');
+            return;
+        }
+
+        existing.quantity += 1;
+        cart.set(id, existing);
+        renderCart();
+    }
+
     function attachAddHandlers() {
         document.querySelectorAll('.add-product').forEach(button => {
-            button.onclick = () => {
-                const id = Number(button.dataset.id);
-                const existing = cart.get(id) || createCartItem(button);
-                if (existing.quantity >= Number(button.dataset.stock)) {
-                    alert('Sản phẩm đã đạt số lượng tồn kho.');
-                    return;
-                }
-                existing.quantity += 1;
-                cart.set(id, existing);
-                renderCart();
+            button.onclick = (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                addProduct(button);
             };
         });
     }
@@ -161,39 +172,67 @@
         return element.innerHTML;
     }
 
-    document.querySelectorAll('.category-tabs button').forEach(button => {
-        button.onclick = () => {
-            document.querySelectorAll('.category-tabs button').forEach(x => x.classList.remove('active'));
-            button.classList.add('active');
+    function initializeOrderPage() {
+        let activeCategory = 'all';
+        let searchQuery = '';
+
+        function applyFilters() {
+            const query = searchQuery.trim().toLowerCase();
             document.querySelectorAll('.menu-category').forEach(section => {
-                section.hidden = button.dataset.category !== 'all' && section.dataset.category !== button.dataset.category;
-            });
-        };
-    });
+                const products = section.querySelectorAll('.menu-product');
+                let hasVisibleProducts = false;
 
-    const searchInput = document.getElementById('menuSearch');
-    if (searchInput) {
-        searchInput.addEventListener('input', event => {
-            const query = event.target.value.trim().toLowerCase();
-            document.querySelectorAll('.menu-product').forEach(product => {
-                product.hidden = !product.dataset.name.includes(query);
+                products.forEach(product => {
+                    const matchesCategory = activeCategory === 'all' || product.dataset.category === activeCategory;
+                    const matchesQuery = !query || (product.dataset.search || '').includes(query);
+                    const shouldShow = matchesCategory && matchesQuery;
+                    product.hidden = !shouldShow;
+                    if (shouldShow) hasVisibleProducts = true;
+                });
+
+                section.hidden = activeCategory !== 'all' && section.dataset.category !== activeCategory;
+                if (activeCategory === 'all') {
+                    section.hidden = false;
+                }
             });
+        }
+
+        document.querySelectorAll('.category-tabs button').forEach(button => {
+            button.onclick = () => {
+                document.querySelectorAll('.category-tabs button').forEach(x => x.classList.remove('active'));
+                button.classList.add('active');
+                activeCategory = button.dataset.category || 'all';
+                applyFilters();
+            };
         });
-    }
 
-    const placeOrderForm = document.getElementById('placeOrderForm');
-    if (placeOrderForm) {
-        placeOrderForm.addEventListener('submit', event => {
-            if (cart.size === 0) {
-                event.preventDefault();
-                alert('Vui lòng chọn ít nhất một món.');
-            } else {
+        const searchInput = document.getElementById('menuSearch');
+        if (searchInput) {
+            searchInput.addEventListener('input', event => {
+                searchQuery = event.target.value.trim().toLowerCase();
+                applyFilters();
+            });
+        }
+
+        const placeOrderForm = document.getElementById('placeOrderForm');
+        if (placeOrderForm) {
+            placeOrderForm.addEventListener('submit', event => {
                 syncCart();
-            }
-        });
+                if (cart.size === 0) {
+                    event.preventDefault();
+                    alert('Vui lòng chọn ít nhất một món.');
+                }
+            });
+        }
+
+        attachAddHandlers();
+        renderCart();
     }
 
-    attachAddHandlers();
-    renderCart();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeOrderPage);
+    } else {
+        initializeOrderPage();
+    }
 </script>
 }
