@@ -12,16 +12,22 @@ namespace Quản_lý_quán_cafe.Areas.Customer.Controllers;
 public class OrdersController(ApplicationDbContext context) : Controller
 {
     [HttpGet]
-    public async Task<IActionResult> Menu(int? tableId = null)
+    public async Task<IActionResult> Index(int? tableId = null)
     {
         if (!IsCustomer()) return RedirectToLogin();
         var model = new OrderMenuViewModel { TableId = tableId ?? 0 };
         await LoadMenuAsync(model);
-        return View(model);
+        return View("Menu", model);
     }
 
+    [HttpGet]
+    public Task<IActionResult> Menu(int? tableId = null) => Index(tableId);
+
+    [HttpGet]
+    public Task<IActionResult> Place(int? tableId = null) => Index(tableId);
+
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> Place(OrderMenuViewModel model)
+    public async Task<IActionResult> SubmitOrder(OrderMenuViewModel model)
     {
         if (!IsCustomer()) return RedirectToLogin();
 
