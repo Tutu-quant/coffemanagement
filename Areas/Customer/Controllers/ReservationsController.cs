@@ -15,11 +15,22 @@ public class ReservationsController(ApplicationDbContext context) : Controller
     public async Task<IActionResult> Index()
     {
         if (!IsLoggedIn()) return RedirectToLogin();
+        var tables = await context.RestaurantTables.AsNoTracking()
+            .Where(t => !t.IsDeleted)
+            .OrderBy(t => t.TableNumber)
+            .ToListAsync();
+        return View(tables);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> History()
+    {
+        if (!IsLoggedIn()) return RedirectToLogin();
         var customer = await GetOrCreateCustomerAsync();
         var items = await context.Reservations.AsNoTracking().Include(r => r.Table)
             .Where(r => r.CustomerID == customer.CustomerID && !r.IsDeleted)
             .OrderByDescending(r => r.ReservationDate).ToListAsync();
-        return View(items);
+        return View("History", items);
     }
 
     [HttpGet]
