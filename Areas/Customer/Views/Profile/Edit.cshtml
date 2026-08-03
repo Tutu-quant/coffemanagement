@@ -1,0 +1,54 @@
+@model Quản_lý_quán_cafe.Models.ViewModels.Customer.CustomerEditViewModel
+
+@{
+    ViewData["Title"] = "Chỉnh sửa thông tin";
+    Layout = "_UnifiedLayout";
+}
+
+<div class="d-flex">
+    <aside class="flex-shrink-0">
+        @await Html.PartialAsync("_CustomerSidebar")
+    </aside>
+
+    <main class="flex-grow-1 px-4 py-3">
+        <div class="page-header mb-4">
+            <h4 class="m-0">Chỉnh sửa thông tin</h4>
+        </div>
+
+        <form asp-area="Customer" asp-controller="Profile" asp-action="Edit" method="post" class="card p-3">
+            @Html.AntiForgeryToken()
+            <input asp-for="CustomerID" type="hidden" />
+
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="CustomerName" class="form-label"></label>
+                    <input asp-for="CustomerName" class="form-control" />
+                    <span asp-validation-for="CustomerName" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Phone" class="form-label"></label>
+                    <input asp-for="Phone" class="form-control" />
+                    <span asp-validation-for="Phone" class="text-danger small"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Address" class="form-label"></label>
+                    <input asp-for="Address" class="form-control" />
+                    <span asp-validation-for="Address" class="text-danger small"></span>
+                </div>
+
+                <div class="col-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-success">Lưu thay đổi</button>
+                    <a asp-area="Customer" asp-controller="Profile" asp-action="Index" class="btn btn-secondary">Hủy</a>
+                </div>
+            </div>
+        </form>
+    </main>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}   

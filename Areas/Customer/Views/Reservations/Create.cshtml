@@ -1,54 +1,72 @@
 @model Quản_lý_quán_cafe.Areas.Customer.ViewModels.ReservationViewModel
+
 @{
     ViewData["Title"] = "Đặt bàn";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    Layout = "_UnifiedLayout";
 }
 
-<div class="container py-4">
-    <h2 class="mb-4">Đặt bàn</h2>
-    @if (!Model.SupportsBooking)
-    {
-        <div class="alert alert-info text-center py-5 shadow-sm">
-            <i class="bi bi-info-circle fs-1 d-block mb-3"></i>
-            <h4>Quán chưa hỗ trợ đặt bàn</h4>
-            <p class="mb-0">Hiện chưa có bàn khả dụng để đặt trước. Vui lòng quay lại sau.</p>
+<div class="d-flex">
+    <aside class="flex-shrink-0">
+        @await Html.PartialAsync("_CustomerSidebar")
+    </aside>
+
+    <main class="flex-grow-1 px-4 py-3">
+        <div class="page-header mb-4">
+            <h4 class="m-0">Đặt bàn</h4>
         </div>
-    }
-    else
-    {
-        <div class="card shadow-sm mx-auto" style="max-width: 720px">
-            <div class="card-body">
-                <form asp-area="Customer" asp-controller="Reservations" asp-action="Create" method="post">
-                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                    <div class="mb-3">
-                        <label asp-for="TableID" class="form-label"></label>
-                        <select asp-for="TableID" asp-items="Model.Tables" class="form-select">
-                            <option value="">-- Chọn bàn --</option>
-                        </select>
-                        <span asp-validation-for="TableID" class="text-danger"></span>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label asp-for="ReservationDate" class="form-label"></label>
-                            <input asp-for="ReservationDate" type="datetime-local" class="form-control" />
-                            <span asp-validation-for="ReservationDate" class="text-danger"></span>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label asp-for="NumberOfGuests" class="form-label"></label>
-                            <input asp-for="NumberOfGuests" class="form-control" min="1" />
-                            <span asp-validation-for="NumberOfGuests" class="text-danger"></span>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label asp-for="Notes" class="form-label"></label>
-                        <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
-                    </div>
-                    <button class="btn btn-primary">Xác nhận đặt bàn</button>
-                    <a asp-action="Index" class="btn btn-outline-secondary">Lịch sử đặt bàn</a>
-                </form>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+        }
+
+        <form asp-area="Customer" asp-controller="Reservations" asp-action="Create" method="post" class="card p-3">
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Họ và tên</label>
+                    <input name="customerName" class="form-control" placeholder="Nguyễn Văn A" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Số điện thoại</label>
+                    <input name="phone" class="form-control" placeholder="09xxxxxxxx" />
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="TableID" class="form-label"></label>
+                    <select asp-for="TableID" asp-items="Model.Tables" class="form-select"></select>
+                    <span asp-validation-for="TableID" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="ReservationDate" class="form-label"></label>
+                    <input asp-for="ReservationDate" class="form-control" type="datetime-local" value="@(Model.ReservationDate.ToString("yyyy-MM-ddTHH:mm"))" />
+                    <span asp-validation-for="ReservationDate" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="NumberOfGuests" class="form-label"></label>
+                    <input asp-for="NumberOfGuests" class="form-control" />
+                    <span asp-validation-for="NumberOfGuests" class="text-danger small"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Notes" class="form-label"></label>
+                    <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                    <span asp-validation-for="Notes" class="text-danger small"></span>
+                </div>
+
+                <div class="col-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-success">Xác nhận</button>
+                    <a asp-area="Customer" asp-controller="Reservations" asp-action="Index" class="btn btn-secondary">Quay lại</a>
+                </div>
             </div>
-        </div>
-    }
+        </form>
+    </main>
 </div>
 
 @section Scripts {

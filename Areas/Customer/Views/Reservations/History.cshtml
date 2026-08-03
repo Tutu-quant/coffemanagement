@@ -1,0 +1,46 @@
+@model IEnumerable<Quản_lý_quán_cafe.Models.Entities.Reservation>
+
+@{
+    ViewData["Title"] = "Lịch sử đặt bàn";
+    Layout = "_UnifiedLayout";
+}
+
+<div class="d-flex">
+    <div class="flex-shrink-0">
+        @await Html.PartialAsync("_CustomerSidebar")
+    </div>
+
+    <div class="flex-grow-1 px-4">
+        <h2 class="mb-4">Lịch sử đặt bàn</h2>
+
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Bàn</th>
+                    <th>Thời gian</th>
+                    <th>Số khách</th>
+                    <th>Trạng thái</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model)
+                {
+                    <tr>
+                        <td>@r.ReservationID</td>
+                        <td>@(r.Table?.TableNumber ?? r.TableID.ToString())</td>
+                        <td>@r.ReservationDate.ToLocalTime().ToString("g")</td>
+                        <td>@r.NumberOfGuests</td>
+                        <td>@r.ReservationStatus</td>
+                        <td>
+                            <a asp-area="Customer" asp-controller="Reservations" asp-action="Details" asp-route-id="@r.ReservationID" class="btn btn-sm btn-outline-primary">Chi tiết</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <a asp-area="Customer" asp-controller="Reservations" asp-action="Index" class="btn btn-secondary">Quay lại sơ đồ bàn</a>
+    </div>
+</div>
