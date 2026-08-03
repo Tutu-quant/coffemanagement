@@ -17,7 +17,7 @@
 <div class="customer-orders">
     @if (Model.Count == 0)
     {
-        <div class="orders-empty"><i class="bi bi-receipt"></i><h3>Chưa có đơn hàng</h3><a asp-action="Menu">Khám phá menu</a></div>
+        <div class="orders-empty"><i class="bi bi-receipt"></i><h3>Chưa có đơn hàng</h3><a asp-action="Index">Khám phá menu</a></div>
     }
     @foreach (var order in Model)
     {

@@ -115,12 +115,28 @@ public class OrdersController(ApplicationDbContext context) : Controller
         order.TotalAmount = order.OrderDetails.Sum(x => x.Subtotal);
         table.TableStatus = "Occupied";
         table.UpdatedAt = DateTime.UtcNow;
+
         context.Orders.Add(order);
+        await context.SaveChangesAsync();
+
+        context.Payments.Add(new Payment
+        {
+            OrderID = order.OrderID,
+            Amount = order.TotalAmount,
+            PaymentMethod = "Cash",
+            PaymentStatus = "Pending",
+            PaymentDate = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        });
+
         await context.SaveChangesAsync();
         await transaction.CommitAsync();
 
-        TempData["SuccessMessage"] = $"Đặt món thành công. Mã đơn #{order.OrderID}.";
-        return RedirectToAction(nameof(History));
+        TempData["SuccessMessage"] =
+             $"Đặt món thành công. Mã đơn #{order.OrderID}.";
+
+        return RedirectToAction(nameof(Details), new { id = order.OrderID });
     }
 
     [HttpGet]
@@ -138,7 +154,67 @@ public class OrdersController(ApplicationDbContext context) : Controller
             .ToListAsync();
         return View(orders);
     }
+    [HttpGet]
+    public async Task<IActionResult> Details(int id)
+    {
+        if (!IsCustomer())
+            return RedirectToLogin();
 
+        var customer = await GetOrCreateCustomerAsync();
+
+        var order = await context.Orders
+            .AsNoTracking()
+            .Include(o => o.Customer)
+            .Include(o => o.Table)
+            .Include(o => o.Payment)
+            .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
+                .ThenInclude(d => d.Product)
+            .FirstOrDefaultAsync(o =>
+                !o.IsDeleted &&
+                o.OrderID == id &&
+                o.CustomerID == customer.CustomerID);
+
+        if (order is null)
+            return NotFound();
+
+        var vm = new Quản_lý_quán_cafe.Models.ViewModels.Order.OrderDetailViewModel
+        {
+            OrderId = order.OrderID,
+            OrderCode = $"ORD-{order.OrderID:D6}",
+            OrderDate = order.OrderDate,
+            OrderStatus = order.OrderStatus,
+            CompletedDate = order.CompletedDate,
+            Notes = order.Notes,
+
+            CustomerId = order.CustomerID,
+            CustomerName = order.Customer?.CustomerName,
+            CustomerEmail = order.Customer?.Email,
+
+            TableId = order.TableID,
+            TableNumber = order.Table?.TableNumber?.ToString(),
+
+            PaymentId = order.PaymentID,
+            PaymentStatus = order.Payment?.PaymentStatus,
+            TotalAmount = order.TotalAmount,
+            PaidAmount = order.Payment?.Amount ?? 0,
+            PaidDate = order.Payment?.PaymentDate,
+
+            Items = order.OrderDetails
+                .Where(d => !d.IsDeleted)
+                .Select(d => new Quản_lý_quán_cafe.Models.ViewModels.Order.OrderItemViewModel
+                {
+                    OrderDetailId = d.OrderDetailID,
+                    ProductId = d.ProductID,
+                    ProductName = d.Product?.ProductName ?? "Sản phẩm",
+                    UnitPrice = d.UnitPrice,
+                    Quantity = d.Quantity,
+                    Notes = d.Notes
+                })
+                .ToList()
+        };
+
+        return View("Details", vm);
+    }
     private async Task LoadMenuAsync(OrderMenuViewModel model)
     {
         model.Tables = await context.RestaurantTables.AsNoTracking()
