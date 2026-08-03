@@ -14,6 +14,22 @@ namespace Quản_lý_quán_cafe.Data
             {
                 // Create database if not exists
                 await context.Database.EnsureCreatedAsync();
+                await context.Database.ExecuteSqlRawAsync("""
+                    CREATE TABLE IF NOT EXISTS PaymentAccountSettings (
+                        PaymentAccountSettingID INTEGER NOT NULL CONSTRAINT PK_PaymentAccountSettings PRIMARY KEY AUTOINCREMENT,
+                        Provider TEXT NOT NULL,
+                        AccountNumber TEXT NOT NULL,
+                        AccountName TEXT NOT NULL,
+                        IsActive INTEGER NOT NULL DEFAULT 1,
+                        CreatedAt TEXT NOT NULL,
+                        UpdatedAt TEXT NULL,
+                        UpdatedBy TEXT NULL
+                    );
+                    """);
+                await context.Database.ExecuteSqlRawAsync("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS IX_PaymentAccountSettings_Provider
+                    ON PaymentAccountSettings (Provider);
+                    """);
 
                 // Seed Roles
                 await SeedRolesAsync(context);

@@ -9,9 +9,11 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.ViewModels
         public int TodayOrdersCount { get; set; }
         public int WaitingPaymentCount { get; set; }
         public decimal TodayRevenue { get; set; }
+        public decimal PendingPaymentTotal { get; set; }
 
         public List<TableStatusDto> Tables { get; set; } = new();
         public List<OrderSummaryDto> RecentOrders { get; set; } = new();
+        public List<OrderSummaryDto> PendingBills { get; set; } = new();
 
         public class TableStatusDto
         {

@@ -22,6 +22,7 @@
         let currentTableId = @(Model.CurrentTable?.TableID ?? 0);
         let currentDiscountType = 'none';
         let currentPaymentMethod = 'cash';
+        let currentQrIntent = null;
         let currentCustomerId = @(Model.Customer?.CustomerID?.ToString() ?? "null");
         const subtotal = @Model.Subtotal.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
@@ -119,6 +120,11 @@
             currentPaymentMethod = method;
             document.querySelectorAll('.method-btn').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
+            const paidInput = document.getElementById('paidAmount');
+            if (paidInput) {
+                paidInput.disabled = method === 'qr';
+                if (method === 'qr') paidInput.value = '';
+            }
         }
 
         function proceedCheckout() {
@@ -126,7 +132,14 @@
                 alert('Vui lòng chọn bàn');
                 return;
             }
-            const paidAmount = Number(document.getElementById('paidAmount')?.value || 0) * 1000;
+            if (currentPaymentMethod === 'qr') {
+                createQrPayment();
+                return;
+            }
+            completeCheckout(Number(document.getElementById('paidAmount')?.value || 0) * 1000);
+        }
+
+        function completeCheckout(paidAmount) {
             postForm('/Cashier/POS/Checkout', {
                 tableId: currentTableId,
                 paymentMethod: currentPaymentMethod,
@@ -139,6 +152,46 @@
                 alert(`Thanh toán thành công. Tiền thừa: ${formatMoney(data.change)}`);
                 window.location.href = '/Cashier/POS';
             }).catch(error => alert(error.message));
+        }
+
+        async function createQrPayment() {
+            if (currentTableId === 0) return alert('Vui lòng chọn bàn');
+            try {
+                const response = await fetch('/api/payments/qr/intents', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tableId: currentTableId,
+                        discountType: currentDiscountType,
+                        discountValue: Number(document.getElementById('discountValue')?.value || 0)
+                    })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || data.message || 'Không thể tạo mã QR');
+                currentQrIntent = data;
+                const qrImage = document.getElementById('qrPaymentImage');
+                if (data.qrImageUrl) {
+                    qrImage.src = data.qrImageUrl;
+                    qrImage.classList.remove('d-none');
+                } else {
+                    qrImage.removeAttribute('src');
+                    qrImage.classList.add('d-none');
+                }
+                document.getElementById('momoReceiverAccount').textContent = data.receiverAccount;
+                document.getElementById('momoReceiverName').textContent = data.receiverName;
+                document.getElementById('qrPaymentAmount').textContent = formatMoney(data.amount);
+                document.getElementById('qrPaymentContent').textContent = data.transferContent;
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('qrPaymentModal')).show();
+            } catch (error) {
+                alert(error.message || 'Không thể kết nối API thanh toán QR');
+            }
+        }
+
+        function confirmQrPayment() {
+            if (!currentQrIntent) return;
+            const button = document.getElementById('confirmQrPaymentButton');
+            button.disabled = true;
+            completeCheckout(currentQrIntent.amount);
         }
 
         function closeTable() {

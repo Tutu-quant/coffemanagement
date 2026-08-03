@@ -11,6 +11,8 @@ using Quản_lý_quán_cafe.Services.Interfaces;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
+builder.Services.Configure<QrPaymentOptions>(
+    builder.Configuration.GetSection(QrPaymentOptions.SectionName));
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 

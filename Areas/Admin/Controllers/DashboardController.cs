@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Quản_lý_quán_cafe.Areas.Admin.ViewModels;
 using Quản_lý_quán_cafe.Data;
+using Quản_lý_quán_cafe.Models.Entities;
 
 namespace Quản_lý_quán_cafe.Areas.Admin.Controllers;
 
@@ -102,6 +103,9 @@ public class DashboardController : Controller
             .Select(p => new LowStockItem(p.ProductID, p.ProductName, p.Quantity))
             .ToListAsync();
 
+        var paymentAccount = await _context.PaymentAccountSettings.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Provider == "MoMo");
+
         var viewModel = new DashboardViewModel
         {
             TodayRevenue = todayRevenue,
@@ -122,9 +126,53 @@ public class DashboardController : Controller
             RevenueLast7Days = revenuePoints,
             BestSellers = bestSellers,
             RecentOrders = recentOrders,
-            LowStockItems = lowStockItems
+            LowStockItems = lowStockItems,
+            PaymentAccount = paymentAccount is null
+                ? new PaymentAccountViewModel()
+                : new PaymentAccountViewModel
+                {
+                    AccountNumber = paymentAccount.AccountNumber,
+                    AccountName = paymentAccount.AccountName,
+                    IsActive = paymentAccount.IsActive
+                }
         };
 
         return View(viewModel);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdatePaymentAccount(
+        [Bind(Prefix = "PaymentAccount")] PaymentAccountViewModel model)
+    {
+        if (HttpContext.Session.GetString("RoleName") != "Admin")
+            return Forbid();
+
+        if (!ModelState.IsValid)
+        {
+            TempData["PaymentAccountError"] = string.Join(" ", ModelState.Values
+                .SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+            return RedirectToAction(nameof(Index), new { paymentSettings = true });
+        }
+
+        var setting = await _context.PaymentAccountSettings
+            .FirstOrDefaultAsync(x => x.Provider == "MoMo");
+        if (setting is null)
+        {
+            setting = new PaymentAccountSetting
+            {
+                Provider = "MoMo",
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.PaymentAccountSettings.Add(setting);
+        }
+
+        setting.AccountNumber = model.AccountNumber.Trim();
+        setting.AccountName = model.AccountName.Trim();
+        setting.IsActive = model.IsActive;
+        setting.UpdatedAt = DateTime.UtcNow;
+        setting.UpdatedBy = HttpContext.Session.GetString("Username");
+        await _context.SaveChangesAsync();
+        TempData["PaymentAccountSuccess"] = "Đã cập nhật tài khoản nhận tiền MoMo.";
+        return RedirectToAction(nameof(Index), new { paymentSettings = true });
     }
 }
