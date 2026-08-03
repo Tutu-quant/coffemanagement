@@ -1,0 +1,89 @@
+@model Quản_lý_quán_cafe.Areas.Cashier.ViewModels.POSViewModel
+
+<!-- Cột phải: Tổng kết & Thanh toán -->
+<div class="pos-payment">
+    <div class="payment-header">Tổng kết</div>
+
+    <!-- Tính toán -->
+    <div class="payment-summary">
+        <div class="summary-row">
+            <span>Tạm tính:</span>
+            <span id="subtotalDisplay">0đ</span>
+        </div>
+        <div class="summary-row">
+            <span>Giảm giá:</span>
+            <span id="discountDisplay">0đ</span>
+        </div>
+        <div class="summary-row total">
+            <span>Tổng cộng:</span>
+            <span id="totalDisplay">0đ</span>
+        </div>
+    </div>
+
+    <div class="payment-divider"></div>
+
+    <!-- Khách tích thêm điểm -->
+    @if (Model.Customer?.CustomerID.HasValue == true)
+    {
+        <div class="customer-reward">
+            <i class="bi bi-gift"></i>
+            <span>Khách tích thêm +@Model.PointsToAdd điểm</span>
+        </div>
+    }
+
+    <!-- Phương thức thanh toán -->
+    <div class="payment-methods">
+        <div class="payment-header-small">PHƯƠNG THỨC THANH TOÁN</div>
+        <div class="method-buttons">
+            <button class="method-btn active" onclick="selectPaymentMethod('cash', this)">
+                <i class="bi bi-wallet2"></i> Tiền mặt
+            </button>
+            <button class="method-btn" onclick="selectPaymentMethod('qr', this)">
+                <i class="bi bi-wallet2"></i> MoMo
+            </button>
+        </div>
+    </div>
+
+    <!-- Nhập tiền khách đưa -->
+    <div class="payment-input">
+        <label>Tiền khách đưa (ngàn đồng)</label>
+        <input type="number" class="form-control" placeholder="VD: 200" id="paidAmount" onchange="calculateChange()" />
+    </div>
+
+    <!-- Nút thanh toán -->
+    <div class="payment-actions">
+        <button class="btn-checkout" id="btnCheckout" onclick="proceedCheckout()">
+            <i class="bi bi-credit-card"></i> Xác nhận thanh toán
+        </button>
+        <button class="btn-print">
+            <i class="bi bi-printer"></i> In hóa đơn
+        </button>
+    </div>
+</div>
+
+<div class="modal fade" id="qrPaymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thanh toán MoMo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="qrPaymentImage" alt="Mã thanh toán MoMo" class="img-fluid mb-3 d-none" style="max-height: 360px" />
+                <div class="border rounded p-3 mb-3 bg-light">
+                    <div>Tài khoản MoMo: <strong id="momoReceiverAccount"></strong></div>
+                    <div>Người nhận: <strong id="momoReceiverName"></strong></div>
+                </div>
+                <div class="fw-bold fs-4" id="qrPaymentAmount"></div>
+                <div class="text-muted">Nội dung: <code id="qrPaymentContent"></code></div>
+                <div class="small text-warning mt-2">Chỉ xác nhận sau khi đã kiểm tra tiền vào tài khoản.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-success" id="confirmQrPaymentButton" onclick="confirmQrPayment()">
+                    <i class="bi bi-check-circle"></i> Đã nhận tiền
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,162 @@
+@model Quản_lý_quán_cafe.Areas.Customer.ViewModels.OrderMenuViewModel
+
+@{
+    ViewData["Title"] = "Đặt món";
+    ViewData["PageTitle"] = "Menu gọi món";
+}
+
+@section Head {
+    <link rel="stylesheet" href="~/css/customer-order.css" asp-append-version="true" />
+}
+
+<div class="order-page">
+    <section class="menu-section">
+        <div class="menu-hero">
+            <div><span>BREWPOINT MENU</span><h2>Hôm nay bạn muốn uống gì?</h2><p>Chọn món, kiểm tra giỏ hàng và gửi đơn trực tiếp tới quầy.</p></div>
+            <div class="menu-search"><i class="bi bi-search"></i><input id="menuSearch" placeholder="Tìm cà phê, trà, bánh..." /></div>
+        </div>
+
+        <div class="category-tabs">
+            <button class="active" data-category="all">Tất cả</button>
+            @foreach (var category in Model.Categories)
+            {
+                <button data-category="@category.Name.ToLowerInvariant().Replace(" ", "-")">@category.Name</button>
+            }
+        </div>
+
+        @foreach (var category in Model.Categories)
+        {
+            var categoryKey = category.Name.ToLowerInvariant().Replace(" ", "-");
+            <div class="menu-category" data-category="@categoryKey">
+                <div class="category-heading"><h3>@category.Name</h3><span>@category.Products.Count món</span></div>
+                <div class="product-grid">
+                    @foreach (var product in category.Products)
+                    {
+                        <article class="menu-product" data-name="@product.Name.ToLowerInvariant()">
+                            <div class="product-image">
+                                @if (!string.IsNullOrWhiteSpace(product.ImageUrl))
+                                {
+                                    <img src="@product.ImageUrl" alt="@product.Name" />
+                                }
+                                else
+                                {
+                                    <i class="bi bi-cup-hot"></i>
+                                }
+                                <span>Còn @product.AvailableQuantity</span>
+                            </div>
+                            <div class="product-body">
+                                <h4>@product.Name</h4>
+                                <p>@product.Description</p>
+                                <div><strong>@product.Price.ToString("N0")đ</strong>
+                                    <button type="button" class="add-product"
+                                            data-id="@product.ProductId"
+                                            data-name="@product.Name"
+                                            data-price="@product.Price.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                            data-stock="@product.AvailableQuantity">
+                                        <i class="bi bi-plus-lg"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </article>
+                    }
+                </div>
+            </div>
+        }
+    </section>
+
+    <aside class="cart-panel">
+        <div class="cart-title"><div><span>ĐƠN CỦA BẠN</span><h3>Giỏ hàng</h3></div><span id="cartCount">0 món</span></div>
+        <div id="cartItems" class="cart-items"><div class="empty-cart"><i class="bi bi-bag"></i><p>Chưa có món nào</p></div></div>
+        <form asp-action="Place" method="post" id="placeOrderForm">
+            <div asp-validation-summary="All" class="text-danger validation-summary"></div>
+            <input asp-for="CartJson" type="hidden" id="cartJson" />
+            <label asp-for="TableId">Bàn phục vụ</label>
+            <select asp-for="TableId" asp-items="Model.Tables" class="form-select">
+                <option value="0">-- Chọn bàn --</option>
+            </select>
+            <span asp-validation-for="TableId" class="text-danger"></span>
+            <label asp-for="Notes">Ghi chú chung</label>
+            <textarea asp-for="Notes" class="form-control" rows="2" placeholder="Ít đá, giao món cùng lúc..."></textarea>
+            <div class="cart-total"><span>Tổng cộng</span><strong id="cartTotal">0đ</strong></div>
+            <button type="submit" class="place-order-btn"><i class="bi bi-send"></i> Gửi đơn tới quầy</button>
+        </form>
+    </aside>
+</div>
+
+@section Scripts {
+<script>
+    const initialCart = @Html.Raw(string.IsNullOrWhiteSpace(Model.CartJson) ? "[]" : Model.CartJson);
+    const cart = new Map(initialCart.map(item => [item.productId ?? item.ProductId, item]));
+    const money = value => new Intl.NumberFormat('vi-VN').format(value) + 'đ';
+
+    document.querySelectorAll('.add-product').forEach(button => button.addEventListener('click', () => {
+        const id = Number(button.dataset.id);
+        const existing = cart.get(id) || { productId: id, name: button.dataset.name, price: Number(button.dataset.price), quantity: 0, stock: Number(button.dataset.stock), notes: '' };
+        if (existing.quantity >= Number(button.dataset.stock)) return alert('Sản phẩm đã đạt số lượng tồn kho.');
+        existing.quantity++;
+        cart.set(id, existing);
+        renderCart();
+    }));
+
+    function changeQuantity(id, change) {
+        const item = cart.get(id);
+        if (!item) return;
+        item.quantity += change;
+        if (item.quantity <= 0) cart.delete(id);
+        else if (item.quantity > item.stock) item.quantity = item.stock;
+        renderCart();
+    }
+
+    function updateNotes(id, value) {
+        const item = cart.get(id);
+        if (item) item.notes = value;
+        syncCart();
+    }
+
+    function renderCart() {
+        const container = document.getElementById('cartItems');
+        const items = [...cart.values()];
+        container.innerHTML = items.length === 0
+            ? '<div class="empty-cart"><i class="bi bi-bag"></i><p>Chưa có món nào</p></div>'
+            : items.map(item => `<div class="cart-item">
+                <div class="cart-item-head"><strong>${escapeHtml(item.name)}</strong><button type="button" onclick="changeQuantity(${item.productId}, -${item.quantity})"><i class="bi bi-x"></i></button></div>
+                <div class="cart-item-row"><span>${money(item.price)}</span><div class="quantity-control"><button type="button" onclick="changeQuantity(${item.productId},-1)">−</button><b>${item.quantity}</b><button type="button" onclick="changeQuantity(${item.productId},1)">+</button></div></div>
+                <input value="${escapeHtml(item.notes || '')}" onchange="updateNotes(${item.productId},this.value)" placeholder="Ghi chú món..." />
+            </div>`).join('');
+        document.getElementById('cartCount').textContent = `${items.reduce((sum, item) => sum + item.quantity, 0)} món`;
+        document.getElementById('cartTotal').textContent = money(items.reduce((sum, item) => sum + item.price * item.quantity, 0));
+        syncCart();
+    }
+
+    function syncCart() {
+        document.getElementById('cartJson').value = JSON.stringify([...cart.values()].map(item => ({
+            productId: item.productId, quantity: item.quantity, notes: item.notes
+        })));
+    }
+
+    function escapeHtml(value) {
+        const element = document.createElement('div');
+        element.textContent = value ?? '';
+        return element.innerHTML;
+    }
+
+    document.querySelectorAll('.category-tabs button').forEach(button => button.addEventListener('click', () => {
+        document.querySelectorAll('.category-tabs button').forEach(x => x.classList.remove('active'));
+        button.classList.add('active');
+        document.querySelectorAll('.menu-category').forEach(section => {
+            section.hidden = button.dataset.category !== 'all' && section.dataset.category !== button.dataset.category;
+        });
+    }));
+
+    document.getElementById('menuSearch').addEventListener('input', event => {
+        const query = event.target.value.trim().toLowerCase();
+        document.querySelectorAll('.menu-product').forEach(product => product.hidden = !product.dataset.name.includes(query));
+    });
+
+    document.getElementById('placeOrderForm').addEventListener('submit', event => {
+        if (cart.size === 0) { event.preventDefault(); alert('Vui lòng chọn ít nhất một món.'); }
+        else syncCart();
+    });
+    renderCart();
+</script>
+}

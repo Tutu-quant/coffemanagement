@@ -1,0 +1,56 @@
+@model Quản_lý_quán_cafe.Areas.Customer.ViewModels.ReservationViewModel
+@{
+    ViewData["Title"] = "Đặt bàn";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-4">
+    <h2 class="mb-4">Đặt bàn</h2>
+    @if (!Model.SupportsBooking)
+    {
+        <div class="alert alert-info text-center py-5 shadow-sm">
+            <i class="bi bi-info-circle fs-1 d-block mb-3"></i>
+            <h4>Quán chưa hỗ trợ đặt bàn</h4>
+            <p class="mb-0">Hiện chưa có bàn khả dụng để đặt trước. Vui lòng quay lại sau.</p>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm mx-auto" style="max-width: 720px">
+            <div class="card-body">
+                <form asp-area="Customer" asp-controller="Reservations" asp-action="Create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <div class="mb-3">
+                        <label asp-for="TableID" class="form-label"></label>
+                        <select asp-for="TableID" asp-items="Model.Tables" class="form-select">
+                            <option value="">-- Chọn bàn --</option>
+                        </select>
+                        <span asp-validation-for="TableID" class="text-danger"></span>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="ReservationDate" class="form-label"></label>
+                            <input asp-for="ReservationDate" type="datetime-local" class="form-control" />
+                            <span asp-validation-for="ReservationDate" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="NumberOfGuests" class="form-label"></label>
+                            <input asp-for="NumberOfGuests" class="form-control" min="1" />
+                            <span asp-validation-for="NumberOfGuests" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Notes" class="form-label"></label>
+                        <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                    </div>
+                    <button class="btn btn-primary">Xác nhận đặt bàn</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">Lịch sử đặt bàn</a>
+                </form>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

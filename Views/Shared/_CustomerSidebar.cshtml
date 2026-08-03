@@ -1,0 +1,41 @@
+<aside class="admin-sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo"><i class="bi bi-cup-hot"></i><span>BrewPoint</span></div>
+        <p class="sidebar-tagline">Gọi món tại bàn</p>
+    </div>
+    <nav class="sidebar-nav">
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a asp-area="Customer" asp-controller="Orders" asp-action="Menu"
+                   class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Menu" ? "active" : "")">
+                    <i class="bi bi-cup-straw"></i><span>Đặt món</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a asp-area="Customer" asp-controller="Orders" asp-action="History"
+                   class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "History" ? "active" : "")">
+                    <i class="bi bi-receipt"></i><span>Đơn của tôi</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a asp-area="Customer" asp-controller="Reservations" asp-action="Create" class="nav-link">
+                    <i class="bi bi-calendar-plus"></i><span>Đặt bàn</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a asp-area="Customer" asp-controller="Reservations" asp-action="Index" class="nav-link">
+                    <i class="bi bi-calendar-check"></i><span>Lịch đặt bàn</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="user-profile">
+            <div class="user-avatar">@(Context.Session.GetString("Username")?.Substring(0, 1).ToUpper() ?? "K")</div>
+            <div class="user-info"><p class="user-name">@Context.Session.GetString("Username")</p><p class="user-role">Khách hàng</p></div>
+        </div>
+        <a asp-area="" asp-controller="Account" asp-action="Logout" class="btn-logout">
+            <i class="bi bi-box-arrow-right"></i> Đăng xuất
+        </a>
+    </div>
+</aside>

@@ -1,0 +1,45 @@
+@model IEnumerable<Quản_lý_quán_cafe.Models.Entities.Reservation>
+@{
+    ViewData["Title"] = "Đặt bàn của tôi";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Đặt bàn của tôi</h2>
+        <a asp-action="Create" class="btn btn-primary">Đặt bàn mới</a>
+    </div>
+    @if (TempData["SuccessMessage"] is not null) { <div class="alert alert-success">@TempData["SuccessMessage"]</div> }
+    @if (TempData["ErrorMessage"] is not null) { <div class="alert alert-danger">@TempData["ErrorMessage"]</div> }
+    @if (!Model.Any())
+    {
+        <div class="alert alert-secondary">Bạn chưa có lịch đặt bàn.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead><tr><th>Bàn</th><th>Thời gian</th><th>Số khách</th><th>Trạng thái</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.Table?.TableNumber</td>
+                        <td>@item.ReservationDate.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@item.NumberOfGuests</td>
+                        <td>@item.ReservationStatus</td>
+                        <td>
+                            @if (item.ReservationStatus is "Pending" or "Confirmed")
+                            {
+                                <form asp-action="Cancel" asp-route-id="@item.ReservationID" method="post">
+                                    <button class="btn btn-sm btn-outline-danger">Hủy</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

@@ -1,0 +1,39 @@
+@model List<Quản_lý_quán_cafe.Models.Entities.Order>
+
+@{
+    ViewData["Title"] = "Đơn của tôi";
+    ViewData["PageTitle"] = "Lịch sử gọi món";
+}
+
+@section Head {
+    <link rel="stylesheet" href="~/css/customer-order.css" asp-append-version="true" />
+}
+
+<div class="history-header">
+    <div><span>ĐƠN HÀNG</span><h2>Theo dõi món đã gọi</h2><p>Đơn mới sẽ được gửi trực tiếp tới quầy thu ngân.</p></div>
+    <a asp-action="Menu" class="new-order-btn"><i class="bi bi-plus-lg"></i> Đặt món mới</a>
+</div>
+
+<div class="customer-orders">
+    @if (Model.Count == 0)
+    {
+        <div class="orders-empty"><i class="bi bi-receipt"></i><h3>Chưa có đơn hàng</h3><a asp-action="Menu">Khám phá menu</a></div>
+    }
+    @foreach (var order in Model)
+    {
+        <article class="customer-order">
+            <header>
+                <div><span class="order-code">#@order.OrderID</span><strong>@(order.Table?.TableNumber ?? "Mang đi")</strong><small>@order.OrderDate.ToLocalTime().ToString("HH:mm · dd/MM/yyyy")</small></div>
+                <span class="order-status status-@order.OrderStatus.ToLowerInvariant()">@order.OrderStatus</span>
+            </header>
+            <div class="order-lines">
+                @foreach (var item in order.OrderDetails)
+                {
+                    <div><span><b>@item.Quantity×</b> @(item.Product?.ProductName ?? $"Sản phẩm #{item.ProductID}")</span><strong>@item.Subtotal.ToString("N0")đ</strong></div>
+                }
+            </div>
+            @if (!string.IsNullOrWhiteSpace(order.Notes)) { <p class="order-note"><i class="bi bi-chat-left-text"></i> @order.Notes</p> }
+            <footer><span>@order.OrderDetails.Sum(x => x.Quantity) món</span><strong>@order.TotalAmount.ToString("N0")đ</strong></footer>
+        </article>
+    }
+</div>
