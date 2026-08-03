@@ -1,0 +1,54 @@
+@model Quản_lý_quán_cafe.Models.Entities.Customer
+
+@{
+    ViewData["Title"] = "Thông tin cá nhân";
+    Layout = "_UnifiedLayout";
+}
+
+<div class="d-flex">
+    <aside class="flex-shrink-0">
+        @await Html.PartialAsync("_CustomerSidebar")
+    </aside>
+
+    <main class="flex-grow-1 px-4 py-3">
+        <div class="page-header d-flex justify-content-between align-items-center mb-4">
+            <h4 class="m-0">Thông tin cá nhân</h4>
+            <div>
+                <a asp-area="Customer" asp-controller="Profile" asp-action="Edit" class="btn btn-primary btn-sm">Chỉnh sửa</a>
+                <a asp-area="Customer" asp-controller="Profile" asp-action="Points" class="btn btn-outline-secondary btn-sm">Tích điểm</a>
+            </div>
+        </div>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+        }
+
+        <div class="card">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>Họ và tên</strong></p>
+                        <p class="text-muted">@Model.CustomerName</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>Email</strong></p>
+                        <p class="text-muted">@Model.Email</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>Điện thoại</strong></p>
+                        <p class="text-muted">@Model.Phone</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>Địa chỉ</strong></p>
+                        <p class="text-muted">@Model.Address</p>
+                    </div>
+                    <div class="col-12">
+                        <p class="mb-1"><strong>Điểm tích lũy</strong></p>
+                        <p class="h5 text-primary">@Model.RewardPoints</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>

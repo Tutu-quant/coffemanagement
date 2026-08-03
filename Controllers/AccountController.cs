@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System;
+using System.Linq;
+using System.Collections.Generic;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Quản_lý_quán_cafe.Models.Entities;
 using Quản_lý_quán_cafe.Models.ViewModels.Account;
@@ -19,7 +22,8 @@ namespace Quản_lý_quán_cafe.Controllers
             _userRepository = userRepository;
         }
 
-        public async Task<IActionResult> Login()
+        // GET
+        public IActionResult Login()
         {
             return View();
         }
@@ -33,36 +37,49 @@ namespace Quản_lý_quán_cafe.Controllers
                 return View(model);
             }
 
-            // Authenticate user
-            var user = await _userRepository.AuthenticateAsync(model.Username, model.Password);
-            if (user == null)
+            try
             {
-                ModelState.AddModelError(string.Empty, "Tên đăng nhập hoặc mật khẩu không chính xác");
+                var result = await _accountService.LoginAsync(model);
+                if (!result.Success)
+                {
+                    // Giữ hành vi thông báo lỗi như trước
+                    ModelState.AddModelError(string.Empty, result.Message);
+                    return View(model);
+                }
+
+                // Set session
+                if (result.UserId.HasValue)
+                    HttpContext.Session.SetInt32("UserId", result.UserId.Value);
+                if (result.RoleId.HasValue)
+                    HttpContext.Session.SetInt32("RoleId", result.RoleId.Value);
+                if (!string.IsNullOrEmpty(result.RoleName))
+                    HttpContext.Session.SetString("RoleName", result.RoleName);
+                HttpContext.Session.SetString("Username", model.Username);
+                HttpContext.Session.SetString("FullName", model.Username);
+
+                // Thông báo thành công giống code cũ (nếu cần hiển thị)
+                TempData["SuccessMessage"] = result.Message ?? "Đăng nhập thành công";
+
+                // Redirect based on role from database
+                return result.RoleName?.ToLowerInvariant() switch
+                {
+                    "admin" => RedirectToAction("Index", "RestaurantTables", new { area = "Admin" }),
+                    "customer" => RedirectToAction("Menu", "Orders", new { area = "Customer" }),
+                    _ => RedirectToAction("Index", "POS", new { area = "Cashier" })
+                };
+            }
+            catch (Exception ex)
+            {
+                // Giữ hành vi log và thông báo lỗi
+                System.Diagnostics.Debug.WriteLine($"Unexpected error during login: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+                }
+
+                ModelState.AddModelError(string.Empty, "Lỗi khi đăng nhập. Vui lòng thử lại.");
                 return View(model);
             }
-
-            // Get role from database
-            var role = await _userRepository.GetRoleByIdAsync(user.RoleID);
-            if (role == null)
-            {
-                ModelState.AddModelError(string.Empty, "Vị trí không hợp lệ");
-                return View(model);
-            }
-
-            // Set session
-            HttpContext.Session.SetInt32("UserId", user.UserID);
-            HttpContext.Session.SetString("Username", model.Username);
-            HttpContext.Session.SetInt32("RoleId", user.RoleID);
-            HttpContext.Session.SetString("RoleName", role.RoleName ?? "");
-            HttpContext.Session.SetString("FullName", user.Username);
-
-            // Redirect based on role from database
-            return role.RoleName?.ToLowerInvariant() switch
-            {
-                "admin" => RedirectToAction("Index", "RestaurantTables", new { area = "Admin" }),
-                "customer" => RedirectToAction("Menu", "Orders", new { area = "Customer" }),
-                _ => RedirectToAction("Index", "POS", new { area = "Cashier" })
-            };
         }
 
         public IActionResult Register()
@@ -96,7 +113,7 @@ namespace Quản_lý_quán_cafe.Controllers
                 if (customerRole == null)
                 {
                     // Log detailed error
-                    System.Diagnostics.Debug.WriteLine("ERROR: Customer role not found in database. Available roles: " + 
+                    System.Diagnostics.Debug.WriteLine("ERROR: Customer role not found in database. Available roles: " +
                         string.Join(", ", allRoles?.Select(r => r.RoleName) ?? new List<string>()));
 
                     ModelState.AddModelError(string.Empty, "Hệ thống chưa được cấu hình quyền Customer. Vui lòng liên hệ quản trị viên.");
@@ -117,7 +134,7 @@ namespace Quản_lý_quán_cafe.Controllers
 
                 await _userRepository.AddAsync(newUser);
 
-                // Show success message
+                // Giữ thông báo giống code cũ
                 TempData["SuccessMessage"] = "Đăng ký thành công. Vui lòng đăng nhập.";
                 return RedirectToAction("Login");
             }
@@ -152,6 +169,7 @@ namespace Quản_lý_quán_cafe.Controllers
         {
             await _accountService.LogoutAsync();
             HttpContext.Session.Clear();
+            TempData["SuccessMessage"] = "Bạn đã đăng xuất thành công.";
             return RedirectToAction("Login");
         }
     }
