@@ -10,7 +10,6 @@ namespace Quản_lý_quán_cafe.Data
         {
         }
 
-        // DbSets
         public DbSet<Role> Roles { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Employee> Employees { get; set; }
@@ -31,7 +30,6 @@ namespace Quản_lý_quán_cafe.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // ==================== ROLE ====================
             modelBuilder.Entity<Role>(entity =>
             {
                 entity.HasKey(e => e.RoleID);
@@ -55,7 +53,6 @@ namespace Quản_lý_quán_cafe.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // ==================== EMPLOYEE ====================
             modelBuilder.Entity<Employee>(entity =>
             {
                 entity.HasKey(e => e.EmployeeID);
@@ -91,7 +88,6 @@ namespace Quản_lý_quán_cafe.Data
                     .OnDelete(DeleteBehavior.SetNull);
             });
 
-            // ==================== USER ====================
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.UserID);
@@ -129,7 +125,6 @@ namespace Quản_lý_quán_cafe.Data
                     .OnDelete(DeleteBehavior.SetNull);
             });
 
-            // ==================== CATEGORY ====================
             modelBuilder.Entity<Category>(entity =>
             {
                 entity.HasKey(e => e.CategoryID);
@@ -153,7 +148,6 @@ namespace Quản_lý_quán_cafe.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // ==================== PRODUCT ====================
             modelBuilder.Entity<Product>(entity =>
             {
                 entity.HasKey(e => e.ProductID);
@@ -199,7 +193,6 @@ namespace Quản_lý_quán_cafe.Data
                     .OnDelete(DeleteBehavior.SetNull);
             });
 
-            // ==================== CUSTOMER ====================
             modelBuilder.Entity<Customer>(entity =>
             {
                 entity.HasKey(e => e.CustomerID);
@@ -261,7 +254,6 @@ namespace Quản_lý_quán_cafe.Data
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // ==================== RESTAURANT TABLE ====================
             modelBuilder.Entity<RestaurantTable>(entity =>
             {
                 entity.HasKey(e => e.TableID);
@@ -297,7 +289,6 @@ namespace Quản_lý_quán_cafe.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // ==================== ORDER ====================
             modelBuilder.Entity<Order>(entity =>
             {
                 entity.HasKey(e => e.OrderID);
@@ -339,7 +330,6 @@ namespace Quản_lý_quán_cafe.Data
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // ==================== ORDER DETAIL ====================
             modelBuilder.Entity<OrderDetail>(entity =>
             {
                 entity.HasKey(e => e.OrderDetailID);
@@ -370,7 +360,6 @@ namespace Quản_lý_quán_cafe.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // ==================== RESERVATION ====================
             modelBuilder.Entity<Reservation>(entity =>
             {
                 entity.HasKey(e => e.ReservationID);
@@ -399,7 +388,6 @@ namespace Quản_lý_quán_cafe.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // ==================== PAYMENT ====================
             modelBuilder.Entity<Payment>(entity =>
             {
                 entity.HasKey(e => e.PaymentID);
@@ -448,7 +436,6 @@ namespace Quản_lý_quán_cafe.Data
                 entity.HasIndex(e => e.Provider).IsUnique();
             });
 
-            // ==================== PROMOTION ====================
             modelBuilder.Entity<Promotion>(entity =>
             {
                 entity.HasKey(e => e.PromotionID);
@@ -483,7 +470,6 @@ namespace Quản_lý_quán_cafe.Data
                     .OnDelete(DeleteBehavior.SetNull);
             });
 
-            // ==================== REVIEW ====================
             modelBuilder.Entity<Review>(entity =>
             {
                 entity.HasKey(e => e.ReviewID);
@@ -508,7 +494,6 @@ namespace Quản_lý_quán_cafe.Data
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // ==================== POINT HISTORY ====================
             modelBuilder.Entity<PointHistory>(entity =>
             {
                 entity.HasKey(e => e.PointHistoryID);

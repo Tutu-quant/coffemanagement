@@ -19,7 +19,6 @@
 </head>
 <body>
     <div class="login-wrapper">
-        <!-- Left Side -->
         <div class="login-left">
             <div class="login-logo">
                 <div class="login-logo-icon">
@@ -60,7 +59,6 @@
             </div>
         </div>
 
-        <!-- Right Side -->
         <div class="login-right">
             <div class="login-container">
                 <div class="login-header">
@@ -79,26 +77,22 @@
                 }
 
                 <form method="post" asp-action="Login" id="loginForm">
-                    <!-- Username -->
                     <div class="form-group">
                         <label asp-for="Username" class="form-label">Email / Tên đăng nhập</label>
                         <input type="text" asp-for="Username" class="form-control" placeholder="admin@brewpoint.vn" />
                         <span asp-validation-for="Username" class="form-error-message"></span>
                     </div>
 
-                    <!-- Password -->
                     <div class="form-group">
                         <label asp-for="Password" class="form-label">Mật khẩu</label>
                         <div class="password-input-group">
                             <input type="password" id="password" asp-for="Password" class="form-control" placeholder="••••••••" />
-                            <button type="button" id="passwordToggle" class="password-toggle">
-                                <i class="bi bi-eye"></i>
+                            <button type="button" id="passwordToggle" class="password-toggle" aria-label="Toggle password visibility" aria-pressed="false">
+                                <i class="bi bi-eye-slash"></i>
                             </button>
                         </div>
                         <span asp-validation-for="Password" class="form-error-message"></span>
                     </div>
-
-                    <!-- Checkbox & Forgot Password -->
                     <div class="form-check">
                         <div class="form-check-left">
                             <input type="checkbox" id="rememberMe" asp-for="RememberMe" class="form-check-input" />
@@ -107,11 +101,9 @@
                         <a href="#" class="forgot-password-link">Quên mật khẩu?</a>
                     </div>
 
-                    <!-- Login Button -->
                     <button type="submit" class="login-btn">Đăng nhập</button>
                 </form>
 
-                <!-- Register Link -->
                 <div class="register-section">
                     <p class="register-text">Hoặc</p>
                     <a href="@Url.Action("Register", "Account")" class="register-link">
