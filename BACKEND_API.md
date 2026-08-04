@@ -18,5 +18,9 @@ Các phần đã tích hợp vào bản `manhhung1011/Qu-n-l-qu-n-cafe`:
 
 Admin cập nhật tài khoản và tên người nhận tại **Admin Dashboard > Tài khoản nhận tiền**. Tính năng này chỉ là placeholder cho cổng thanh toán sẽ được chọn sau này.
 
+Admin có thể lưu cấu hình MoMo/VietQR tại **Admin Dashboard > Merchant API MoMo / VietQR**. API key và secret key được mã hóa bằng ASP.NET Core Data Protection; giao diện không trả lại secret đã lưu. Nếu chưa có gateway đang bật, POS hiển thị **"Quán chưa liên kết với MoMo/VietQR"**.
+
+Tài khoản nhận tiền mặc định là `19074356859019`, ngân hàng Techcombank (`BANK_ID = 970407`). Quick Link VietQR tự điền `amount` bằng tổng tiền sau giảm giá và `addInfo` bằng `BP{OrderID}`. Với VietQR, `PaymentGateway.MerchantId` được dùng là `BANK_ID` (mã BIN hoặc tên viết tắt ngân hàng).
+
 Trạng thái bàn dùng thống nhất: `Available`, `Reserved`, `Occupied`, `WaitingPayment`, `Maintenance`.
 Khi không có bàn ngoài trạng thái `Maintenance`, giao diện Customer hiển thị **“Quán chưa hỗ trợ đặt bàn”** thay cho form.

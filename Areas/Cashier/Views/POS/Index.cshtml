@@ -203,6 +203,7 @@
                 }
                 document.getElementById('placeholderReceiverAccount').textContent = data.receiverAccount;
                 document.getElementById('placeholderReceiverName').textContent = data.receiverName;
+                document.getElementById('qrProviderName').textContent = data.provider || 'QR';
                 document.getElementById('qrPaymentAmount').textContent = formatMoney(data.amount);
                 document.getElementById('qrPaymentContent').textContent = data.transferContent;
                 bootstrap.Modal.getOrCreateInstance(document.getElementById('qrPaymentModal')).show();

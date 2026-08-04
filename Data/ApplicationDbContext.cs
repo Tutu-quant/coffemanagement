@@ -25,6 +25,7 @@ namespace Quản_lý_quán_cafe.Data
         public DbSet<Promotion> Promotions { get; set; }
         public DbSet<PointHistory> PointHistories { get; set; }
         public DbSet<PaymentAccountSetting> PaymentAccountSettings { get; set; }
+        public DbSet<PaymentGatewaySetting> PaymentGatewaySettings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -432,6 +433,16 @@ namespace Quản_lý_quán_cafe.Data
                 entity.Property(e => e.Provider).IsRequired().HasMaxLength(30);
                 entity.Property(e => e.AccountNumber).IsRequired().HasMaxLength(30);
                 entity.Property(e => e.AccountName).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.UpdatedBy).HasMaxLength(100);
+                entity.HasIndex(e => e.Provider).IsUnique();
+            });
+
+            modelBuilder.Entity<PaymentGatewaySetting>(entity =>
+            {
+                entity.HasKey(e => e.PaymentGatewaySettingID);
+                entity.Property(e => e.Provider).IsRequired().HasMaxLength(30);
+                entity.Property(e => e.MerchantId).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Endpoint).HasMaxLength(500);
                 entity.Property(e => e.UpdatedBy).HasMaxLength(100);
                 entity.HasIndex(e => e.Provider).IsUnique();
             });

@@ -12,6 +12,14 @@ public class QrPaymentsApiController(ApplicationDbContext context) : ControllerB
     public async Task<IActionResult> CreateIntent([FromBody] CreateQrIntentRequest request)
     {
         if (!IsStaff()) return Unauthorized();
+        var gateway = await context.PaymentGatewaySettings.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.IsActive);
+        if (gateway is null)
+            return Problem(
+                statusCode: StatusCodes.Status503ServiceUnavailable,
+                title: "Payment gateway is not connected",
+                detail: "Quán chưa liên kết với MoMo/VietQR");
+
         var receiver = await context.PaymentAccountSettings.AsNoTracking()
             .FirstOrDefaultAsync(x => x.Provider == "Placeholder" && x.IsActive);
         if (receiver is null)
@@ -56,15 +64,20 @@ public class QrPaymentsApiController(ApplicationDbContext context) : ControllerB
         order.PaymentID = payment.PaymentID;
         await context.SaveChangesAsync();
 
+        var qrImageUrl = gateway.Provider == "VietQR"
+            ? BuildVietQrQuickLink(gateway.MerchantId, receiver, payment)
+            : null;
+
         return Ok(new
         {
             orderId = order.OrderID,
             paymentId = payment.PaymentID,
             amount,
             transferContent = payment.TransactionCode,
-            qrImageUrl = (string?)null,
+            qrImageUrl,
             receiverAccount = receiver.AccountNumber,
             receiverName = receiver.AccountName,
+            provider = gateway.Provider,
             isPlaceholder = true,
             status = payment.PaymentStatus
         });
@@ -82,6 +95,19 @@ public class QrPaymentsApiController(ApplicationDbContext context) : ControllerB
     }
 
     private bool IsStaff() => HttpContext.Session.GetString("RoleName") is "Admin" or "Cashier";
+
+    private static string BuildVietQrQuickLink(
+        string bankId,
+        PaymentAccountSetting receiver,
+        Payment payment)
+    {
+        var bank = Uri.EscapeDataString(bankId.Trim());
+        var account = Uri.EscapeDataString(receiver.AccountNumber.Trim());
+        var content = Uri.EscapeDataString(payment.TransactionCode ?? $"BP{payment.OrderID}");
+        var accountName = Uri.EscapeDataString(receiver.AccountName.Trim());
+        return $"https://img.vietqr.io/image/{bank}-{account}-compact2.png" +
+               $"?amount={payment.Amount:0}&addInfo={content}&accountName={accountName}";
+    }
 
     private static decimal CalculateDiscount(decimal subtotal, string? type, decimal value) =>
         type?.ToLowerInvariant() switch

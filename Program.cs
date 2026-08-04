@@ -11,6 +11,7 @@ using Quản_lý_quán_cafe.Services.Interfaces;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddDataProtection();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -39,6 +40,7 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRestaurantTableService, RestaurantTableService>();
+builder.Services.AddSingleton<PaymentGatewaySecretProtector>();
 
 var app = builder.Build();
 

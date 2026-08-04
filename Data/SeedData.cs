@@ -30,6 +30,47 @@ namespace Quản_lý_quán_cafe.Data
                     CREATE UNIQUE INDEX IF NOT EXISTS IX_PaymentAccountSettings_Provider
                     ON PaymentAccountSettings (Provider);
                     """);
+                await context.Database.ExecuteSqlRawAsync("""
+                    CREATE TABLE IF NOT EXISTS PaymentGatewaySettings (
+                        PaymentGatewaySettingID INTEGER NOT NULL CONSTRAINT PK_PaymentGatewaySettings PRIMARY KEY AUTOINCREMENT,
+                        Provider TEXT NOT NULL,
+                        MerchantId TEXT NOT NULL,
+                        ApiKeyProtected TEXT NULL,
+                        SecretKeyProtected TEXT NULL,
+                        Endpoint TEXT NULL,
+                        IsActive INTEGER NOT NULL DEFAULT 0,
+                        CreatedAt TEXT NOT NULL,
+                        UpdatedAt TEXT NULL,
+                        UpdatedBy TEXT NULL
+                    );
+                    """);
+                await context.Database.ExecuteSqlRawAsync("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS IX_PaymentGatewaySettings_Provider
+                    ON PaymentGatewaySettings (Provider);
+                    """);
+                await context.Database.ExecuteSqlRawAsync("""
+                    INSERT INTO PaymentAccountSettings
+                        (Provider, AccountNumber, AccountName, IsActive, CreatedAt)
+                    SELECT 'Placeholder', '19074356859019', 'QUAN CAFE THU NGHIEM', 1, CURRENT_TIMESTAMP
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM PaymentAccountSettings WHERE Provider = 'Placeholder'
+                    );
+                    """);
+                await context.Database.ExecuteSqlRawAsync("""
+                    UPDATE PaymentAccountSettings
+                    SET AccountName = 'QUAN CAFE THU NGHIEM', UpdatedAt = CURRENT_TIMESTAMP
+                    WHERE Provider = 'Placeholder'
+                      AND AccountNumber = '19074356859019'
+                      AND AccountName = 'TAI KHOAN QUAN';
+                    """);
+                await context.Database.ExecuteSqlRawAsync("""
+                    INSERT INTO PaymentGatewaySettings
+                        (Provider, MerchantId, Endpoint, IsActive, CreatedAt)
+                    SELECT 'VietQR', '970407', 'https://img.vietqr.io/image', 1, CURRENT_TIMESTAMP
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM PaymentGatewaySettings WHERE Provider = 'VietQR'
+                    );
+                    """);
 
                 // Seed Roles
                 await SeedRolesAsync(context);
