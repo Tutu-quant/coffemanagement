@@ -12,6 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 <<<<<<< HEAD
+<<<<<<< HEAD
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-CSRF-TOKEN";
@@ -21,6 +22,9 @@ builder.Services.Configure<QrPaymentOptions>(
     builder.Configuration.GetSection(QrPaymentOptions.SectionName));
 =======
 >>>>>>> 2c132e90f4590d4c50705f7b1e933a689778226d
+=======
+builder.Services.AddDataProtection();
+>>>>>>> 658778f8b1a28887957a37d04aec22365bf00459
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -51,8 +55,12 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRestaurantTableService, RestaurantTableService>();
+<<<<<<< HEAD
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<CustomerSessionService>();
+=======
+builder.Services.AddSingleton<PaymentGatewaySecretProtector>();
+>>>>>>> 658778f8b1a28887957a37d04aec22365bf00459
 
 var app = builder.Build();
 
