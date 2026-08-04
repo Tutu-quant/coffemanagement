@@ -11,24 +11,20 @@ using Quản_lý_quán_cafe.Services.Interfaces;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
-<<<<<<< HEAD
-<<<<<<< HEAD
+
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-CSRF-TOKEN";
     options.FormFieldName = "__RequestVerificationToken";
 });
-builder.Services.Configure<QrPaymentOptions>(
-    builder.Configuration.GetSection(QrPaymentOptions.SectionName));
-=======
->>>>>>> 2c132e90f4590d4c50705f7b1e933a689778226d
-=======
+
 builder.Services.AddDataProtection();
->>>>>>> 658778f8b1a28887957a37d04aec22365bf00459
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddDistributedMemoryCache();
+
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
@@ -40,6 +36,7 @@ builder.Services.AddSession(options =>
 
 builder.Services.AddHttpContextAccessor();
 
+// Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
@@ -48,6 +45,7 @@ builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
 builder.Services.AddScoped<IRestaurantTableRepository, RestaurantTableRepository>();
 
+// Services
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IProductService, ProductService>();
@@ -55,12 +53,11 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRestaurantTableService, RestaurantTableService>();
-<<<<<<< HEAD
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<CustomerSessionService>();
-=======
+
+// Payment
 builder.Services.AddSingleton<PaymentGatewaySecretProtector>();
->>>>>>> 658778f8b1a28887957a37d04aec22365bf00459
 
 var app = builder.Build();
 
@@ -77,7 +74,7 @@ else
 // Add cache-busting headers for static files
 app.Use(async (context, next) =>
 {
-    if (context.Request.Path.StartsWithSegments("/css") || 
+    if (context.Request.Path.StartsWithSegments("/css") ||
         context.Request.Path.StartsWithSegments("/js") ||
         context.Request.Path.StartsWithSegments("/lib"))
     {
@@ -85,12 +82,16 @@ app.Use(async (context, next) =>
         context.Response.Headers.Pragma = "no-cache";
         context.Response.Headers.Expires = "0";
     }
+
     await next();
 });
 
 app.UseStaticFiles();
+
 app.UseRouting();
+
 app.UseSession();
+
 app.UseMiddleware<LoggingMiddleware>();
 
 await app.SeedDatabaseAsync();
