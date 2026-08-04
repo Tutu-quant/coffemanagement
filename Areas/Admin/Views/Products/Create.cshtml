@@ -1,4 +1,4 @@
-﻿@model ProductCreateViewModel
+@model ProductCreateViewModel
 
 @{
     ViewData["Title"] = "Thêm sản phẩm";
@@ -192,15 +192,15 @@
         const previewImage = document.getElementById('previewImage');
         const imageInputGroup = document.querySelector('.image-input-group');
 
-        // Handle file selection
+
         imageInput.addEventListener('change', handleImageSelection);
         imageInputGroup.addEventListener('click', () => imageInput.click());
 
-        // Prevent default drag behavior
+
         document.addEventListener('dragover', e => e.preventDefault());
         document.addEventListener('drop', e => e.preventDefault());
 
-        // Handle drag and drop
+
         imageInputGroup.addEventListener('dragover', e => {
             e.preventDefault();
             imageInputGroup.style.borderColor = 'var(--coffee-brown)';
@@ -227,7 +227,7 @@
             const file = imageInput.files[0];
             if (!file) return;
 
-            // Validate file type
+
             const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
             if (!allowedTypes.includes(file.type)) {
                 alert('Định dạng ảnh không hợp lệ. Chỉ chấp nhận: JPG, PNG, WebP');
@@ -236,7 +236,7 @@
                 return;
             }
 
-            // Validate file size (5MB)
+
             if (file.size > 5 * 1024 * 1024) {
                 alert('Kích thước ảnh không được vượt quá 5MB');
                 imageInput.value = '';
@@ -244,7 +244,7 @@
                 return;
             }
 
-            // Show preview
+
             const reader = new FileReader();
             reader.onload = e => {
                 previewImage.src = e.target.result;
@@ -260,7 +260,7 @@
             imageInputGroup.style.display = 'block';
         }
 
-        // Form validation
+
         document.getElementById('createForm').addEventListener('submit', function(e) {
             const nameInput = document.querySelector('input[name="Name"]');
             const categorySelect = document.querySelector('select[name="CategoryId"]');

@@ -30,9 +30,6 @@ html, body {
     height: 100%;
 }
 
-/* ====================================
-   LOGIN CONTAINER
-   ==================================== */
 
 .login-wrapper {
     display: flex;
@@ -78,9 +75,6 @@ html, body {
     z-index: 2;
 }
 
-/* ====================================
-   LEFT SIDE: LOGO & BRANDING
-   ==================================== */
 
 .login-logo {
     display: flex;
@@ -106,9 +100,6 @@ html, body {
     letter-spacing: -0.5px;
 }
 
-/* ====================================
-   LEFT SIDE: HERO IMAGE & CONTENT
-   ==================================== */
 
 .login-hero {
     flex: 1;
@@ -151,9 +142,6 @@ html, body {
     line-height: 1.6;
 }
 
-/* ====================================
-   LEFT SIDE: FEATURE PILLS
-   ==================================== */
 
 .login-features {
     display: flex;
@@ -179,9 +167,6 @@ html, body {
     transform: translateY(-2px);
 }
 
-/* ====================================
-   RIGHT SIDE: LOGIN FORM
-   ==================================== */
 
 .login-right {
     flex: 1;
@@ -220,9 +205,6 @@ html, body {
     color: var(--text-dark);
 }
 
-/* ====================================
-   FORM CONTROLS
-   ==================================== */
 
 .form-group {
     margin-bottom: 20px;
@@ -265,9 +247,6 @@ html, body {
     color: var(--text-light);
 }
 
-/* ====================================
-   PASSWORD INPUT WITH SHOW/HIDE
-   ==================================== */
 
 .password-input-group {
     position: relative;
@@ -291,9 +270,6 @@ html, body {
     color: var(--coffee-brown);
 }
 
-/* ====================================
-   CHECKBOX
-   ==================================== */
 
 .form-check {
     margin-bottom: 20px;
@@ -353,9 +329,6 @@ html, body {
     text-decoration: underline;
 }
 
-/* ====================================
-   LOGIN BUTTON
-   ==================================== */
 
 .login-btn {
     width: 100%;
@@ -407,15 +380,6 @@ html, body {
     }
 }
 
-/* ====================================
-   DEMO ACCOUNTS - REMOVED
-   ==================================== */
-
-/* Demo accounts styling removed */
-
-/* ====================================
-   REGISTER SECTION
-   ==================================== */
 
 .register-section {
     text-align: center;
@@ -489,9 +453,6 @@ html, body {
     }
 }
 
-/* ====================================
-   ALERTS & ERRORS
-   ==================================== */
 
 .alert {
     padding: 12px 16px;
@@ -534,9 +495,6 @@ html, body {
     border-color: #dc3545 !important;
 }
 
-/* ====================================
-   RESPONSIVE DESIGN
-   ==================================== */
 
 @media (max-width: 1024px) {
     .login-left {
@@ -695,9 +653,6 @@ html, body {
     }
 }
 
-/* ====================================
-   SCROLLBAR CUSTOMIZATION
-   ==================================== */
 
 ::-webkit-scrollbar {
     width: 8px;

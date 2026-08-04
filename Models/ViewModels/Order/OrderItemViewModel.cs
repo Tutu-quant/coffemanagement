@@ -1,8 +1,7 @@
 namespace Quản_lý_quán_cafe.Models.ViewModels.Order
 {
-    /// <summary>
-    /// ViewModel cho món hàng trong đơn
-    /// </summary>
+
+
     public class OrderItemViewModel
     {
         public int OrderDetailId { get; set; }

@@ -1,4 +1,4 @@
-﻿namespace Quản_lý_quán_cafe.Models.Entities
+namespace Quản_lý_quán_cafe.Models.Entities
 {
     public class Customer
     {
@@ -16,7 +16,7 @@
 
         public decimal TotalSpent { get; set; } = 0;
 
-        public string MembershipTier { get; set; } = "Member"; // Member, Silver, Gold, Diamond, VIP
+        public string MembershipTier { get; set; } = "Member";
 
         public bool IsActive { get; set; } = true;
 
@@ -28,7 +28,7 @@
 
         public bool IsDeleted { get; set; }
 
-        // Navigation Properties
+
         public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
         public virtual ICollection<Reservation> Reservations { get; set; } = new List<Reservation>();
         public virtual ICollection<PointHistory> PointHistories { get; set; } = new List<PointHistory>();

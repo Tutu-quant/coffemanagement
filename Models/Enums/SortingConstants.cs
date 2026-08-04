@@ -1,8 +1,7 @@
 namespace Quản_lý_quán_cafe.Models.Enums
 {
-    /// <summary>
-    /// Constants cho các option sắp xếp
-    /// </summary>
+
+
     public static class SortingConstants
     {
         public const string DateDesc = "date_desc";

@@ -19,7 +19,7 @@
 </head>
 <body>
     <div class="login-wrapper">
-        <!-- Left Side -->
+
         <div class="login-left">
             <div class="login-logo">
                 <div class="login-logo-icon">
@@ -60,7 +60,7 @@
             </div>
         </div>
 
-        <!-- Right Side -->
+
         <div class="login-right">
             <div class="login-container">
                 <div class="login-header">
@@ -81,35 +81,35 @@
                 <form method="post" asp-action="Register" id="registerForm">
                     @Html.AntiForgeryToken()
 
-                    <!-- Full Name -->
+
                     <div class="form-group">
                         <label asp-for="FullName" class="form-label">Họ và tên</label>
                         <input type="text" asp-for="FullName" class="form-control" placeholder="Nhập họ và tên" />
                         <span asp-validation-for="FullName" class="form-error-message"></span>
                     </div>
 
-                    <!-- Username -->
+
                     <div class="form-group">
                         <label asp-for="Username" class="form-label">Tên đăng nhập</label>
                         <input type="text" asp-for="Username" class="form-control" placeholder="Chọn tên đăng nhập" />
                         <span asp-validation-for="Username" class="form-error-message"></span>
                     </div>
 
-                    <!-- Email -->
+
                     <div class="form-group">
                         <label asp-for="Email" class="form-label">Email</label>
                         <input type="email" asp-for="Email" class="form-control" placeholder="your@email.com" />
                         <span asp-validation-for="Email" class="form-error-message"></span>
                     </div>
 
-                    <!-- Phone -->
+
                     <div class="form-group">
                         <label asp-for="Phone" class="form-label">Số điện thoại (tuỳ chọn)</label>
                         <input type="tel" asp-for="Phone" class="form-control" placeholder="0912345678" />
                         <span asp-validation-for="Phone" class="form-error-message"></span>
                     </div>
 
-                    <!-- Password -->
+
                     <div class="form-group">
                         <label asp-for="Password" class="form-label">Mật khẩu</label>
                         <div class="password-input-group">
@@ -121,7 +121,7 @@
                         <span asp-validation-for="Password" class="form-error-message"></span>
                     </div>
 
-                    <!-- Confirm Password -->
+
                     <div class="form-group">
                         <label asp-for="ConfirmPassword" class="form-label">Nhập lại mật khẩu</label>
                         <div class="password-input-group">
@@ -133,11 +133,11 @@
                         <span asp-validation-for="ConfirmPassword" class="form-error-message"></span>
                     </div>
 
-                    <!-- Register Button -->
+
                     <button type="submit" class="login-btn">Đăng ký</button>
                 </form>
 
-                <!-- Login Link -->
+
                 <div class="register-section">
                     <p class="register-text">Đã có tài khoản?</p>
                     <a href="@Url.Action("Login", "Account")" class="register-link">
@@ -167,7 +167,7 @@
             }
         }
 
-        // Prevent form submission on Enter in password toggle button
+
         document.querySelectorAll('.password-toggle').forEach(btn => {
             btn.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {

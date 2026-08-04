@@ -1,40 +1,40 @@
-﻿:root {
-    /* Primary Colors */
+:root {
+
     --primary-dark: #2D1B14;
     --primary-medium: #1a0f0a;
     --primary-light: #3d2b22;
 
-    /* Secondary Colors */
+
     --secondary: #8B5A2B;
     --secondary-dark: #6b4623;
     --secondary-light: #9b6a3b;
 
-    /* Accent Colors */
+
     --accent: #C57A24;
     --accent-dark: #a55f1a;
     --accent-light: #d88a34;
 
-    /* Background & Surface */
+
     --bg-main: #FDF7E8;
     --bg-light: #fefaf0;
     --card-bg: #FFFFFF;
 
-    /* Border & Divider */
+
     --border-color: #E9DCC4;
     --border-light: #f0e8d8;
 
-    /* Text Colors */
+
     --text-primary: #2D1B14;
     --text-secondary: #8B5A2B;
     --text-muted: #a89968;
     --text-light: #d4c4a8;
 
-    /* Functional Colors */
+
     --success: #10b981;
     --warning: #f59e0b;
     --danger: #ef4444;
 
-    /* Shadows */
+
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.15);
@@ -57,7 +57,6 @@ html, body {
     overflow: hidden;
 }
 
-/* ==================== POS PAGE LAYOUT ==================== */
 
 .pos-page {
     width: 100%;
@@ -73,7 +72,6 @@ html, body {
     min-height: 0;
 }
 
-/* ==================== LEFT SIDEBAR - TABLE LIST ==================== */
 
 .pos-sidebar {
     width: 300px;
@@ -157,7 +155,7 @@ html, body {
     gap: 8px;
 }
 
-/* Custom scrollbar for tables list */
+
 .tables-list::-webkit-scrollbar {
     width: 6px;
 }
@@ -293,7 +291,6 @@ html, body {
     color: #fff;
 }
 
-/* ==================== CENTER CONTENT - ORDER DETAILS ==================== */
 
 .pos-main {
     flex: 1;
@@ -365,7 +362,6 @@ html, body {
     border-radius: 8px;
 }
 
-/* ==================== ORDER ITEMS SECTION ==================== */
 
 .order-items-section {
     background-color: var(--card-bg);
@@ -537,7 +533,6 @@ html, body {
     font-weight: 500;
 }
 
-/* ==================== CUSTOMER SECTION ==================== */
 
 .customer-section {
     background-color: var(--card-bg);
@@ -642,7 +637,6 @@ html, body {
     padding: 10px 16px;
 }
 
-/* ==================== NOTES & DISCOUNT SECTION ==================== */
 
 .notes-discount-section {
     background-color: var(--card-bg);
@@ -724,7 +718,6 @@ html, body {
     color: #fff;
 }
 
-/* ==================== RIGHT SIDEBAR - PAYMENT ==================== */
 
 .pos-payment {
     width: 340px;
@@ -957,7 +950,6 @@ html, body {
     color: var(--primary-dark);
 }
 
-/* ==================== RESPONSIVE DESIGN ==================== */
 
 @media (max-width: 1920px) {
     .pos-sidebar {
@@ -1156,7 +1148,6 @@ html, body {
     }
 }
 
-/* ==================== UTILITY CLASSES ==================== */
 
 .form-control-sm {
     font-size: 12px;
@@ -1172,7 +1163,6 @@ html, body {
     color: var(--text-muted) !important;
 }
 
-/* ==================== TRANSITIONS & ANIMATIONS ==================== */
 
 * {
     transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
@@ -1187,7 +1177,6 @@ textarea:focus {
     transition: all 0.3s ease;
 }
 
-/* ==================== FOCUS STATES ==================== */
 
 button:focus,
 a:focus {
@@ -1200,7 +1189,6 @@ a:focus:not(:focus-visible) {
     outline: none;
 }
 
-/* ==================== PRINT STYLES ==================== */
 
 @media print {
     .pos-sidebar,

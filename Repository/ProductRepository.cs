@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Quản_lý_quán_cafe.Data;
 using Quản_lý_quán_cafe.Models.Entities;
 using Quản_lý_quán_cafe.Repository.Interfaces;
@@ -47,7 +47,7 @@ namespace Quản_lý_quán_cafe.Repository
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                query = query.Where(p => p.ProductName.Contains(searchTerm) || 
+                query = query.Where(p => p.ProductName.Contains(searchTerm) ||
                                         (p.Description != null && p.Description.Contains(searchTerm)));
             }
 
@@ -64,26 +64,26 @@ namespace Quản_lý_quán_cafe.Repository
                 .Include(p => p.Category)
                 .Where(p => !p.IsDeleted);
 
-            // Search filter
+
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                query = query.Where(p => p.ProductName.Contains(searchTerm) || 
+                query = query.Where(p => p.ProductName.Contains(searchTerm) ||
                                         (p.Description != null && p.Description.Contains(searchTerm)));
             }
 
-            // Category filter
+
             if (categoryId.HasValue)
             {
                 query = query.Where(p => p.CategoryID == categoryId.Value);
             }
 
-            // Status filter
+
             if (isAvailable.HasValue)
             {
                 query = query.Where(p => p.IsActive == isAvailable.Value);
             }
 
-            // Sorting
+
             query = sortBy switch
             {
                 "name_asc" => query.OrderBy(p => p.ProductName),
@@ -114,7 +114,7 @@ namespace Quản_lý_quán_cafe.Repository
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                query = query.Where(p => p.ProductName.Contains(searchTerm) || 
+                query = query.Where(p => p.ProductName.Contains(searchTerm) ||
                                         (p.Description != null && p.Description.Contains(searchTerm)));
             }
 
@@ -128,7 +128,7 @@ namespace Quản_lý_quán_cafe.Repository
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                query = query.Where(p => p.ProductName.Contains(searchTerm) || 
+                query = query.Where(p => p.ProductName.Contains(searchTerm) ||
                                         (p.Description != null && p.Description.Contains(searchTerm)));
             }
 

@@ -15,21 +15,21 @@ namespace Quản_lý_quán_cafe.Services
 
         public async Task<(bool Success, string Message, int? UserId, int? RoleId, string? RoleName)> LoginAsync(LoginViewModel model)
         {
-            // Authenticate user
+
             var user = await _userRepository.AuthenticateAsync(model.Username, model.Password);
             if (user == null)
             {
                 return (false, "Tên đăng nhập hoặc mật khẩu không chính xác", null, null, null);
             }
 
-            // Get role from database
+
             var role = await _userRepository.GetRoleByIdAsync(user.RoleID);
             if (role == null)
             {
                 return (false, "Vị trí không hợp lệ", null, null, null);
             }
 
-            // Update last login time - Note: User entity không có LastLoginAt column
+
             await _userRepository.UpdateAsync(user);
 
             return (true, "Đăng nhập thành công", user.UserID, user.RoleID, role.RoleName);
@@ -37,7 +37,7 @@ namespace Quản_lý_quán_cafe.Services
 
         public async Task LogoutAsync()
         {
-            // Logout logic if needed
+
             await Task.CompletedTask;
         }
     }

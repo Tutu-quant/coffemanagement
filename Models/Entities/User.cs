@@ -26,7 +26,7 @@ namespace Quản_lý_quán_cafe.Models.Entities
 
         public bool IsDeleted { get; set; }
 
-        // Navigation Properties
+
         public virtual Role? Role { get; set; }
         public virtual Employee? Employee { get; set; }
     }

@@ -29,7 +29,7 @@
                     <p><strong>Mã bàn:</strong> @Model.TableNumber</p>
                     <p><strong>Sức chứa:</strong> @Model.Capacity người</p>
                     <p><strong>Khu vực:</strong> @(string.IsNullOrEmpty(Model.Location) ? "-- Không xác định --" : Model.Location)</p>
-                    <p><strong>Trạng thái:</strong> 
+                    <p><strong>Trạng thái:</strong>
                         @if (Model.TableStatus == "Available")
                         {
                             <span class="badge bg-success">Trống</span>

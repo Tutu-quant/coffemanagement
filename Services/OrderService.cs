@@ -1,4 +1,4 @@
-﻿using Quản_lý_quán_cafe.Models.Entities;
+using Quản_lý_quán_cafe.Models.Entities;
 using Quản_lý_quán_cafe.Models.Enums;
 using Quản_lý_quán_cafe.Repository.Interfaces;
 using Quản_lý_quán_cafe.Services.Interfaces;
@@ -58,7 +58,7 @@ namespace Quản_lý_quán_cafe.Services
                 if (order.TotalAmount < 0)
                     return (false, "Tổng tiền không hợp lệ", null);
 
-                // Set default status if not provided
+
                 if (string.IsNullOrWhiteSpace(order.OrderStatus))
                     order.OrderStatus = OrderStatusConstants.Pending;
 
@@ -87,7 +87,7 @@ namespace Quản_lý_quán_cafe.Services
                 if (existingOrder == null)
                     return (false, "Không tìm thấy đơn hàng");
 
-                // Update only allowed fields (don't change OrderDate, CreatedAt)
+
                 existingOrder.Notes = order.Notes;
                 existingOrder.TotalAmount = order.TotalAmount;
                 existingOrder.UpdatedAt = DateTime.UtcNow;
@@ -137,9 +137,9 @@ namespace Quản_lý_quán_cafe.Services
                 if (string.IsNullOrWhiteSpace(status))
                     return (false, "Trạng thái không hợp lệ");
 
-                // Validate status
-                var validStatuses = new[] 
-                { 
+
+                var validStatuses = new[]
+                {
                     OrderStatusConstants.Pending,
                     OrderStatusConstants.Preparing,
                     OrderStatusConstants.Ready,
@@ -157,7 +157,7 @@ namespace Quản_lý_quán_cafe.Services
 
                 order.OrderStatus = status;
 
-                // Set CompletedDate if status is Completed
+
                 if (status == OrderStatusConstants.Completed)
                     order.CompletedDate = DateTime.UtcNow;
 

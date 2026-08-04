@@ -1,8 +1,7 @@
 namespace Quản_lý_quán_cafe.Areas.Cashier.ViewModels
 {
-    /// <summary>
-    /// Dashboard Cashier - Tổng quan
-    /// </summary>
+
+
     public class CashierDashboardViewModel
     {
         public int ActiveTablesCount { get; set; }
@@ -19,7 +18,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.ViewModels
         {
             public int TableID { get; set; }
             public string TableName { get; set; } = string.Empty;
-            public string Status { get; set; } = "Empty"; // Empty, Occupied, WaitingPayment, Reserved
+            public string Status { get; set; } = "Empty";
             public int? OrderID { get; set; }
             public string? OrderCode { get; set; }
             public int? GuestCount { get; set; }
@@ -50,7 +49,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.ViewModels
             public int TableID { get; set; }
             public string TableName { get; set; } = string.Empty;
             public decimal TotalAmount { get; set; }
-            public string Status { get; set; } = "Pending"; // Pending, Completed, Paid
+            public string Status { get; set; } = "Pending";
             public DateTime CreatedAt { get; set; }
             public int ItemCount { get; set; }
         }

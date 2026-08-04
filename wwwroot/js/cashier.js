@@ -1,6 +1,6 @@
-// BrewPoint Cashier - JavaScript
 
-// Update time display
+
+
 function updateTime() {
     const now = new Date();
     const timeDisplay = document.getElementById('current-time');
@@ -9,14 +9,14 @@ function updateTime() {
     }
 }
 
-// Initialize on page load
+
 document.addEventListener('DOMContentLoaded', function() {
     setInterval(updateTime, 1000);
 });
 
-// Show notification
+
 function showNotification(message, type = 'success') {
-    const alertClass = type === 'success' ? 'alert-success' : 
+    const alertClass = type === 'success' ? 'alert-success' :
                        type === 'error' ? 'alert-danger' : 'alert-info';
 
     const alert = document.createElement('div');
@@ -38,7 +38,7 @@ function showNotification(message, type = 'success') {
     }, 5000);
 }
 
-// Format currency
+
 function formatCurrency(value) {
     return new Intl.NumberFormat('vi-VN', {
         style: 'currency',
@@ -47,13 +47,13 @@ function formatCurrency(value) {
     }).format(value);
 }
 
-// Table operations
+
 function selectTable(tableId) {
     window.location.href = `/Cashier/POS?tableId=${tableId}`;
 }
 
 function callCustomer(tableId) {
-    // Sound/notification for calling customer
+
     playSound('/sounds/call.mp3');
     showNotification(`Gọi khách bàn ${tableId}`);
 }

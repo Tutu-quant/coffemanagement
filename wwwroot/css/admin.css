@@ -1,6 +1,5 @@
-/* ====================================
-   VARIABLES & ROOT COLORS
-   ==================================== */
+
+
 
 :root {
     --coffee-dark: #3d2c27;
@@ -16,9 +15,6 @@
     --transition: all 0.2s ease-in-out;
 }
 
-/* ====================================
-   GENERAL STYLES
-   ==================================== */
 
 * {
     margin: 0;
@@ -37,9 +33,6 @@ html, body {
     height: 100%;
 }
 
-/* ====================================
-   ADMIN WRAPPER
-   ==================================== */
 
 .admin-wrapper {
     display: flex;
@@ -47,9 +40,6 @@ html, body {
     overflow: hidden;
 }
 
-/* ====================================
-   SIDEBAR STYLES
-   ==================================== */
 
 .admin-sidebar {
     width: 240px;
@@ -208,9 +198,6 @@ html, body {
     border-color: rgba(255, 255, 255, 0.3);
 }
 
-/* ====================================
-   MAIN CONTENT AREA
-   ==================================== */
 
 .admin-main {
     flex: 1;
@@ -219,9 +206,6 @@ html, body {
     overflow: hidden;
 }
 
-/* ====================================
-   HEADER STYLES
-   ==================================== */
 
 .admin-header {
     background-color: var(--white);
@@ -325,9 +309,6 @@ html, body {
     color: var(--text-light);
 }
 
-/* ====================================
-   PAGE CONTENT
-   ==================================== */
 
 .admin-content {
     flex: 1;
@@ -335,9 +316,6 @@ html, body {
     padding: 24px;
 }
 
-/* ====================================
-   ALERTS
-   ==================================== */
 
 .alert {
     border: none;
@@ -379,9 +357,6 @@ html, body {
     }
 }
 
-/* ====================================
-   PAGE HEADER SECTION
-   ==================================== */
 
 .page-header {
     display: flex;
@@ -426,9 +401,6 @@ html, body {
     color: var(--text-dark);
 }
 
-/* ====================================
-   BUTTONS
-   ==================================== */
 
 .btn {
     border-radius: 8px;
@@ -493,9 +465,6 @@ html, body {
     color: var(--coffee-dark);
 }
 
-/* ====================================
-   CARDS
-   ==================================== */
 
 .card {
     border: none;
@@ -530,9 +499,6 @@ html, body {
     gap: 12px;
 }
 
-/* ====================================
-   FORMS
-   ==================================== */
 
 .form-group {
     margin-bottom: 20px;
@@ -606,9 +572,6 @@ html, body {
     border-color: #dc3545 !important;
 }
 
-/* ====================================
-   TABLES
-   ==================================== */
 
 .table {
     margin-bottom: 0;
@@ -680,9 +643,6 @@ html, body {
     background-color: #f5c6cb;
 }
 
-/* ====================================
-   BADGES
-   ==================================== */
 
 .badge {
     padding: 6px 12px;
@@ -707,9 +667,6 @@ html, body {
     color: #856404;
 }
 
-/* ====================================
-   SEARCH & FILTER BAR
-   ==================================== */
 
 .search-bar {
     display: flex;
@@ -739,9 +696,6 @@ html, body {
     pointer-events: none;
 }
 
-/* ====================================
-   PAGINATION
-   ==================================== */
 
 .pagination {
     margin-top: 24px;
@@ -766,9 +720,6 @@ html, body {
     border-color: var(--coffee-brown);
 }
 
-/* ====================================
-   RESPONSIVE DESIGN
-   ==================================== */
 
 @media (max-width: 1200px) {
     .admin-sidebar {
@@ -835,9 +786,6 @@ html, body {
     }
 }
 
-/* ====================================
-   PRODUCT TABLE STYLES
-   ==================================== */
 
 .table-products {
     margin-bottom: 0;
@@ -1002,9 +950,6 @@ html, body {
     font-size: 14px;
 }
 
-/* ====================================
-   PAGINATION STYLES
-   ==================================== */
 
 .pagination {
     margin: 0;
@@ -1042,9 +987,6 @@ html, body {
     border-color: var(--coffee-dark);
 }
 
-/* ====================================
-   FORM STYLES
-   ==================================== */
 
 .form-group {
     margin-bottom: 20px;
@@ -1118,9 +1060,6 @@ html, body {
     margin: 0;
 }
 
-/* ====================================
-   BUTTON STYLES
-   ==================================== */
 
 .btn {
     display: inline-flex;
@@ -1167,9 +1106,6 @@ html, body {
     background-color: #d32f2f;
 }
 
-/* ====================================
-   SCROLLBAR CUSTOMIZATION
-   ==================================== */
 
 ::-webkit-scrollbar {
     width: 8px;
@@ -1189,9 +1125,6 @@ html, body {
     background: var(--coffee-light);
 }
 
-/* ====================================
-   CASHIER SPECIFIC STYLES
-   ==================================== */
 
 .page-header-cashier {
     display: flex;
@@ -1346,7 +1279,7 @@ html, body {
     line-height: 1.4;
 }
 
-/* Responsive adjustments */
+
 @media (max-width: 768px) {
     .stat-cards {
         grid-template-columns: repeat(2, 1fr);

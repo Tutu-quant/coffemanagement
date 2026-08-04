@@ -1,8 +1,7 @@
 namespace Quản_lý_quán_cafe.Models.ViewModels.Order
 {
-    /// <summary>
-    /// ViewModel cho danh sách đơn hàng
-    /// </summary>
+
+
     public class OrderListViewModel
     {
         public int OrderId { get; set; }
@@ -15,12 +14,10 @@ namespace Quản_lý_quán_cafe.Models.ViewModels.Order
         public decimal TotalAmount { get; set; }
         public DateTime OrderDate { get; set; }
         public int ItemCount { get; set; }
-        public string StatusBadgeClass { get; set; } = string.Empty; // For CSS styling
+        public string StatusBadgeClass { get; set; } = string.Empty;
     }
 
-    /// <summary>
-    /// ViewModel cho danh sách đơn hàng (pagination)
-    /// </summary>
+
     public class OrderListContainerViewModel
     {
         public List<OrderListViewModel> Orders { get; set; } = new();

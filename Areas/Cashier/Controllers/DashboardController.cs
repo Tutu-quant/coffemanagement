@@ -24,7 +24,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             var today = DateTime.Today;
             var tomorrow = today.AddDays(1);
 
-            // Get all restaurant tables with order info
+
             var tables = await _context.RestaurantTables
                 .Where(t => !t.IsDeleted)
                 .Include(t => t.Orders.Where(o => !o.IsDeleted && o.OrderDate >= today && o.OrderDate < tomorrow))
@@ -32,7 +32,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 .OrderBy(t => t.TableNumber)
                 .ToListAsync();
 
-            // Build table status DTOs
+
             var tableStatuses = new List<CashierDashboardViewModel.TableStatusDto>();
             foreach (var table in tables)
             {
@@ -62,7 +62,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 });
             }
 
-            // Get today's stats
+
             var todayOrders = await _context.Orders
                 .Where(o => !o.IsDeleted && o.OrderDate >= today && o.OrderDate < tomorrow)
                 .Include(o => o.Table)
@@ -98,7 +98,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             var activeTablesCount = tableStatuses.Count(t => t.Status == "Occupied");
             var waitingPaymentCount = pendingBills.Count;
 
-            // Get recent orders
+
             var recentOrders = todayOrders
                 .OrderByDescending(o => o.OrderDate)
                 .Take(5)

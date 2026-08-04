@@ -5,7 +5,7 @@
     Layout = "~/Areas/Cashier/Views/Shared/_POSLayout.cshtml";
 }
 
-@* *@
+
 @Html.AntiForgeryToken()
 
 @section Head {
@@ -218,11 +218,10 @@
                 discountValue: document.getElementById('discountValue')?.value || 0,
                 notes: document.getElementById('orderNotes')?.value || ''
             }).then(data => {
-                // Open printable bill in new tab, then reload POS
                 try {
                     const printUrl = `/Cashier/Orders/Print/${data.orderId}?returnUrl=${encodeURIComponent('/Cashier/POS')}`;
                     window.open(printUrl, '_blank');
-                } catch (e) { /* ignore */ }
+                } catch (e) {  }
                 alert(`Thanh toán thành công. Tiền thừa: ${formatMoney(data.change)}`);
                 window.location.href = '/Cashier/POS';
             }).catch(error => alert(error.message));

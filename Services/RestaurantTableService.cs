@@ -48,7 +48,7 @@ namespace Quản_lý_quán_cafe.Services
                 CreatedAt = t.CreatedAt
             }).ToList();
 
-            // Get statistics
+
             var allTables = await _repository.GetAllAsync();
             var availableTables = await _repository.GetCountByStatusAsync("Available");
             var occupiedTables = await _repository.GetCountByStatusAsync("Occupied");
@@ -87,7 +87,7 @@ namespace Quản_lý_quán_cafe.Services
                 CreatedAt = t.CreatedAt
             }).ToList();
 
-            // Get statistics
+
             var allTables = await _repository.GetAllAsync();
             var availableTables = await _repository.GetCountByStatusAsync("Available");
             var occupiedTables = await _repository.GetCountByStatusAsync("Occupied");

@@ -1,8 +1,7 @@
 namespace Quản_lý_quán_cafe.Models.ViewModels.Order
 {
-    /// <summary>
-    /// ViewModel cho lọc và tìm kiếm đơn hàng
-    /// </summary>
+
+
     public class OrderFilterViewModel
     {
         public string? Keyword { get; set; }
@@ -14,14 +13,14 @@ namespace Quản_lý_quán_cafe.Models.ViewModels.Order
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 20;
 
-        // Kết quả lọc
+
         public List<OrderListViewModel> Results { get; set; } = new();
         public int TotalCount { get; set; }
         public int TotalPages => (TotalCount + PageSize - 1) / PageSize;
         public bool HasPreviousPage => Page > 1;
         public bool HasNextPage => Page < TotalPages;
 
-        // Dropdown lists
+
         public List<SelectListItem> StatusOptions { get; set; } = new();
         public List<SelectListItem> EmployeeOptions { get; set; } = new();
     }

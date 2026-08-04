@@ -1,4 +1,4 @@
-﻿namespace Quản_lý_quán_cafe.Models.Entities
+namespace Quản_lý_quán_cafe.Models.Entities
 {
     public class Payment
     {
@@ -24,7 +24,7 @@
 
         public bool IsDeleted { get; set; }
 
-        // Navigation Properties
+
         public virtual Order? Order { get; set; }
         public virtual ICollection<Promotion> PromotionUses { get; set; } = new List<Promotion>();
     }

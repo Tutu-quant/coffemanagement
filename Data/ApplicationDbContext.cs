@@ -5,10 +5,73 @@ namespace Quản_lý_quán_cafe.Data
 {
     public class ApplicationDbContext : DbContext
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        private readonly Quản_lý_quán_cafe.Realtime.IRealtimeUpdateNotifier _realtimeNotifier;
+
+        public ApplicationDbContext(
+            DbContextOptions<ApplicationDbContext> options,
+            Quản_lý_quán_cafe.Realtime.IRealtimeUpdateNotifier realtimeNotifier)
             : base(options)
         {
+            _realtimeNotifier = realtimeNotifier;
         }
+
+        public override int SaveChanges()
+        {
+            var trackedChanges = CaptureRealtimeChanges();
+            var result = base.SaveChanges();
+            _realtimeNotifier.NotifyAsync(MaterializeChanges(trackedChanges)).GetAwaiter().GetResult();
+            return result;
+        }
+
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            var trackedChanges = CaptureRealtimeChanges();
+            var result = await base.SaveChangesAsync(cancellationToken);
+            await _realtimeNotifier.NotifyAsync(MaterializeChanges(trackedChanges), cancellationToken);
+            return result;
+        }
+
+        private List<(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry Entry, string ChangeType)> CaptureRealtimeChanges() =>
+            ChangeTracker.Entries()
+                .Where(entry => entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
+                .Where(entry => entry.Entity is Role or User or Employee or Customer or Category or Product
+                    or Order or OrderDetail or Payment or RestaurantTable or Reservation or Promotion
+                    or Review or PointHistory or PaymentAccountSetting or PaymentGatewaySetting)
+                .Select(entry => (entry, entry.State.ToString()))
+                .ToList();
+
+        private static IReadOnlyCollection<Quản_lý_quán_cafe.Realtime.EntityChange> MaterializeChanges(
+            IEnumerable<(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry Entry, string ChangeType)> trackedChanges) =>
+            trackedChanges
+                .Select(change => new Quản_lý_quán_cafe.Realtime.EntityChange(
+                    change.Entry.Metadata.ClrType.Name,
+                    GetEntityId(change.Entry.Entity),
+                    change.ChangeType))
+                .Where(change => change.EntityId > 0)
+                .GroupBy(change => new { change.EntityType, change.EntityId, change.ChangeType })
+                .Select(group => group.First())
+                .ToArray();
+
+        private static int GetEntityId(object entity) => entity switch
+        {
+            Order item => item.OrderID,
+            OrderDetail item => item.OrderDetailID,
+            Payment item => item.PaymentID,
+            RestaurantTable item => item.TableID,
+            Reservation item => item.ReservationID,
+            Product item => item.ProductID,
+            Category item => item.CategoryID,
+            Customer item => item.CustomerID,
+            Employee item => item.EmployeeID,
+            User item => item.UserID,
+            Role item => item.RoleID,
+            Promotion item => item.PromotionID,
+            Review item => item.ReviewID,
+            PointHistory item => item.PointHistoryID,
+            PaymentAccountSetting item => item.PaymentAccountSettingID,
+            PaymentGatewaySetting item => item.PaymentGatewaySettingID,
+            _ => 0
+        };
 
         public DbSet<Role> Roles { get; set; }
         public DbSet<User> Users { get; set; }

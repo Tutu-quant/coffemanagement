@@ -79,8 +79,8 @@ namespace Quản_lý_quán_cafe.Services.Interfaces
             int pageSize = 20);
 
         Task<List<Order>> GetOrdersByPaymentIdAsync(int paymentId);
-            
-        
+
+
         #endregion
     }
 }

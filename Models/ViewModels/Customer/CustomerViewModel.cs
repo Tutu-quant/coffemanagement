@@ -29,7 +29,7 @@ namespace Quản_lý_quán_cafe.Models.ViewModels.Customer
         public string? SelectedMembershipTier { get; set; }
         public string? SortBy { get; set; }
 
-        // Dashboard Statistics
+
         public int TotalCustomers { get; set; }
         public int VIPCustomers { get; set; }
         public long TotalPoints { get; set; }

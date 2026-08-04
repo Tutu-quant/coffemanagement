@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Quản_lý_quán_cafe.Data;
 using Quản_lý_quán_cafe.Models.Entities;
 using Quản_lý_quán_cafe.Models.ViewModels.Customer;
@@ -170,11 +170,11 @@ namespace Quản_lý_quán_cafe.Services
         public async Task<CustomerStatisticsViewModel> GetStatisticsAsync()
         {
             var totalCustomers = await _repository.GetCountAsync();
-            var vipCustomers = await _repository.GetCountAsync(); // VIP = Diamond + VIP tier
+            var vipCustomers = await _repository.GetCountAsync();
             var totalPoints = await _repository.GetTotalPointsAsync();
             var customersToday = await _repository.GetCountTodayAsync();
 
-            // Tính VIP từ database
+
             var vipCount = await _context.Customers
                 .Where(c => !c.IsDeleted && (c.MembershipTier == "VIP" || c.MembershipTier == "Diamond"))
                 .CountAsync();

@@ -11,6 +11,7 @@ using Quản_lý_quán_cafe.Services.Interfaces;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddSignalR();
 builder.Services.AddDataProtection();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -41,6 +42,8 @@ builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRestaurantTableService, RestaurantTableService>();
 builder.Services.AddSingleton<PaymentGatewaySecretProtector>();
+builder.Services.AddSingleton<Quản_lý_quán_cafe.Realtime.IRealtimeUpdateNotifier,
+    Quản_lý_quán_cafe.Realtime.RealtimeUpdateNotifier>();
 
 var app = builder.Build();
 
@@ -68,5 +71,7 @@ app.MapControllerRoute(
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+app.MapHub<Quản_lý_quán_cafe.Realtime.AppStateHub>("/hubs/app-state");
 
 await app.RunAsync();

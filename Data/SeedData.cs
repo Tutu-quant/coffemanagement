@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Quản_lý_quán_cafe.Models.Entities;
 using Quản_lý_quán_cafe.Repository;
 using System.Security.Cryptography;
@@ -12,7 +12,7 @@ namespace Quản_lý_quán_cafe.Data
         {
             try
             {
-                // Create database if not exists
+
                 await context.Database.EnsureCreatedAsync();
                 await context.Database.ExecuteSqlRawAsync("""
                     CREATE TABLE IF NOT EXISTS PaymentAccountSettings (
@@ -72,26 +72,26 @@ namespace Quản_lý_quán_cafe.Data
                     );
                     """);
 
-                // Seed Roles
+
                 await SeedRolesAsync(context);
 
-                // Seed Employees
+
                 await SeedEmployeesAsync(context);
 
-                // Seed Users
+
                 await SeedUsersAsync(context);
 
-                // Seed Categories
+
                 await SeedCategoriesAsync(context);
 
-                // Seed Products
+
                 await SeedProductsAsync(context);
                 await SeedDemoProductsAsync(context);
 
-                // Seed Customers
+
                 await SeedCustomersAsync(context);
 
-                // Seed RestaurantTables
+
                 await SeedRestaurantTablesAsync(context);
 
                 await context.SaveChangesAsync();

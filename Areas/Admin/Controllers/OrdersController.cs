@@ -158,10 +158,6 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
         }
 
         #region Helper Methods
-
-        /// <summary>
-        /// Map Order entity sang OrderListViewModel
-        /// </summary>
         private List<OrderListViewModel> MapToOrderListViewModels(List<Models.Entities.Order> orders)
         {
             return orders.Select(o => new OrderListViewModel
@@ -170,7 +166,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 OrderCode = $"#{o.OrderID:D6}",
                 CustomerName = o.Customer?.CustomerName ?? "N/A",
                 TableNumber = o.Table?.TableNumber ?? "N/A",
-                EmployeeName = "N/A", // TODO: Add Employee info if needed
+                EmployeeName = "N/A",
                 OrderStatus = o.OrderStatus ?? "Unknown",
                 PaymentStatus = o.Payment?.PaymentStatus ?? "Pending",
                 TotalAmount = o.TotalAmount,
@@ -179,10 +175,6 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 StatusBadgeClass = GetStatusBadgeClass(o.OrderStatus)
             }).ToList();
         }
-
-        /// <summary>
-        /// Map Order entity sang OrderDetailViewModel
-        /// </summary>
         private OrderDetailViewModel MapToOrderDetailViewModel(Models.Entities.Order order)
         {
             var viewModel = new OrderDetailViewModel
@@ -193,32 +185,24 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 OrderStatus = order.OrderStatus ?? "Unknown",
                 CompletedDate = order.CompletedDate?.ToLocalTime(),
                 Notes = order.Notes,
-
-                // Customer info
                 CustomerId = order.CustomerID,
                 CustomerName = order.Customer?.CustomerName,
                 CustomerPhone = order.Customer?.Phone,
                 CustomerEmail = order.Customer?.Email,
-
-                // Table info
                 TableId = order.TableID,
                 TableNumber = order.Table?.TableNumber,
                 TableCapacity = order.Table?.Capacity,
-
-                // Payment info
                 PaymentId = order.PaymentID,
                 PaymentStatus = order.Payment?.PaymentStatus ?? "Pending",
                 TotalAmount = order.TotalAmount,
                 PaidAmount = order.Payment?.Amount ?? 0,
                 PaidDate = order.Payment != null ? order.Payment.CreatedAt.ToLocalTime() : (DateTime?)null,
-
-                // Items
                 Items = order.OrderDetails?.Select(od => new OrderItemViewModel
                 {
                     OrderDetailId = od.OrderDetailID,
                     ProductId = od.ProductID,
                     ProductName = od.Product?.ProductName ?? "Unknown",
-                    Size = null, // OrderDetail doesn't have Size property
+                    Size = null,
                     UnitPrice = od.UnitPrice,
                     Quantity = od.Quantity,
                     Notes = od.Notes
@@ -230,10 +214,6 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
 
             return viewModel;
         }
-
-        /// <summary>
-        /// Lấy CSS class cho status badge
-        /// </summary>
         private string GetStatusBadgeClass(string? status)
         {
             return status switch
@@ -247,10 +227,6 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 _ => "badge-light"
             };
         }
-
-        /// <summary>
-        /// Tạo danh sách sự kiện timeline cho đơn hàng
-        /// </summary>
         private List<OrderTimelineEventViewModel> GenerateOrderTimeline(Models.Entities.Order order)
         {
             var timeline = new List<OrderTimelineEventViewModel>
@@ -288,10 +264,6 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
 
             return timeline.OrderBy(e => e.EventDate).ToList();
         }
-
-        /// <summary>
-        /// Lấy danh sách tùy chọn trạng thái
-        /// </summary>
         private List<SelectListItem> GetStatusOptions(string? selectedStatus = null)
         {
             var statuses = new[]
@@ -311,10 +283,6 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 Selected = s == selectedStatus
             }).ToList();
         }
-
-        /// <summary>
-        /// Lấy tên hiển thị của trạng thái
-        /// </summary>
         private string GetStatusDisplayName(string status)
         {
             return status switch

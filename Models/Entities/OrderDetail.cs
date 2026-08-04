@@ -1,4 +1,4 @@
-﻿namespace Quản_lý_quán_cafe.Models.Entities
+namespace Quản_lý_quán_cafe.Models.Entities
 {
     public class OrderDetail
     {
@@ -22,7 +22,7 @@
 
         public bool IsDeleted { get; set; }
 
-        // Navigation Properties
+
         public virtual Order? Order { get; set; }
         public virtual Product? Product { get; set; }
     }
