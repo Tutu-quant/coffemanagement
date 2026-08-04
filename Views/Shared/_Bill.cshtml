@@ -10,6 +10,13 @@
         <div>
             <div><strong>Mã đơn:</strong> @Model.OrderCode</div>
             <div><strong>Bàn:</strong> @(string.IsNullOrEmpty(Model.TableNumber) ? "Mang đi" : Model.TableNumber)</div>
+            @if (!string.IsNullOrEmpty(Model.CustomerName) || !string.IsNullOrEmpty(Model.CustomerEmail))
+            {
+                <div style="margin-top:6px; font-size:13px; color:#333;">
+                    @if (!string.IsNullOrEmpty(Model.CustomerName)) { <div>Tên KH: @Model.CustomerName</div> }
+                    @if (!string.IsNullOrEmpty(Model.CustomerEmail)) { <div>Email: @Model.CustomerEmail</div> }
+                </div>
+            }
         </div>
         <div style="text-align:right">
             <div>@Model.OrderDate.ToString("dd/MM/yyyy")</div>

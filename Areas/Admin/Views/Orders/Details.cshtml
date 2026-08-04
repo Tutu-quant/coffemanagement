@@ -165,6 +165,10 @@
                         <label>Ngày thanh toán:</label>
                         <span>@Model.PaidDate.Value.ToString("dd/MM/yyyy HH:mm:ss")</span>
                     </div>
+                <div class="info-row">
+                    <label>Nhân viên thao tác:</label>
+                    <span>@(ViewContext.HttpContext.Session.GetString("FullName") ?? ViewContext.HttpContext.User.Identity?.Name ?? "-")</span>
+                </div>
                 }
             </div>
         </div>

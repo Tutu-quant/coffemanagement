@@ -139,32 +139,7 @@
     </div>
 </div>
 
-<!-- Recent Orders -->
-@if (Model.RecentOrders.Any())
-{
-    <div class="order-panel" style="margin-top: 2rem;">
-        <h3 class="order-panel-title">
-            <i class="bi bi-clock-history"></i>
-            Đơn gần đây
-        </h3>
-        <div class="order-list">
-            @foreach (var order in Model.RecentOrders)
-            {
-                <a href="~/Cashier/POS?orderId=@order.OrderID" class="order-item">
-                    <div class="order-item-code">
-                        Order #@order.OrderCode
-                    </div>
-                    <div class="order-item-table">
-                        📍 @order.TableName - @order.CreatedAt.ToString("HH:mm")
-                    </div>
-                    <div class="order-item-amount">
-                        @order.TotalAmount.ToString("N0")đ (@order.ItemCount) món
-                    </div>
-                </a>
-            }
-        </div>
-    </div>
-}
+<!-- Recent Orders removed for Cashier UI -->
 
 @section Scripts {
     <script>

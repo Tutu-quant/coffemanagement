@@ -95,9 +95,9 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             {
                 OrderId = order.OrderID,
                 OrderCode = $"#{order.OrderID:D6}",
-                OrderDate = order.OrderDate,
+                OrderDate = order.OrderDate.ToLocalTime(),
                 OrderStatus = order.OrderStatus ?? "Unknown",
-                CompletedDate = order.CompletedDate,
+                CompletedDate = order.CompletedDate?.ToLocalTime(),
                 Notes = order.Notes,
 
                 CustomerId = order.CustomerID,
@@ -113,7 +113,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 PaymentStatus = order.Payment?.PaymentStatus ?? "Pending",
                 TotalAmount = order.TotalAmount,
                 PaidAmount = order.Payment?.Amount ?? 0,
-                PaidDate = order.Payment?.CreatedAt,
+                PaidDate = order.Payment != null ? order.Payment.CreatedAt.ToLocalTime() : (DateTime?)null,
 
                 Items = order.OrderDetails?.Select(od => new Models.ViewModels.Order.OrderItemViewModel
                 {
@@ -136,10 +136,10 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
         private List<Models.ViewModels.Order.OrderTimelineEventViewModel> GenerateOrderTimeline(Models.Entities.Order order)
         {
             var list = new List<Models.ViewModels.Order.OrderTimelineEventViewModel>();
-            list.Add(new Models.ViewModels.Order.OrderTimelineEventViewModel { EventDate = order.OrderDate, EventType = "Created", EventDescription = "Order created" });
+            list.Add(new Models.ViewModels.Order.OrderTimelineEventViewModel { EventDate = order.OrderDate.ToLocalTime(), EventType = "Created", EventDescription = "Order created" });
             if (order.CompletedDate.HasValue)
             {
-                list.Add(new Models.ViewModels.Order.OrderTimelineEventViewModel { EventDate = order.CompletedDate.Value, EventType = "Completed", EventDescription = "Order completed" });
+                list.Add(new Models.ViewModels.Order.OrderTimelineEventViewModel { EventDate = order.CompletedDate.Value.ToLocalTime(), EventType = "Completed", EventDescription = "Order completed" });
             }
             return list;
         }

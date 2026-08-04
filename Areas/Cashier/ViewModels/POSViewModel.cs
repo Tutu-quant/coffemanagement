@@ -40,7 +40,7 @@
         public int OrderDetailID { get; set; }
         public int ProductID { get; set; }
         public string ProductName { get; set; } = string.Empty;
-        public string Size { get; set; } = "M"; // S, M, L
+        public string Size { get; set; } = "M";
         public decimal Price { get; set; }
         public int Quantity { get; set; }
         public decimal Total => Price * Quantity;
@@ -51,9 +51,10 @@
     {
         public int? CustomerID { get; set; }
         public string Phone { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public int RewardPoints { get; set; }
-        public string MembershipTier { get; set; } = "Member"; // Member, Silver, Gold
+        public string MembershipTier { get; set; } = "Member";
     }
 }
 

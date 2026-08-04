@@ -8,15 +8,15 @@
     <div class="payment-summary">
         <div class="summary-row">
             <span>Tạm tính:</span>
-            <span id="subtotalDisplay">0đ</span>
+            <span id="subtotalDisplay">@($"{Model.Subtotal:N0}đ")</span>
         </div>
         <div class="summary-row">
             <span>Giảm giá:</span>
-            <span id="discountDisplay">0đ</span>
+            <span id="discountDisplay">@($"{Model.DiscountAmount:N0}đ")</span>
         </div>
         <div class="summary-row total">
             <span>Tổng cộng:</span>
-            <span id="totalDisplay">0đ</span>
+            <span id="totalDisplay">@($"{Model.Total:N0}đ")</span>
         </div>
     </div>
 
@@ -35,22 +35,22 @@
     <div class="payment-methods">
         <div class="payment-header-small">PHƯƠNG THỨC THANH TOÁN</div>
         <div class="method-buttons">
-            <button class="method-btn active" onclick="selectPaymentMethod('cash', this)">
+            <button class="method-btn @(Model.PaymentMethod == "cash" ? "active" : "")" onclick="selectPaymentMethod('cash', this)">
                 <i class="bi bi-wallet2"></i> Tiền mặt
             </button>
-            <button class="method-btn" onclick="selectPaymentMethod('qr', this)">
+            <button class="method-btn @(Model.PaymentMethod == "qr" ? "active" : "")" onclick="selectPaymentMethod('qr', this)">
                 <i class="bi bi-wallet2"></i> MoMo
             </button>
         </div>
     </div>
 
     <!-- Nhập tiền khách đưa (chỉ hiện khi tiền mặt) -->
-    <div class="payment-input" id="cashPaymentFields">
+    <div class="payment-input" id="cashPaymentFields" style="display:@(Model.PaymentMethod == "cash" ? "block" : "none")">
         <label>Tiền khách đưa (ngàn đồng)</label>
-        <input type="number" class="form-control" placeholder="VD: 200" id="paidAmount" onchange="calculateChange()" />
-        <div class="change-row" id="changeRow" style="display:none; margin-top:8px;">
+        <input type="number" class="form-control" placeholder="VD: 200" id="paidAmount" onchange="calculateChange()" value="@(Model.PaidAmount > 0 ? (Model.PaidAmount/1000).ToString() : string.Empty)" @(Model.PaymentMethod == "qr" ? "disabled" : "") />
+        <div class="change-row" id="changeRow" style="display:@(Model.PaymentMethod == "cash" ? "block" : "none"); margin-top:8px;">
             <label for="changeAmountDisplay">Tiền trả lại</label>
-            <input type="text" id="changeAmountDisplay" class="form-control" readonly value="0đ" />
+            <input type="text" id="changeAmountDisplay" class="form-control" readonly value="@($"{Model.ChangeAmount:N0}đ")" />
         </div>
     </div>
 
