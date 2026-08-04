@@ -16,7 +16,7 @@
             <i class="bi bi-arrow-left"></i>
             Quay lại
         </a>
-        <a href="@Url.Action("Print", "Orders", new { id = Model.OrderId })" target="_blank" class="btn btn-primary">
+        <a href="@Url.Action("Print", "Orders", new { id = Model.OrderId, returnUrl = Url.Action("Details", "Orders", new { id = Model.OrderId }) })" target="_blank" class="btn btn-primary">
             <i class="bi bi-printer"></i>
             In hóa đơn
         </a>

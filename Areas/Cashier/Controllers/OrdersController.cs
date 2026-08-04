@@ -89,6 +89,33 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> Print(int id, string? returnUrl = null)
+        {
+            if (id <= 0) return RedirectToAction(nameof(Index));
+            try
+            {
+                var order = await _orderService.GetOrderByIdAsync(id);
+                if (order == null) return RedirectToAction(nameof(Index));
+                var viewModel = MapToOrderDetailViewModel(order);
+                // reuse Admin print view for printing in cashier area
+                // only allow local returnUrl values to avoid open redirects
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                {
+                    ViewData["ReturnUrl"] = returnUrl;
+                }
+                else
+                {
+                    ViewData["ReturnUrl"] = null;
+                }
+                return View("~/Areas/Admin/Views/Orders/Print.cshtml", viewModel);
+            }
+            catch
+            {
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
         private OrderDetailViewModel MapToOrderDetailViewModel(Models.Entities.Order order)
         {
             var viewModel = new OrderDetailViewModel

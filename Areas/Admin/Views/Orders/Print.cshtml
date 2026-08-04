@@ -8,7 +8,15 @@
     @await Html.PartialAsync("~/Views/Shared/_Bill.cshtml", Model)
     <div style="text-align:center; margin-top:12px;">
         <button class="btn btn-primary" onclick="window.print()">In hóa đơn</button>
-        <a class="btn btn-secondary ms-2" href="@Url.Action("Details", "Orders")">Quay lại</a>
+        @{ var returnUrl = ViewData["ReturnUrl"] as string; }
+        @if (!string.IsNullOrEmpty(returnUrl))
+        {
+            <a class="btn btn-secondary ms-2" href="@returnUrl">Quay lại</a>
+        }
+        else
+        {
+            <a class="btn btn-secondary ms-2" href="@Url.Action("Details", "Orders", new { id = Model.OrderId })">Quay lại</a>
+        }
     </div>
 </div>
 
@@ -18,7 +26,6 @@
             window.print();
         }, 300);
     });
-    window.onafterprint = function() {
-        try { window.close(); } catch (e) {  }
-    };
+    // NOTE: do not automatically close the window after printing or when the print dialog is cancelled.
+    // The user should remain on the print page and explicitly click "Quay lại" to return.
 </script>
