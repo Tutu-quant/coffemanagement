@@ -16,6 +16,10 @@
             <i class="bi bi-arrow-left"></i>
             Quay lại
         </a>
+        <a href="@Url.Action("Print", "Orders", new { id = Model.OrderId })" target="_blank" class="btn btn-primary">
+            <i class="bi bi-printer"></i>
+            In hóa đơn
+        </a>
     </div>
 </div>
 
@@ -141,15 +145,15 @@
             <div class="card-body">
                 <div class="info-row">
                     <label>Tổng tiền:</label>
-                    <strong style="color: var(--coffee-brown); font-size: 18px;">@Model.TotalAmount.ToString("C")</strong>
+                    <strong style="color: var(--coffee-brown); font-size: 18px;">@($"{Model.TotalAmount:N0}đ")</strong>
                 </div>
                 <div class="info-row">
                     <label>Đã thanh toán:</label>
-                    <span style="color: #28a745;">@Model.PaidAmount.ToString("C")</span>
+                    <span style="color: #28a745;">@($"{Model.PaidAmount:N0}đ")</span>
                 </div>
                 <div class="info-row">
                     <label>Còn lại:</label>
-                    <span style="color: @(Model.RemainingAmount > 0 ? "#ffc107" : "#28a745");">@Model.RemainingAmount.ToString("C")</span>
+                    <span style="color: @(Model.RemainingAmount > 0 ? "#ffc107" : "#28a745");">@($"{Model.RemainingAmount:N0}đ")</span>
                 </div>
                 <div class="info-row">
                     <label>Trạng thái:</label>
@@ -191,11 +195,11 @@
                         {
                             <tr>
                                 <td><strong>@item.ProductName</strong></td>
-                                <td style="text-align: right;">@item.UnitPrice.ToString("C")</td>
+                                <td style="text-align: right;">@($"{item.UnitPrice:N0}đ")</td>
                                 <td style="text-align: center;">
                                     <span class="badge bg-light text-dark">@item.Quantity</span>
                                 </td>
-                                <td style="text-align: right;"><strong>@item.TotalPrice.ToString("C")</strong></td>
+                                <td style="text-align: right;"><strong>@($"{item.TotalPrice:N0}đ")</strong></td>
                                 <td>
                                     @if (!string.IsNullOrEmpty(item.Notes))
                                     {

@@ -1,0 +1,63 @@
+@model Quản_lý_quán_cafe.Models.ViewModels.Order.OrderDetailViewModel
+
+<div class="bill-paper" id="billPaper" style="font-family: 'Inter', sans-serif; max-width:420px; margin:0 auto; padding:16px; background:#fff; color:#000;">
+    <div style="text-align:center; margin-bottom:8px;">
+        <h3 style="margin:0;">BrewPoint Cafe</h3>
+        <div style="font-size:12px; color:#666;">Hóa đơn bán hàng</div>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; font-size:13px; margin:8px 0;">
+        <div>
+            <div><strong>Mã đơn:</strong> @Model.OrderCode</div>
+            <div><strong>Bàn:</strong> @(string.IsNullOrEmpty(Model.TableNumber) ? "Mang đi" : Model.TableNumber)</div>
+        </div>
+        <div style="text-align:right">
+            <div>@Model.OrderDate.ToString("dd/MM/yyyy")</div>
+            <div>@Model.OrderDate.ToString("HH:mm:ss")</div>
+        </div>
+    </div>
+
+    <hr />
+
+    <div>
+        @foreach (var it in Model.Items)
+        {
+            <div style="display:flex; justify-content:space-between; font-size:13px; margin:6px 0;">
+                <div style="flex:1">
+                    <div style="font-weight:600">@it.ProductName</div>
+                    <div style="font-size:12px; color:#666">x@it.Quantity</div>
+                </div>
+                <div style="min-width:80px; text-align:right">@it.TotalPrice.ToString("N0")đ</div>
+            </div>
+        }
+    </div>
+
+    <hr />
+
+    <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:700; margin-top:8px;">
+        <div>TỔNG</div>
+        <div>@Model.TotalAmount.ToString("N0")đ</div>
+    </div>
+
+    <div style="font-size:13px; color:#666; margin-top:8px;">
+        <div>Thanh toán: @(Model.PaymentStatus ?? "-")</div>
+        <div>Ngày thanh toán: @(Model.PaidDate.HasValue ? Model.PaidDate.Value.ToString("dd/MM/yyyy HH:mm:ss") : "-")</div>
+        <div>Nhân viên: @(ViewContext.HttpContext.Session.GetString("FullName") ?? ViewContext.HttpContext.User.Identity?.Name ?? "-")</div>
+    </div>
+
+    <div style="text-align:center; margin-top:12px; font-size:12px; color:#666;">Cảm ơn quý khách! Hẹn gặp lại.</div>
+</div>
+
+    <style>
+    @@media print {
+        body * { visibility: hidden; }
+        #billPaper, #billPaper * { visibility: visible; }
+        #billPaper { position: absolute; left: 0; top: 0; }
+    }
+    </style>
+
+<script>
+    function printBill() {
+        window.print();
+    }
+</script>

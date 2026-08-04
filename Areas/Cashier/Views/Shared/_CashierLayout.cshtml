@@ -2,4 +2,8 @@
     Layout = "~/Views/Shared/_UnifiedLayout.cshtml";
 }
 
+@section Head {
+    @RenderSection("Head", required: false)
+}
+
 @RenderBody()

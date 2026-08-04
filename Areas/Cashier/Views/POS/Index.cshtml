@@ -21,7 +21,7 @@
     <script>
         let currentTableId = @(Model.CurrentTable?.TableID ?? 0);
         let currentDiscountType = 'none';
-        let currentPaymentMethod = 'cash';
+        let currentPaymentMethod = '@(Model.PaymentMethod ?? "cash")';
         let currentQrIntent = null;
         let currentCustomerId = @(Model.Customer?.CustomerID?.ToString() ?? "null");
         const subtotal = @Model.Subtotal.ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -110,6 +110,13 @@
             const change = Math.max(0, paid - subtotal + getDiscount());
             const input = document.getElementById('paidAmount');
             if (input) input.title = `Tiền thừa: ${formatMoney(change)}`;
+            const changeDisplay = document.getElementById('changeAmountDisplay');
+            const changeRow = document.getElementById('changeRow');
+            if (changeDisplay) {
+                if (changeDisplay.tagName === 'INPUT') changeDisplay.value = formatMoney(change);
+                else changeDisplay.textContent = formatMoney(change);
+            }
+            if (changeRow) changeRow.style.display = (currentPaymentMethod === 'cash') ? 'block' : 'none';
         }
 
         function formatMoney(value) {
@@ -121,11 +128,23 @@
             document.querySelectorAll('.method-btn').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
             const paidInput = document.getElementById('paidAmount');
+            const cashFields = document.getElementById('cashPaymentFields');
             if (paidInput) {
                 paidInput.disabled = method === 'qr';
                 if (method === 'qr') paidInput.value = '';
             }
+            if (cashFields) cashFields.style.display = (method === 'cash') ? 'block' : 'none';
+            calculateChange();
         }
+
+        // initialize visibility on load
+        document.addEventListener('DOMContentLoaded', function() {
+            const cashFields = document.getElementById('cashPaymentFields');
+            const paidInput = document.getElementById('paidAmount');
+            if (cashFields) cashFields.style.display = (currentPaymentMethod === 'cash') ? 'block' : 'none';
+            if (paidInput) paidInput.disabled = (currentPaymentMethod === 'qr');
+            calculateTotal();
+        });
 
         function proceedCheckout() {
             if (currentTableId === 0) {
@@ -149,6 +168,11 @@
                 discountValue: document.getElementById('discountValue')?.value || 0,
                 notes: document.getElementById('orderNotes')?.value || ''
             }).then(data => {
+                // Open printable bill in new tab, then reload POS
+                try {
+                    const printUrl = `/Admin/Orders/Print/${data.orderId}`;
+                    window.open(printUrl, '_blank');
+                } catch (e) { /* ignore */ }
                 alert(`Thanh toán thành công. Tiền thừa: ${formatMoney(data.change)}`);
                 window.location.href = '/Cashier/POS';
             }).catch(error => alert(error.message));

@@ -44,10 +44,14 @@
         </div>
     </div>
 
-    <!-- Nhập tiền khách đưa -->
-    <div class="payment-input">
+    <!-- Nhập tiền khách đưa (chỉ hiện khi tiền mặt) -->
+    <div class="payment-input" id="cashPaymentFields">
         <label>Tiền khách đưa (ngàn đồng)</label>
         <input type="number" class="form-control" placeholder="VD: 200" id="paidAmount" onchange="calculateChange()" />
+        <div class="change-row" id="changeRow" style="display:none; margin-top:8px;">
+            <label for="changeAmountDisplay">Tiền trả lại</label>
+            <input type="text" id="changeAmountDisplay" class="form-control" readonly value="0đ" />
+        </div>
     </div>
 
     <!-- Nút thanh toán -->

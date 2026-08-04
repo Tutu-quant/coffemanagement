@@ -17,6 +17,26 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
         }
 
         /// <summary>
+        /// Print-friendly bill view
+        /// GET: /Admin/Orders/Print/5
+        /// </summary>
+        public async Task<IActionResult> Print(int id)
+        {
+            if (id <= 0) return RedirectToAction(nameof(Index));
+            try
+            {
+                var order = await _orderService.GetOrderByIdAsync(id);
+                if (order == null) return RedirectToAction(nameof(Index));
+                var viewModel = MapToOrderDetailViewModel(order);
+                return View(viewModel);
+            }
+            catch
+            {
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        /// <summary>
         /// Danh sách đơn hàng với phân trang
         /// GET: /Admin/Orders
         /// </summary>

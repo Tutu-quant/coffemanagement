@@ -1,42 +1,85 @@
-@model List<dynamic>
+@model Quản_lý_quán_cafe.Models.ViewModels.Order.OrderListContainerViewModel
 
 @{
     ViewData["Title"] = "Đơn hàng";
     ViewData["PageTitle"] = "Đơn hàng";
     ViewData["PageBreadcrumb"] = "<span class='breadcrumb-item'><i class='bi bi-receipt'></i> Đơn hàng</span>";
+    Layout = "~/Areas/Cashier/Views/Shared/_CashierLayout.cshtml";
 }
 
-<div class="page-header-cashier">
-    <h1 class="page-title">📋 Quản lý đơn hàng</h1>
+@section Head {
+    <link rel="stylesheet" href="~/css/order.css" />
+}
+
+<!-- Page Header -->
+<div class="page-header mb-3">
+    <div>
+        <p style="color: var(--text-light); margin: 0; font-size: 14px;">BrewPoint Cafe · Quản lý bán hàng</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="@Url.Action("Index")" class="btn btn-outline-secondary" title="Làm mới trang">
+            <i class="bi bi-arrow-clockwise"></i>
+            Làm mới
+        </a>
+    </div>
 </div>
 
-<div class="alert alert-info" role="alert">
-    <i class="bi bi-info-circle"></i>
-    <strong>Thông báo:</strong> Trang quản lý đơn hàng đang phát triển. Vui lòng quay lại sau.
-</div>
-
-<div class="card">
-    <div class="card-body">
+<!-- Orders Table -->
+<div class="card orders-card">
+    @if (Model.Orders.Any())
+    {
         <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-light">
+            <table class="table table-hover table-compact">
+                <thead>
                     <tr>
-                        <th>Mã đơn</th>
-                        <th>Bàn</th>
-                        <th>Trạng thái</th>
-                        <th>Tổng tiền</th>
-                        <th>Thời gian</th>
-                        <th>Hành động</th>
+                        <th class="col-code">Mã đơn</th>
+                        <th class="col-table">Bàn</th>
+                        <th class="col-customer">Khách</th>
+                        <th class="col-employee">Nhân viên</th>
+                        <th class="col-items">Món</th>
+                        <th class="col-status">Trạng thái</th>
+
+                        <th class="col-amount">Tổng tiền</th>
+                        <th class="col-time">Thời gian</th>
+                        <th class="col-action">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
-                            <i class="bi bi-inbox"></i> Chưa có dữ liệu
-                        </td>
-                    </tr>
+                    @foreach (var order in Model.Orders)
+                    {
+                        <tr>
+                            <td class="col-code">
+                                <strong style="color: var(--coffee-brown);">@order.OrderCode</strong>
+                            </td>
+                            <td class="col-table">
+                                @if (!string.IsNullOrEmpty(order.TableNumber))
+                                {
+                                    <span>Bàn @order.TableNumber</span>
+                                }
+                                else
+                                {
+                                    <span>Takeaway</span>
+                                }
+                            </td>
+                            <td class="col-customer">@order.CustomerName</td>
+                            <td class="col-employee">@order.EmployeeName</td>
+                            <td class="col-items">@order.ItemCount</td>
+                            <td class="col-status"><span class="badge @order.StatusBadgeClass">@order.OrderStatus</span></td>
+
+                            <td class="col-amount">@order.TotalAmount.ToString("N0")đ</td>
+                            <td class="col-time">@order.OrderDate.ToString("dd/MM HH:mm")</td>
+                            <td class="col-action">
+                                <a href="@Url.Action("Details", "Orders", new { area = "Cashier", id = order.OrderId })" class="btn btn-sm btn-outline-secondary">Xem</a>
+                            </td>
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
-    </div>
+    }
+    else
+    {
+        <div class="p-4 text-center text-muted">Không có đơn hàng</div>
+    }
 </div>
+

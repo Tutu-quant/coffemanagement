@@ -1,0 +1,21 @@
+@model OrderDetailViewModel
+
+@{
+    Layout = null; // simple print page
+}
+
+<div style="padding:12px; background:#f6f6f6; min-height:100vh;">
+    @await Html.PartialAsync("~/Views/Shared/_Bill.cshtml", Model)
+    <div style="text-align:center; margin-top:12px;">
+        <button class="btn btn-primary" onclick="window.print()">In hóa đơn</button>
+        <a class="btn btn-secondary ms-2" href="@Url.Action("Details", "Orders")">Quay lại</a>
+    </div>
+</div>
+
+<script>
+    // Auto print when opened in new tab
+    window.addEventListener('load', function() {
+        // give a short delay for rendering
+        setTimeout(() => window.print(), 300);
+    });
+</script>
