@@ -57,7 +57,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                     OrderID = lastOrder?.OrderID,
                     OrderCode = $"{lastOrder?.OrderID:D6}",
                     GuestCount = lastOrder?.OrderDetails.Count,
-                    StartTime = lastOrder?.OrderDate,
+                    StartTime = lastOrder != null ? lastOrder.OrderDate.ToLocalTime() : null,
                     TotalAmount = lastOrder?.TotalAmount
                 });
             }
@@ -90,7 +90,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                     TableName = o.Table != null ? o.Table.TableNumber : "N/A",
                     TotalAmount = o.OrderDetails.Where(d => !d.IsDeleted).Sum(d => d.Subtotal),
                     Status = o.OrderStatus,
-                    CreatedAt = o.OrderDate,
+                    CreatedAt = o.OrderDate.ToLocalTime(),
                     ItemCount = o.OrderDetails.Where(d => !d.IsDeleted).Sum(d => d.Quantity)
                 })
                 .ToListAsync();
@@ -110,7 +110,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                     TableName = o.Table?.TableNumber ?? "N/A",
                     TotalAmount = o.TotalAmount,
                     Status = o.OrderStatus,
-                    CreatedAt = o.OrderDate,
+                    CreatedAt = o.OrderDate.ToLocalTime(),
                     ItemCount = o.OrderDetails.Count
                 })
                 .ToList();

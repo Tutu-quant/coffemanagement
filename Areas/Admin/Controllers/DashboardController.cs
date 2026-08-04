@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Quản_lý_quán_cafe.Areas.Admin.ViewModels;
 using Quản_lý_quán_cafe.Data;
 using Quản_lý_quán_cafe.Models.Entities;
+using Quản_lý_quán_cafe.Services;
 
 namespace Quản_lý_quán_cafe.Areas.Admin.Controllers;
 
@@ -10,10 +11,12 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers;
 public class DashboardController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly PaymentGatewaySecretProtector _secretProtector;
 
-    public DashboardController(ApplicationDbContext context)
+    public DashboardController(ApplicationDbContext context, PaymentGatewaySecretProtector secretProtector)
     {
         _context = context;
+        _secretProtector = secretProtector;
     }
 
     [HttpGet]
@@ -104,7 +107,10 @@ public class DashboardController : Controller
             .ToListAsync();
 
         var paymentAccount = await _context.PaymentAccountSettings.AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Provider == "MoMo");
+            .FirstOrDefaultAsync(x => x.Provider == "Placeholder");
+        var paymentGateway = await _context.PaymentGatewaySettings.AsNoTracking()
+            .OrderByDescending(x => x.IsActive)
+            .FirstOrDefaultAsync();
 
         var viewModel = new DashboardViewModel
         {
@@ -134,6 +140,17 @@ public class DashboardController : Controller
                     AccountNumber = paymentAccount.AccountNumber,
                     AccountName = paymentAccount.AccountName,
                     IsActive = paymentAccount.IsActive
+                },
+            PaymentGateway = paymentGateway is null
+                ? new PaymentGatewayViewModel()
+                : new PaymentGatewayViewModel
+                {
+                    Provider = paymentGateway.Provider,
+                    MerchantId = paymentGateway.MerchantId,
+                    Endpoint = paymentGateway.Endpoint,
+                    IsActive = paymentGateway.IsActive,
+                    HasApiKey = !string.IsNullOrWhiteSpace(paymentGateway.ApiKeyProtected),
+                    HasSecretKey = !string.IsNullOrWhiteSpace(paymentGateway.SecretKeyProtected)
                 }
         };
 
@@ -155,12 +172,12 @@ public class DashboardController : Controller
         }
 
         var setting = await _context.PaymentAccountSettings
-            .FirstOrDefaultAsync(x => x.Provider == "MoMo");
+            .FirstOrDefaultAsync(x => x.Provider == "Placeholder");
         if (setting is null)
         {
             setting = new PaymentAccountSetting
             {
-                Provider = "MoMo",
+                Provider = "Placeholder",
                 CreatedAt = DateTime.UtcNow
             };
             _context.PaymentAccountSettings.Add(setting);
@@ -172,7 +189,53 @@ public class DashboardController : Controller
         setting.UpdatedAt = DateTime.UtcNow;
         setting.UpdatedBy = HttpContext.Session.GetString("Username");
         await _context.SaveChangesAsync();
-        TempData["PaymentAccountSuccess"] = "Đã cập nhật tài khoản nhận tiền MoMo.";
+        TempData["PaymentAccountSuccess"] = "Đã cập nhật placeholder tài khoản nhận tiền.";
         return RedirectToAction(nameof(Index), new { paymentSettings = true });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdatePaymentGateway(
+        [Bind(Prefix = "PaymentGateway")] PaymentGatewayViewModel model)
+    {
+        if (HttpContext.Session.GetString("RoleName") != "Admin") return Forbid();
+        if (!ModelState.IsValid)
+        {
+            TempData["PaymentGatewayError"] = string.Join(" ", ModelState.Values
+                .SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+            return RedirectToAction(nameof(Index), new { gatewaySettings = true });
+        }
+
+        var setting = await _context.PaymentGatewaySettings
+            .FirstOrDefaultAsync(x => x.Provider == model.Provider);
+        if (setting is null)
+        {
+            setting = new PaymentGatewaySetting
+            {
+                Provider = model.Provider,
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.PaymentGatewaySettings.Add(setting);
+        }
+
+        if (model.IsActive)
+        {
+            var otherGateways = await _context.PaymentGatewaySettings
+                .Where(x => x.PaymentGatewaySettingID != setting.PaymentGatewaySettingID && x.IsActive)
+                .ToListAsync();
+            foreach (var gateway in otherGateways) gateway.IsActive = false;
+        }
+
+        setting.MerchantId = model.MerchantId.Trim();
+        setting.Endpoint = string.IsNullOrWhiteSpace(model.Endpoint) ? null : model.Endpoint.Trim();
+        setting.IsActive = model.IsActive;
+        if (!string.IsNullOrWhiteSpace(model.ApiKey))
+            setting.ApiKeyProtected = _secretProtector.Protect(model.ApiKey);
+        if (!string.IsNullOrWhiteSpace(model.SecretKey))
+            setting.SecretKeyProtected = _secretProtector.Protect(model.SecretKey);
+        setting.UpdatedAt = DateTime.UtcNow;
+        setting.UpdatedBy = HttpContext.Session.GetString("Username");
+        await _context.SaveChangesAsync();
+        TempData["PaymentGatewaySuccess"] = $"Đã lưu cấu hình {setting.Provider}.";
+        return RedirectToAction(nameof(Index), new { gatewaySettings = true });
     }
 }

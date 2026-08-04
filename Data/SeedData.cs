@@ -30,6 +30,47 @@ namespace Quản_lý_quán_cafe.Data
                     CREATE UNIQUE INDEX IF NOT EXISTS IX_PaymentAccountSettings_Provider
                     ON PaymentAccountSettings (Provider);
                     """);
+                await context.Database.ExecuteSqlRawAsync("""
+                    CREATE TABLE IF NOT EXISTS PaymentGatewaySettings (
+                        PaymentGatewaySettingID INTEGER NOT NULL CONSTRAINT PK_PaymentGatewaySettings PRIMARY KEY AUTOINCREMENT,
+                        Provider TEXT NOT NULL,
+                        MerchantId TEXT NOT NULL,
+                        ApiKeyProtected TEXT NULL,
+                        SecretKeyProtected TEXT NULL,
+                        Endpoint TEXT NULL,
+                        IsActive INTEGER NOT NULL DEFAULT 0,
+                        CreatedAt TEXT NOT NULL,
+                        UpdatedAt TEXT NULL,
+                        UpdatedBy TEXT NULL
+                    );
+                    """);
+                await context.Database.ExecuteSqlRawAsync("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS IX_PaymentGatewaySettings_Provider
+                    ON PaymentGatewaySettings (Provider);
+                    """);
+                await context.Database.ExecuteSqlRawAsync("""
+                    INSERT INTO PaymentAccountSettings
+                        (Provider, AccountNumber, AccountName, IsActive, CreatedAt)
+                    SELECT 'Placeholder', '19074356859019', 'QUAN CAFE THU NGHIEM', 1, CURRENT_TIMESTAMP
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM PaymentAccountSettings WHERE Provider = 'Placeholder'
+                    );
+                    """);
+                await context.Database.ExecuteSqlRawAsync("""
+                    UPDATE PaymentAccountSettings
+                    SET AccountName = 'QUAN CAFE THU NGHIEM', UpdatedAt = CURRENT_TIMESTAMP
+                    WHERE Provider = 'Placeholder'
+                      AND AccountNumber = '19074356859019'
+                      AND AccountName = 'TAI KHOAN QUAN';
+                    """);
+                await context.Database.ExecuteSqlRawAsync("""
+                    INSERT INTO PaymentGatewaySettings
+                        (Provider, MerchantId, Endpoint, IsActive, CreatedAt)
+                    SELECT 'VietQR', '970407', 'https://img.vietqr.io/image', 1, CURRENT_TIMESTAMP
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM PaymentGatewaySettings WHERE Provider = 'VietQR'
+                    );
+                    """);
 
                 // Seed Roles
                 await SeedRolesAsync(context);
@@ -45,6 +86,7 @@ namespace Quản_lý_quán_cafe.Data
 
                 // Seed Products
                 await SeedProductsAsync(context);
+                await SeedDemoProductsAsync(context);
 
                 // Seed Customers
                 await SeedCustomersAsync(context);
@@ -344,6 +386,26 @@ namespace Quản_lý_quán_cafe.Data
             await context.SaveChangesAsync();
         }
 
+        private static async Task SeedDemoProductsAsync(ApplicationDbContext context)
+        {
+            var coffeeCategory = await context.Categories.FirstAsync(c => c.CategoryName == "Cà Phê");
+            var teaCategory = await context.Categories.FirstAsync(c => c.CategoryName == "Trà");
+            var cakeCategory = await context.Categories.FirstAsync(c => c.CategoryName == "Bánh");
+            var now = DateTime.UtcNow;
+            var demoProducts = new[]
+            {
+                new Product { ProductName = "Cà phê sữa đá", Description = "Cà phê pha phin cùng sữa đặc", CategoryID = coffeeCategory.CategoryID, Price = 35000, Quantity = 100, IsActive = true, CreatedAt = now, UpdatedAt = now },
+                new Product { ProductName = "Bạc xỉu", Description = "Sữa thơm béo với một chút cà phê", CategoryID = coffeeCategory.CategoryID, Price = 40000, Quantity = 100, IsActive = true, CreatedAt = now, UpdatedAt = now },
+                new Product { ProductName = "Trà đào cam sả", Description = "Trà đào thanh mát cùng cam và sả", CategoryID = teaCategory.CategoryID, Price = 45000, Quantity = 100, IsActive = true, CreatedAt = now, UpdatedAt = now },
+                new Product { ProductName = "Matcha latte", Description = "Matcha và sữa tươi", CategoryID = teaCategory.CategoryID, Price = 49000, Quantity = 100, IsActive = true, CreatedAt = now, UpdatedAt = now },
+                new Product { ProductName = "Croissant bơ", Description = "Bánh sừng bò bơ nướng giòn", CategoryID = cakeCategory.CategoryID, Price = 32000, Quantity = 50, IsActive = true, CreatedAt = now, UpdatedAt = now }
+            };
+
+            var existingNames = await context.Products.Select(p => p.ProductName).ToListAsync();
+            await context.Products.AddRangeAsync(demoProducts.Where(p => !existingNames.Contains(p.ProductName)));
+            await context.SaveChangesAsync();
+        }
+
         private static async Task SeedCustomersAsync(ApplicationDbContext context)
         {
             if (await context.Customers.AnyAsync())
@@ -375,7 +437,6 @@ namespace Quản_lý_quán_cafe.Data
 
             var tables = new List<RestaurantTable>();
 
-            // Create 10 tables with 2, 4, or 6 seats
             for (int i = 1; i <= 10; i++)
             {
                 int capacity = (i % 3 == 0) ? 6 : (i % 2 == 0) ? 4 : 2;
@@ -395,7 +456,6 @@ namespace Quản_lý_quán_cafe.Data
             await context.SaveChangesAsync();
         }
 
-        // Helper method to hash password
         private static string HashPassword(string password)
         {
             using (var sha256 = SHA256.Create())

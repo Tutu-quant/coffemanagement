@@ -1,16 +1,22 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Quản_lý_quán_cafe.Services.Interfaces;
+using Quản_lý_quán_cafe.Models.ViewModels.Order;
 
 namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
 {
     [Area("Cashier")]
     public class OrdersController : Controller
     {
-        [HttpGet]
-        public IActionResult Index()
+        private readonly IOrderService _orderService;
+
+        public OrdersController(IOrderService orderService)
         {
-<<<<<<< Updated upstream
-            return View();
-=======
+            _orderService = orderService ?? throw new ArgumentNullException(nameof(orderService));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Index(int pageNumber = 1, int pageSize = 20)
+        {
             try
             {
                 if (pageNumber < 1) pageNumber = 1;
@@ -74,9 +80,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 var order = await _orderService.GetOrderByIdAsync(id);
                 if (order == null) return RedirectToAction(nameof(Index));
                 var viewModel = MapToOrderDetailViewModel(order);
-                // provide a Cashier-specific PrintUrl so the shared Admin Details view will open the Cashier Print
-                ViewData["PrintUrl"] = Url.Action("Print", "Orders", new { area = "Cashier", id, returnUrl = Url.Action("Details", "Orders", new { area = "Cashier", id }) });
-                // reuse Admin details view for now (render cashier details using the shared admin view)
+                // reuse Admin details view for now
                 return View("~/Areas/Admin/Views/Orders/Details.cshtml", viewModel);
             }
             catch
@@ -86,7 +90,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Print(int id, string? returnUrl)
+        public async Task<IActionResult> Print(int id, string? returnUrl = null)
         {
             if (id <= 0) return RedirectToAction(nameof(Index));
             try
@@ -94,17 +98,17 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 var order = await _orderService.GetOrderByIdAsync(id);
                 if (order == null) return RedirectToAction(nameof(Index));
                 var viewModel = MapToOrderDetailViewModel(order);
-                // prefer incoming returnUrl (from query) if provided, otherwise default to POS Index
-                if (!string.IsNullOrEmpty(returnUrl))
+                // reuse Admin print view for printing in cashier area
+                // only allow local returnUrl values to avoid open redirects
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 {
                     ViewData["ReturnUrl"] = returnUrl;
                 }
                 else
                 {
-                    ViewData["ReturnUrl"] = Url.Action("Index", "POS", new { area = "Cashier" });
+                    ViewData["ReturnUrl"] = null;
                 }
-                // use Cashier-specific print view
-                return View("~/Areas/Cashier/Views/Orders/Print.cshtml", viewModel);
+                return View("~/Areas/Admin/Views/Orders/Print.cshtml", viewModel);
             }
             catch
             {
@@ -158,6 +162,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
 
         private List<Models.ViewModels.Order.OrderTimelineEventViewModel> GenerateOrderTimeline(Models.Entities.Order order)
         {
+            return View();
             var list = new List<Models.ViewModels.Order.OrderTimelineEventViewModel>();
             list.Add(new Models.ViewModels.Order.OrderTimelineEventViewModel { EventDate = order.OrderDate.ToLocalTime(), EventType = "Created", EventDescription = "Order created" });
             if (order.CompletedDate.HasValue)
@@ -165,7 +170,6 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 list.Add(new Models.ViewModels.Order.OrderTimelineEventViewModel { EventDate = order.CompletedDate.Value.ToLocalTime(), EventType = "Completed", EventDescription = "Order completed" });
             }
             return list;
->>>>>>> Stashed changes
         }
     }
 }

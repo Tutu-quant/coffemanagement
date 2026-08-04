@@ -16,6 +16,32 @@
         </div>
 
         <!-- Danh sách món -->
+        <div class="card border-0 bg-light mb-3">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <strong><i class="bi bi-cup-hot"></i> Thêm món</strong>
+                    <small class="text-muted">@Model.Products.Count món đang bán</small>
+                </div>
+                <div class="row g-2" style="max-height: 260px; overflow-y: auto;">
+                    @foreach (var product in Model.Products)
+                    {
+                        <div class="col-md-6">
+                            <button type="button" class="btn btn-outline-dark w-100 text-start p-2"
+                                    onclick="addProduct(@product.ProductID)">
+                                <span class="d-flex justify-content-between gap-2">
+                                    <span>
+                                        <strong class="d-block">@product.ProductName</strong>
+                                        <small class="text-muted">@product.CategoryName · còn @product.Quantity</small>
+                                    </span>
+                                    <strong class="text-nowrap">@product.Price.ToString("N0")đ</strong>
+                                </span>
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
         <div class="order-items-section">
             <div class="section-header">
                 <div class="col-name">MÓN</div>
@@ -71,6 +97,10 @@
                     <div class="customer-badge">⭐ @Model.Customer.MembershipTier</div>
                     <div class="customer-name">@Model.Customer.Name</div>
                     <div class="customer-phone">@Model.Customer.Phone</div>
+                    @if (!string.IsNullOrEmpty(Model.Customer.Email))
+                    {
+                        <div class="customer-email"><a href="mailto:@Model.Customer.Email">@Model.Customer.Email</a></div>
+                    }
                     <div class="customer-points">
                         <i class="bi bi-gift"></i> @Model.Customer.RewardPoints điểm
                     </div>

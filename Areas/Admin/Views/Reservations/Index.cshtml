@@ -1,6 +1,15 @@
-﻿namespace Quản_lý_quán_cafe.Areas.Admin.View.Reservations
-{
-    public class Index
-    {
-    }
-}
+@model List<Quản_lý_quán_cafe.Models.Entities.Reservation>
+@{ ViewData["Title"] = "Đặt bàn"; }
+<div class="d-flex justify-content-between align-items-center mb-4"><div><h2>Quản lý đặt bàn</h2><p class="text-muted mb-0">Xác nhận và theo dõi lịch hẹn của khách.</p></div></div>
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-3"><select name="status" class="form-select"><option value="">Mọi trạng thái</option>@foreach (var s in new[] { "Pending", "Confirmed", "CheckedIn", "Completed", "Cancelled" }) { <option value="@s" selected="@(ViewBag.Status == s)">@s</option> }</select></div>
+    <div class="col-md-3"><input name="date" type="date" value="@ViewBag.Date" class="form-control" /></div>
+    <div class="col-md-2"><button class="btn btn-primary w-100">Lọc</button></div>
+    <div class="col-md-2"><a asp-action="Index" class="btn btn-outline-secondary w-100">Xóa lọc</a></div>
+</form>
+<div class="card shadow-sm"><div class="table-responsive"><table class="table align-middle mb-0">
+    <thead><tr><th>Khách hàng</th><th>Bàn</th><th>Thời gian</th><th>Số khách</th><th>Trạng thái</th><th></th></tr></thead>
+    <tbody>@if (!Model.Any()) { <tr><td colspan="6" class="text-center text-muted py-5">Chưa có lịch đặt bàn.</td></tr> }
+    @foreach (var r in Model) { <tr><td><strong>@(r.Customer?.CustomerName ?? "Khách")</strong><div class="small text-muted">@(r.Customer?.Phone ?? r.Customer?.Email)</div></td><td>@r.Table?.TableNumber</td><td>@r.ReservationDate.ToLocalTime().ToString("HH:mm · dd/MM/yyyy")</td><td>@r.NumberOfGuests</td><td><span class="badge bg-secondary">@r.ReservationStatus</span></td><td class="text-end"><a asp-action="Details" asp-route-id="@r.ReservationID" class="btn btn-sm btn-outline-primary">Chi tiết</a></td></tr> }
+    </tbody>
+</table></div></div>

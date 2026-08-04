@@ -24,7 +24,7 @@
     <script>
         let currentTableId = @(Model.CurrentTable?.TableID ?? 0);
         let currentDiscountType = 'none';
-        let currentPaymentMethod = 'cash';
+        let currentPaymentMethod = '@(Model.PaymentMethod ?? "cash")';
         let currentQrIntent = null;
         let currentCustomerId = @(Model.Customer?.CustomerID?.ToString() ?? "null");
         const subtotal = @Model.Subtotal.ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -52,8 +52,6 @@
             return Number(item?.querySelector('.qty')?.textContent || 0);
         }
 
-<<<<<<< Updated upstream
-=======
         function addProduct(productId) {
             if (currentTableId === 0) return alert('Vui lòng chọn bàn');
             postForm('/Cashier/POS/AddItem', {
@@ -65,8 +63,6 @@
                 window.location.href = `/Cashier/POS?tableId=${currentTableId}`;
             }).catch(error => alert(error.message));
         }
-
->>>>>>> Stashed changes
         function increaseQty(orderDetailId) {
             postForm('/Cashier/POS/UpdateItem', {
                 orderDetailId,
@@ -128,6 +124,13 @@
             const change = Math.max(0, paid - subtotal + getDiscount());
             const input = document.getElementById('paidAmount');
             if (input) input.title = `Tiền thừa: ${formatMoney(change)}`;
+            const changeDisplay = document.getElementById('changeAmountDisplay');
+            const changeRow = document.getElementById('changeRow');
+            if (changeDisplay) {
+                if (changeDisplay.tagName === 'INPUT') changeDisplay.value = formatMoney(change);
+                else changeDisplay.textContent = formatMoney(change);
+            }
+            if (changeRow) changeRow.style.display = (currentPaymentMethod === 'cash') ? 'block' : 'none';
         }
 
         function formatMoney(value) {
@@ -139,14 +142,15 @@
             document.querySelectorAll('.method-btn').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
             const paidInput = document.getElementById('paidAmount');
+            const cashFields = document.getElementById('cashPaymentFields');
             if (paidInput) {
                 paidInput.disabled = method === 'qr';
                 if (method === 'qr') paidInput.value = '';
             }
+            if (cashFields) cashFields.style.display = (method === 'cash') ? 'block' : 'none';
+            calculateChange();
         }
 
-<<<<<<< Updated upstream
-=======
         document.addEventListener('DOMContentLoaded', function() {
             const cashFields = document.getElementById('cashPaymentFields');
             const paidInput = document.getElementById('paidAmount');
@@ -154,8 +158,7 @@
             if (paidInput) paidInput.disabled = (currentPaymentMethod === 'qr');
             calculateTotal();
         });
-
-        function refreshSidebar() {
+      function refreshSidebar() {
             fetch('/Cashier/POS/OpenTables')
                 .then(async r => {
                     if (!r.ok) throw new Error('Không thể tải sơ đồ bàn');
@@ -193,7 +196,6 @@
             }).catch(err => { console.error(err); alert('Lỗi khi cập nhật trạng thái'); });
         }
 
->>>>>>> Stashed changes
         function proceedCheckout() {
             if (currentTableId === 0) {
                 alert('Vui lòng chọn bàn');
@@ -216,13 +218,11 @@
                 discountValue: document.getElementById('discountValue')?.value || 0,
                 notes: document.getElementById('orderNotes')?.value || ''
             }).then(data => {
-<<<<<<< Updated upstream
-=======
+                // Open printable bill in new tab, then reload POS
                 try {
-                    const printUrl = `/Cashier/Orders/Print/${data.orderId}?returnUrl=${encodeURIComponent('/Cashier/POS')}`;
+                    const printUrl = `/Admin/Orders/Print/${data.orderId}?returnUrl=${encodeURIComponent('/Cashier/POS')}`;
                     window.open(printUrl, '_blank');
-                } catch (e) { }
->>>>>>> Stashed changes
+                } catch (e) { /* ignore */ }
                 alert(`Thanh toán thành công. Tiền thừa: ${formatMoney(data.change)}`);
                 window.location.href = '/Cashier/POS';
             }).catch(error => alert(error.message));
@@ -251,8 +251,9 @@
                     qrImage.removeAttribute('src');
                     qrImage.classList.add('d-none');
                 }
-                document.getElementById('momoReceiverAccount').textContent = data.receiverAccount;
-                document.getElementById('momoReceiverName').textContent = data.receiverName;
+                document.getElementById('placeholderReceiverAccount').textContent = data.receiverAccount;
+                document.getElementById('placeholderReceiverName').textContent = data.receiverName;
+                document.getElementById('qrProviderName').textContent = data.provider || 'QR';
                 document.getElementById('qrPaymentAmount').textContent = formatMoney(data.amount);
                 document.getElementById('qrPaymentContent').textContent = data.transferContent;
                 bootstrap.Modal.getOrCreateInstance(document.getElementById('qrPaymentModal')).show();
