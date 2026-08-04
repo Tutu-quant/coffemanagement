@@ -6,7 +6,6 @@ using Quản_lý_quán_cafe.Models.Enums;
 namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    // [Authorize] // TODO: Implement custom authorization using Session
     public class OrdersController : Controller
     {
         private readonly IOrderService _orderService;
@@ -16,17 +15,11 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             _orderService = orderService ?? throw new ArgumentNullException(nameof(orderService));
         }
 
-        /// <summary>
-        /// Print-friendly bill view
-        /// GET: /Admin/Orders/Print/5
-        /// </summary>
         public async Task<IActionResult> Print(int id, string? returnUrl = null)
         {
             if (id <= 0) return RedirectToAction(nameof(Index));
             try
             {
-                // If caller provided a returnUrl pointing to the Cashier area, prefer redirecting
-                // to the Cashier print so the cashier UI is used for printing.
                 if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && returnUrl.StartsWith("/Cashier", StringComparison.OrdinalIgnoreCase))
                 {
                     return RedirectToAction("Print", "Orders", new { area = "Cashier", id, returnUrl });
@@ -42,10 +35,6 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             }
         }
 
-        /// <summary>
-        /// Danh sách đơn hàng với phân trang
-        /// GET: /Admin/Orders
-        /// </summary>
         public async Task<IActionResult> Index(int pageNumber = 1, int pageSize = 20)
         {
             try
@@ -72,10 +61,6 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             }
         }
 
-        /// <summary>
-        /// Chi tiết đơn hàng
-        /// GET: /Admin/Orders/Details/5
-        /// </summary>
         public async Task<IActionResult> Details(int id)
         {
             if (id <= 0)
@@ -103,10 +88,6 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             }
         }
 
-        /// <summary>
-        /// Tìm kiếm đơn hàng
-        /// GET: /Admin/Orders/Search
-        /// </summary>
         public async Task<IActionResult> Search(string? keyword, int pageNumber = 1, int pageSize = 20)
         {
             try
@@ -133,10 +114,6 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             }
         }
 
-        /// <summary>
-        /// Lọc đơn hàng theo điều kiện
-        /// GET: /Admin/Orders/Filter
-        /// </summary>
         public async Task<IActionResult> Filter(
             string? status,
             DateTime? dateFrom,

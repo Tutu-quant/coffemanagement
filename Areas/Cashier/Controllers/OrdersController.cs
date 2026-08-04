@@ -98,8 +98,6 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 var order = await _orderService.GetOrderByIdAsync(id);
                 if (order == null) return RedirectToAction(nameof(Index));
                 var viewModel = MapToOrderDetailViewModel(order);
-                // reuse Admin print view for printing in cashier area
-                // only allow local returnUrl values to avoid open redirects
                 if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 {
                     ViewData["ReturnUrl"] = returnUrl;

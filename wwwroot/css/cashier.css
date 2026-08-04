@@ -1,4 +1,3 @@
-/* BrewPoint Cashier (POS) - Styling */
 
 :root {
     --primary-color: #8B4513;
@@ -29,14 +28,12 @@ body {
     color: var(--text-dark);
 }
 
-/* ==================== LAYOUT ==================== */
 .cashier-container {
     display: flex;
     height: 100vh;
     overflow: hidden;
 }
 
-/* ==================== SIDEBAR ==================== */
 .cashier-sidebar {
     width: 200px;
     background: var(--bg-secondary);
@@ -65,7 +62,6 @@ body {
     font-size: 24px;
 }
 
-/* ==================== SIDEBAR NAV ==================== */
 .sidebar-nav {
     flex-grow: 1;
     padding: 1rem 0;
@@ -102,7 +98,6 @@ body {
     text-align: center;
 }
 
-/* ==================== SIDEBAR FOOTER ==================== */
 .sidebar-footer {
     padding: 1rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -129,7 +124,6 @@ body {
     font-size: 13px;
 }
 
-/* ==================== MAIN CONTENT ==================== */
 .cashier-main {
     flex-grow: 1;
     overflow: auto;
@@ -141,7 +135,6 @@ body {
     max-width: 100%;
 }
 
-/* ==================== HEADER ==================== */
 .page-header-cashier {
     display: flex;
     justify-content: space-between;
@@ -158,7 +151,6 @@ body {
     margin: 0;
 }
 
-/* ==================== STAT CARDS ==================== */
 .stat-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -199,7 +191,6 @@ body {
     opacity: 0.3;
 }
 
-/* ==================== TABLE MAP ==================== */
 .floor-map {
     background: white;
     padding: 2rem;
@@ -286,7 +277,6 @@ body {
     opacity: 0.8;
 }
 
-/* ==================== ORDER PANEL ==================== */
 .order-panel {
     background: white;
     padding: 1.5rem;
@@ -346,7 +336,6 @@ body {
     font-size: 14px;
 }
 
-/* ==================== BUTTONS ==================== */
 .btn {
     border-radius: 6px;
     font-weight: 500;
@@ -390,7 +379,6 @@ body {
     color: white;
 }
 
-/* ==================== MODAL ==================== */
 .modal-content {
     border: none;
     border-radius: 8px;
@@ -407,7 +395,6 @@ body {
     filter: brightness(0) invert(1);
 }
 
-/* ==================== RESPONSIVE ==================== */
 @media (max-width: 768px) {
     .cashier-sidebar {
         width: 60px;

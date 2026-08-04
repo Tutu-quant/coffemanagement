@@ -12,8 +12,6 @@
         <span class="text-muted" id="current-time">@DateTime.Now.ToString("HH:mm:ss")</span>
     </div>
 </div>
-
-<!-- Stat Cards -->
 <div class="stat-cards">
     <div class="stat-card">
         <div class="stat-card-content">
@@ -56,7 +54,6 @@
     </div>
 </div>
 
-<!-- Quick billing -->
 <div class="order-panel" style="margin-top: 2rem;">
     <div class="d-flex align-items-center justify-content-between mb-3">
         <h3 class="order-panel-title mb-0">
@@ -92,7 +89,6 @@
     }
 </div>
 
-<!-- Floor Map -->
 <div class="floor-map">
     <h2 class="floor-map-title">📍 Sơ đồ bàn</h2>
     @Html.AntiForgeryToken()
@@ -154,22 +150,18 @@
     </div>
 </div>
 
-<!-- Recent Orders removed for Cashier UI -->
 
 @section Scripts {
     <script>
-        // Update time every second
         setInterval(() => {
             const now = new Date();
             document.getElementById('current-time').textContent = now.toLocaleTimeString('vi-VN');
         }, 1000);
 
-        // Auto-refresh dashboard every 30 seconds (realtime table status)
         setInterval(() => {
             location.reload();
         }, 30000);
 
-        // change table status via AJAX (shared with POS)
         async function changeTableStatus(tableId, status) {
             const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
             const token = tokenInput ? tokenInput.value : null;
@@ -185,7 +177,6 @@
                     body: formData.toString()
                 });
                 if (res.redirected) {
-                    // On redirect, reload to show TempData messages
                     window.location.reload();
                     return;
                 }
@@ -194,7 +185,6 @@
                     alert('Không thể cập nhật trạng thái: ' + txt);
                     return;
                 }
-                // Update UI: quick visual change
                 const el = document.querySelector(`.table-item[data-table-id="${tableId}"]`);
                 if (el) {
                     el.classList.remove('empty','occupied','waiting','reserved','maintenance');

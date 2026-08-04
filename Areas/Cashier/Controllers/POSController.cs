@@ -195,7 +195,6 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 detail.Order.TotalAmount = detail.Order.OrderDetails.Where(d => !d.IsDeleted).Sum(d => d.Subtotal);
                 await _context.SaveChangesAsync();
 
-                // If order has no remaining items, mark table as available
                 var remaining = detail.Order.OrderDetails.Count(d => !d.IsDeleted);
                 if (remaining == 0 && detail.Order.Table != null)
                 {
@@ -229,7 +228,6 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 detail.Order.TotalAmount = detail.Order.OrderDetails.Where(d => !d.IsDeleted).Sum(d => d.Subtotal);
                 await _context.SaveChangesAsync();
 
-                // If order has no remaining items, mark table as available
                 var remaining = detail.Order.OrderDetails.Count(d => !d.IsDeleted);
                 if (remaining == 0 && detail.Order.Table != null)
                 {
