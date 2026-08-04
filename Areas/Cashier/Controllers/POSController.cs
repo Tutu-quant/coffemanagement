@@ -54,6 +54,37 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             return View(viewModel);
         }
 
+        private async Task<List<POSTableViewModel>> BuildOpenTablesAsync()
+        {
+            var openTables = await _context.RestaurantTables
+                .Where(t => !t.IsDeleted && t.TableStatus != "Maintenance")
+                .Include(t => t.Orders.Where(o => !o.IsDeleted &&
+                    (o.OrderStatus == "Pending" || o.OrderStatus == "WaitingPayment")))
+                    .ThenInclude(o => o.OrderDetails.Where(d => !d.IsDeleted))
+                .ToListAsync();
+
+            return openTables.Select(t => new POSTableViewModel
+            {
+                OrderID = t.Orders.FirstOrDefault()?.OrderID,
+                TableID = t.TableID,
+                TableNumber = t.TableNumber,
+                TableName = t.TableNumber,
+                OrderCode = t.Orders.Any() ? $"#{t.Orders.First().OrderID}" : string.Empty,
+                ItemCount = t.Orders.FirstOrDefault()?.OrderDetails.Sum(d => d.Quantity) ?? 0,
+                TotalAmount = t.Orders.FirstOrDefault()?.OrderDetails.Sum(d => d.Subtotal) ?? 0,
+                Status = t.TableStatus.ToLower(),
+                StatusBadge = t.TableStatus == "WaitingPayment" ? "THANH TOÁN" : ""
+            }).ToList();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> OpenTables()
+        {
+            if (!IsStaff()) return StatusCode(403);
+            var model = await BuildOpenTablesAsync();
+            return PartialView("~/Areas/Cashier/Views/Shared/_TableList.cshtml", model);
+        }
+
         [HttpGet]
         public async Task<IActionResult> SelectTable(int tableId)
         {
@@ -134,7 +165,10 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             if (!IsStaff()) return StatusCode(403);
             try
             {
-                var detail = await _context.OrderDetails.Include(d => d.Order)!.ThenInclude(o => o!.OrderDetails).Include(d => d.Product)
+                var detail = await _context.OrderDetails
+                    .Include(d => d.Order)!.ThenInclude(o => o!.OrderDetails)
+                    .Include(d => d.Order)!.ThenInclude(o => o!.Table)
+                    .Include(d => d.Product)
                     .FirstOrDefaultAsync(d => d.OrderDetailID == orderDetailId && !d.IsDeleted);
                 if (detail == null || detail.Order?.OrderStatus != "Pending") return NotFound(new { success = false });
                 var difference = quantity - detail.Quantity;
@@ -148,6 +182,16 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 if (detail.Product != null) detail.Product.Quantity -= difference;
                 detail.Order.TotalAmount = detail.Order.OrderDetails.Where(d => !d.IsDeleted).Sum(d => d.Subtotal);
                 await _context.SaveChangesAsync();
+
+                // If order has no remaining items, mark table as available
+                var remaining = detail.Order.OrderDetails.Count(d => !d.IsDeleted);
+                if (remaining == 0 && detail.Order.Table != null)
+                {
+                    detail.Order.Table.TableStatus = "Available";
+                    detail.Order.Table.UpdatedAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                }
+
                 return Json(new { success = true, totalAmount = detail.Order.TotalAmount });
             }
             catch (Exception ex)
@@ -162,13 +206,26 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             if (!IsStaff()) return StatusCode(403);
             try
             {
-                var detail = await _context.OrderDetails.Include(d => d.Order)!.ThenInclude(o => o!.OrderDetails).Include(d => d.Product)
+                var detail = await _context.OrderDetails
+                    .Include(d => d.Order)!.ThenInclude(o => o!.OrderDetails)
+                    .Include(d => d.Order)!.ThenInclude(o => o!.Table)
+                    .Include(d => d.Product)
                     .FirstOrDefaultAsync(d => d.OrderDetailID == orderDetailId && !d.IsDeleted);
                 if (detail == null || detail.Order?.OrderStatus != "Pending") return NotFound(new { success = false });
                 detail.IsDeleted = true;
                 if (detail.Product != null) detail.Product.Quantity += detail.Quantity;
                 detail.Order.TotalAmount = detail.Order.OrderDetails.Where(d => !d.IsDeleted).Sum(d => d.Subtotal);
                 await _context.SaveChangesAsync();
+
+                // If order has no remaining items, mark table as available
+                var remaining = detail.Order.OrderDetails.Count(d => !d.IsDeleted);
+                if (remaining == 0 && detail.Order.Table != null)
+                {
+                    detail.Order.Table.TableStatus = "Available";
+                    detail.Order.Table.UpdatedAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                }
+
                 return Json(new { success = true, totalAmount = detail.Order.TotalAmount });
             }
             catch (Exception ex)

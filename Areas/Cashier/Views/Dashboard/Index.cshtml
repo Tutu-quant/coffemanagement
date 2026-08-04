@@ -95,6 +95,7 @@
 <!-- Floor Map -->
 <div class="floor-map">
     <h2 class="floor-map-title">📍 Sơ đồ bàn</h2>
+    @Html.AntiForgeryToken()
     <div class="tables-grid">
         @foreach (var table in Model.Tables)
         {
@@ -105,36 +106,50 @@
                 "reserved" => "reserved",
                 _ => "empty"
             };
-
-            <a href="~/Cashier/POS?tableId=@table.TableID" 
-               class="table-item @statusClass"
-               title="@table.StatusLabel">
-                <div class="table-name">
-                    <i class="bi bi-table"></i> @table.TableName
-                </div>
-                <div class="table-info">
-                    @if (table.Status == "Occupied" && table.GuestCount.HasValue)
-                    {
-                        <span>👥 @table.GuestCount khách</span>
-                    }
-                    else if (table.Status == "WaitingPayment")
-                    {
-                        <span style="color: #FF6B6B; font-weight: 600;">⏳ @table.TotalAmount?.ToString("N0")đ</span>
-                    }
-                    else
-                    {
-                        <span>Trống</span>
-                    }
-                </div>
-                @if (!string.IsNullOrEmpty(table.OrderCode))
-                {
-                    <div class="table-info" style="margin-top: 0.5rem;">
-                        <span style="background: rgba(139, 69, 19, 0.1); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 11px;">
-                            #@table.OrderCode
-                        </span>
+            <div class="table-item @statusClass" title="@table.StatusLabel" data-table-id="@table.TableID">
+                <a href="~/Cashier/POS?tableId=@table.TableID" class="table-link">
+                    <div class="table-name">
+                        <i class="bi bi-table"></i> @table.TableName
                     </div>
-                }
-            </a>
+                    <div class="table-info">
+                        @if (table.Status == "Occupied" && table.GuestCount.HasValue)
+                        {
+                            <span>👥 @table.GuestCount khách</span>
+                        }
+                        else if (table.Status == "WaitingPayment")
+                        {
+                            <span style="color: #FF6B6B; font-weight: 600;">⏳ @table.TotalAmount?.ToString("N0")đ</span>
+                        }
+                        else
+                        {
+                            <span>Trống</span>
+                        }
+                    </div>
+                    @if (!string.IsNullOrEmpty(table.OrderCode))
+                    {
+                        <div class="table-info" style="margin-top: 0.5rem;">
+                            <span style="background: rgba(139, 69, 19, 0.1); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 11px;">
+                                #@table.OrderCode
+                            </span>
+                        </div>
+                    }
+                </a>
+
+                <div class="table-actions" style="margin-top:6px; display:flex; gap:6px; justify-content:center;">
+                    <button type="button" class="btn btn-outline-secondary btn-sm p-1 rounded-circle" title="Available" onclick="changeTableStatus(@table.TableID, 'Available')">
+                        <i class="bi bi-check-lg"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm p-1 rounded-circle" title="Occupy" onclick="changeTableStatus(@table.TableID, 'Occupied')">
+                        <i class="bi bi-person-fill"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm p-1 rounded-circle" title="Waiting" onclick="changeTableStatus(@table.TableID, 'WaitingPayment')">
+                        <i class="bi bi-hourglass-split"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm p-1 rounded-circle" title="Maintenance" onclick="changeTableStatus(@table.TableID, 'Maintenance')">
+                        <i class="bi bi-tools"></i>
+                    </button>
+                </div>
+            </div>
         }
     </div>
 </div>
@@ -178,5 +193,44 @@
         setInterval(() => {
             location.reload();
         }, 30000);
+
+        // change table status via AJAX (shared with POS)
+        async function changeTableStatus(tableId, status) {
+            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            const token = tokenInput ? tokenInput.value : null;
+            const formData = new URLSearchParams();
+            formData.append('tableId', tableId);
+            formData.append('status', status);
+            if (token) formData.append('__RequestVerificationToken', token);
+
+            try {
+                const res = await fetch('/Cashier/Tables/UpdateStatus', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: formData.toString()
+                });
+                if (res.redirected) {
+                    // On redirect, reload to show TempData messages
+                    window.location.reload();
+                    return;
+                }
+                if (!res.ok) {
+                    const txt = await res.text();
+                    alert('Không thể cập nhật trạng thái: ' + txt);
+                    return;
+                }
+                // Update UI: quick visual change
+                const el = document.querySelector(`.table-item[data-table-id="${tableId}"]`);
+                if (el) {
+                    el.classList.remove('empty','occupied','waiting','reserved','maintenance');
+                    const st = status.toLowerCase();
+                    const cls = st === 'waitingpayment' ? 'waiting' : (st === 'available' ? 'empty' : st);
+                    el.classList.add(cls);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Lỗi khi cập nhật trạng thái');
+            }
+        }
     </script>
 }

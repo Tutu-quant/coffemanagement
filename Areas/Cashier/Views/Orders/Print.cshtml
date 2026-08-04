@@ -1,0 +1,29 @@
+@model Quản_lý_quán_cafe.Models.ViewModels.Order.OrderDetailViewModel
+
+@{
+    Layout = null;
+}
+
+<div style="padding:12px; background:#f6f6f6; min-height:100vh;">
+    @await Html.PartialAsync("~/Views/Shared/_Bill.cshtml", Model)
+    <div style="text-align:center; margin-top:12px;">
+        <button class="btn btn-primary" onclick="window.print()">In hóa đơn</button>
+        @{ var returnUrl = ViewData["ReturnUrl"] as string; }
+        @if (!string.IsNullOrEmpty(returnUrl))
+        {
+            <a class="btn btn-secondary ms-2" href="@returnUrl">Quay lại</a>
+        }
+        else
+        {
+            <a class="btn btn-secondary ms-2" href="@Url.Action("Details", "Orders", new { area = "Cashier", id = Model.OrderId })">Quay lại</a>
+        }
+    </div>
+</div>
+
+<script>
+    window.addEventListener('load', function() {
+        setTimeout(() => {
+            window.print();
+        }, 300);
+    });
+</script>

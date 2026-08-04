@@ -270,6 +270,12 @@ body {
     color: var(--accent-green);
 }
 
+.table-item.maintenance {
+    background: #FFEAEA;
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
 .table-name {
     font-weight: 600;
     font-size: 14px;
