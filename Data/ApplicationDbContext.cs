@@ -71,6 +71,13 @@ namespace Quản_lý_quán_cafe.Data
                 entity.Property(e => e.Email)
                     .HasMaxLength(100);
 
+                entity.Property(e => e.Position)
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Department)
+                    .HasMaxLength(100)
+                    .HasDefaultValue("Chưa cập nhật");
+
                 entity.Property(e => e.Address)
                     .HasMaxLength(500);
 
@@ -83,9 +90,9 @@ namespace Quản_lý_quán_cafe.Data
                 entity.Property(e => e.UpdatedAt)
                     .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                entity.HasMany(e => e.Users)
+                entity.HasOne(e => e.User)
                     .WithOne(u => u.Employee)
-                    .HasForeignKey(u => u.EmployeeID)
+                    .HasForeignKey<User>(u => u.EmployeeID)
                     .OnDelete(DeleteBehavior.SetNull);
             });
 
@@ -121,8 +128,8 @@ namespace Quản_lý_quán_cafe.Data
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.Employee)
-                    .WithMany(emp => emp.Users)
-                    .HasForeignKey(e => e.EmployeeID)
+                    .WithOne(emp => emp.User)
+                    .HasForeignKey<User>(e => e.EmployeeID)
                     .OnDelete(DeleteBehavior.SetNull);
             });
 

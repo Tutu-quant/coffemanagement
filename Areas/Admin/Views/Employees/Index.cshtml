@@ -1,6 +1,369 @@
-﻿namespace Quản_lý_quán_cafe.Areas.Admin.View.Employees
+@using Quản_lý_quán_cafe.Models.ViewModels.Employees
+@using Quản_lý_quán_cafe.Models.Entities
+@model EmployeeListViewModel
+
+@{
+    ViewData["Title"] = "Quản lý nhân viên";
+    ViewData["PageTitle"] = "Nhân viên";
+    ViewData["PageBreadcrumb"] = "<span class='breadcrumb-item'><i class='bi bi-people'></i> Nhân viên</span>";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <div>
+        <p style="color: var(--text-light); margin: 0; font-size: 14px;">BrewPoint Cafe · Quản trị</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-clockwise"></i>
+            Làm mới
+        </a>
+        <a href="@Url.Action("Create")" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i>
+            Thêm nhân viên
+        </a>
+    </div>
+</div>
+
+<!-- Dashboard Statistics -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="stat-content">
+                <p class="stat-label">Tổng nhân viên</p>
+                <p class="stat-value">@Model?.TotalEmployees</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #4CAF50 0%, #81C784 100%);">
+                <i class="bi bi-check-circle"></i>
+            </div>
+            <div class="stat-content">
+                <p class="stat-label">Đang hoạt động</p>
+                <p class="stat-value">@Model?.ActiveEmployees</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #FFA500 0%, #FFD700 100%);">
+                <i class="bi bi-exclamation-circle"></i>
+            </div>
+            <div class="stat-content">
+                <p class="stat-label">Không hoạt động</p>
+                <p class="stat-value">@Model?.InactiveEmployees</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #8B6F47 0%, #D4A574 100%);">
+                <i class="bi bi-briefcase"></i>
+            </div>
+            <div class="stat-content">
+                <p class="stat-label">Phòng ban</p>
+                <p class="stat-value">@(Model?.Departments?.Count ?? 0)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notification -->
+@if (!string.IsNullOrEmpty(TempData["SuccessMessage"]?.ToString()))
 {
-    public class Index
-    {
-    }
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle"></i>
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Search & Filter Bar -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="search-filter-bar">
+            <div class="search-input-group">
+                <i class="bi bi-search"></i>
+                <input type="text" class="form-control" name="search" placeholder="Tìm nhân viên, email, số điện thoại..." value="@Model?.SearchTerm">
+            </div>
+
+            <select class="form-select" name="department">
+                <option value="">Tất cả phòng ban</option>
+                @foreach (var dept in Model?.Departments ?? new List<string>())
+                {
+                    <option value="@dept" selected="@(Model?.Department == dept)">@dept</option>
+                }
+            </select>
+
+            <select class="form-select" name="sort">
+                <option value="newest" selected="@(Model?.SortBy == "newest")">Mới nhất</option>
+                <option value="oldest" selected="@(Model?.SortBy == "oldest")">Cũ nhất</option>
+                <option value="name_asc" selected="@(Model?.SortBy == "name_asc")">Tên A-Z</option>
+                <option value="name_desc" selected="@(Model?.SortBy == "name_desc")">Tên Z-A</option>
+            </select>
+
+            <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">Xóa bộ lọc</a>
+        </form>
+    </div>
+</div>
+
+<!-- Employees Table -->
+<div class="card">
+    <div class="card-body">
+        @if (Model?.Employees?.Count > 0)
+        {
+            <div class="table-responsive">
+                <table class="table table-employees">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">#</th>
+                            <th style="width: 25%;">Tên nhân viên</th>
+                            <th style="width: 20%;">Thông tin liên lạc</th>
+                            <th style="width: 15%;">Chức vụ</th>
+                            <th style="width: 15%;">Phòng ban</th>
+                            <th style="width: 10%;">Trạng thái</th>
+                            <th style="width: 10%;">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int index = 1;
+                        }
+                        @foreach (var employee in Model.Employees)
+                        {
+                            <tr>
+                                <td>@index</td>
+                                <td>
+                                    <div class="employee-info">
+                                        <div class="employee-avatar">
+                                            @employee.FullName.First()
+                                        </div>
+                                        <div class="employee-details">
+                                            <p class="employee-name">@employee.FullName</p>
+                                            <p class="employee-username">@employee.User?.Username</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <p class="employee-email">
+                                        <i class="bi bi-envelope"></i>
+                                        @employee.Email
+                                    </p>
+                                    @if (!string.IsNullOrEmpty(employee.Phone))
+                                    {
+                                        <p class="employee-phone">
+                                            <i class="bi bi-telephone"></i>
+                                            @employee.Phone
+                                        </p>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge badge-position">@employee.Position</span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-department">@employee.Department</span>
+                                </td>
+                                <td>
+                                    @if (employee.IsActive)
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i>
+                                            Hoạt động
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-exclamation-circle"></i>
+                                            Không hoạt động
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="@Url.Action("Details", new { id = employee.EmployeeID })" class="btn btn-sm btn-info" title="Xem chi tiết">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="@Url.Action("Edit", new { id = employee.EmployeeID })" class="btn btn-sm btn-warning" title="Chỉnh sửa">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="@Url.Action("ChangePassword", new { id = employee.EmployeeID })" class="btn btn-sm btn-secondary" title="Đổi mật khẩu">
+                                            <i class="bi bi-key"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-danger" title="Xóa" onclick="confirmDelete(@employee.EmployeeID)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            index++;
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="bi bi-inbox"></i>
+                <h5>Không có dữ liệu</h5>
+                <p>Chưa có nhân viên nào trong hệ thống. <a href="@Url.Action("Create")">Thêm nhân viên mới</a></p>
+            </div>
+        }
+    </div>
+</div>
+
+<form id="deleteForm" method="post" style="display: none;">
+    <input type="hidden" name="id" id="deleteId" />
+</form>
+
+@section Head {
+    <style>
+        .employee-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .employee-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8B6F47 0%, #D4A574 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .employee-details {
+            flex: 1;
+        }
+
+        .employee-name {
+            margin: 0;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .employee-username {
+            margin: 0;
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        .employee-email,
+        .employee-phone {
+            margin: 4px 0;
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .employee-email i,
+        .employee-phone i {
+            margin-right: 4px;
+            color: var(--coffee-brown);
+        }
+
+        .badge-position,
+        .badge-department {
+            background-color: #E8F5E9;
+            color: #2E7D32;
+            font-weight: 500;
+        }
+
+        .badge-department {
+            background-color: #FFF3E0;
+            color: #E65100;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 4px;
+        }
+
+        .btn-group .btn {
+            padding: 6px 8px;
+            font-size: 12px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            color: var(--coffee-light);
+            margin-bottom: 16px;
+        }
+
+        .empty-state h5 {
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            color: var(--text-light);
+        }
+
+        .empty-state a {
+            color: var(--coffee-brown);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .table-employees {
+            border-collapse: collapse;
+        }
+
+        .table-employees thead {
+            background-color: #FAFAF8;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .table-employees th {
+            padding: 16px;
+            font-weight: 600;
+            color: var(--text-dark);
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .table-employees tbody tr {
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s;
+        }
+
+        .table-employees tbody tr:hover {
+            background-color: #FFFDF8;
+        }
+
+        .table-employees td {
+            padding: 16px;
+            vertical-align: middle;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        function confirmDelete(id) {
+            if (confirm('Bạn chắc chắn muốn xóa nhân viên này? Tài khoản sẽ bị vô hiệu hóa.')) {
+                const form = document.getElementById('deleteForm');
+                form.action = '@Url.Action("Delete")';
+                document.getElementById('deleteId').value = id;
+                form.submit();
+            }
+        }
+    </script>
 }

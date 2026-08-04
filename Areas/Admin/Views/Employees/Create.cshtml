@@ -1,6 +1,154 @@
-﻿namespace Quản_lý_quán_cafe.Areas.Admin.View.Employees
-{
-    public class Create
-    {
-    }
+@model EmployeeCreateViewModel
+
+@{
+    ViewData["Title"] = "Thêm nhân viên";
+    ViewData["PageTitle"] = "Thêm nhân viên mới";
+    ViewData["PageBreadcrumb"] = "<span class='breadcrumb-item'><a href='" + Url.Action("Index", "Employees", new { area = "Admin" }) + "'><i class='bi bi-people'></i> Nhân viên</a></span><span class='breadcrumb-item'>Thêm mới</span>";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <a href="@Url.Action("Index")" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+</div>
+
+<div class="card" style="max-width: 900px;">
+    <div class="card-body">
+        <form method="post" asp-action="Create" id="createForm">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="Username" class="form-label">
+                            <i class="bi bi-asterisk" style="color: #dc3545; font-size: 8px; margin-right: 4px;"></i>
+                            Tên đăng nhập
+                        </label>
+                        <input type="text" class="form-control @(ViewData.ModelState["Username"]?.Errors.Count > 0 ? "is-invalid" : "")"
+                               asp-for="Username" placeholder="Nhập tên đăng nhập" maxlength="50">
+                        <span asp-validation-for="Username" class="invalid-feedback"></span>
+                        <small class="text-muted d-block mt-1">Từ 3 đến 50 ký tự, không có khoảng trắng</small>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="FullName" class="form-label">
+                            <i class="bi bi-asterisk" style="color: #dc3545; font-size: 8px; margin-right: 4px;"></i>
+                            Tên nhân viên
+                        </label>
+                        <input type="text" class="form-control @(ViewData.ModelState["FullName"]?.Errors.Count > 0 ? "is-invalid" : "")"
+                               asp-for="FullName" placeholder="Nhập tên đầy đủ" maxlength="100">
+                        <span asp-validation-for="FullName" class="invalid-feedback"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="Email" class="form-label">
+                            <i class="bi bi-asterisk" style="color: #dc3545; font-size: 8px; margin-right: 4px;"></i>
+                            Email
+                        </label>
+                        <input type="email" class="form-control @(ViewData.ModelState["Email"]?.Errors.Count > 0 ? "is-invalid" : "")"
+                               asp-for="Email" placeholder="Nhập email" maxlength="100">
+                        <span asp-validation-for="Email" class="invalid-feedback"></span>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="Phone" class="form-label">Số điện thoại</label>
+                        <input type="tel" class="form-control @(ViewData.ModelState["Phone"]?.Errors.Count > 0 ? "is-invalid" : "")"
+                               asp-for="Phone" placeholder="Nhập số điện thoại" maxlength="20">
+                        <span asp-validation-for="Phone" class="invalid-feedback"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="Position" class="form-label">
+                            <i class="bi bi-asterisk" style="color: #dc3545; font-size: 8px; margin-right: 4px;"></i>
+                            Chức vụ
+                        </label>
+                        <select class="form-select @(ViewData.ModelState["Position"]?.Errors.Count > 0 ? "is-invalid" : "")" asp-for="Position">
+                            <option value="">-- Chọn chức vụ --</option>
+                            <option value="Quản lý">Quản lý</option>
+                            <option value="Phó Quản lý">Phó Quản lý</option>
+                            <option value="Pha chế">Pha chế</option>
+                            <option value="Phục vụ">Phục vụ</option>
+                            <option value="Thu ngân">Thu ngân</option>
+                            <option value="Giao hàng">Giao hàng</option>
+                            <option value="Khác">Khác</option>
+                        </select>
+                        <span asp-validation-for="Position" class="invalid-feedback"></span>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="Department" class="form-label">Phòng ban</label>
+                        <input type="text" class="form-control @(ViewData.ModelState["Department"]?.Errors.Count > 0 ? "is-invalid" : "")"
+                               asp-for="Department" placeholder="Nhập phòng ban" maxlength="50">
+                        <span asp-validation-for="Department" class="invalid-feedback"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Address" class="form-label">Địa chỉ</label>
+                <input type="text" class="form-control @(ViewData.ModelState["Address"]?.Errors.Count > 0 ? "is-invalid" : "")"
+                       asp-for="Address" placeholder="Nhập địa chỉ" maxlength="200">
+                <span asp-validation-for="Address" class="invalid-feedback"></span>
+            </div>
+
+            <hr class="my-4" />
+
+            <h6 class="mb-3">
+                <i class="bi bi-lock"></i> Thông tin đăng nhập
+            </h6>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="Password" class="form-label">
+                            <i class="bi bi-asterisk" style="color: #dc3545; font-size: 8px; margin-right: 4px;"></i>
+                            Mật khẩu
+                        </label>
+                        <input type="password" class="form-control @(ViewData.ModelState["Password"]?.Errors.Count > 0 ? "is-invalid" : "")"
+                               asp-for="Password" placeholder="Nhập mật khẩu" maxlength="100">
+                        <span asp-validation-for="Password" class="invalid-feedback"></span>
+                        <small class="text-muted d-block mt-1">Tối thiểu 6 ký tự</small>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="ConfirmPassword" class="form-label">
+                            <i class="bi bi-asterisk" style="color: #dc3545; font-size: 8px; margin-right: 4px;"></i>
+                            Xác nhận mật khẩu
+                        </label>
+                        <input type="password" class="form-control @(ViewData.ModelState["ConfirmPassword"]?.Errors.Count > 0 ? "is-invalid" : "")"
+                               asp-for="ConfirmPassword" placeholder="Xác nhận mật khẩu" maxlength="100">
+                        <span asp-validation-for="ConfirmPassword" class="invalid-feedback"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 32px; display: flex; gap: 12px; justify-content: flex-end;">
+                <a href="@Url.Action("Index")" class="btn btn-secondary">
+                    <i class="bi bi-x-lg"></i> Hủy
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> Tạo tài khoản
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
 }

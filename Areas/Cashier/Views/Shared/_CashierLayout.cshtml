@@ -1,9 +1,274 @@
-@{
-    Layout = "~/Views/Shared/_UnifiedLayout.cshtml";
-}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - BrewPoint Cashier</title>
 
-@section Head {
-    @RenderSection("Head", required: false)
-}
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
 
-@RenderBody()
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Site CSS -->
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    <!-- Cashier CSS -->
+    <link rel="stylesheet" href="~/css/cashier.css" asp-append-version="true" />
+
+    <style>
+        :root {
+            --primary-color: #8B6F47;
+            --secondary-color: #D4AF37;
+            --accent-color: #E8DCC8;
+            --light-bg: #f5f3f0;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--light-bg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .cashier-wrapper {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .cashier-sidebar {
+            background: #2c2c2c;
+            color: white;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .sidebar-header {
+            padding: 20px 15px;
+            border-bottom: 2px solid var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+        }
+
+        .sidebar-header i {
+            font-size: 24px;
+            color: var(--secondary-color);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 10px 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            color: #ccc;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .sidebar-menu a:hover {
+            color: white;
+            background-color: rgba(139, 111, 71, 0.3);
+            border-left: 3px solid var(--secondary-color);
+            padding-left: 12px;
+        }
+
+        .sidebar-menu a.active {
+            color: var(--secondary-color);
+            background-color: rgba(139, 111, 71, 0.5);
+            border-left: 3px solid var(--secondary-color);
+            padding-left: 12px;
+        }
+
+        .sidebar-menu i {
+            width: 20px;
+            text-align: center;
+        }
+
+        .cashier-header {
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .header-title {
+            color: var(--primary-color);
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .header-actions .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .header-actions .logout-btn {
+            padding: 6px 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 13px;
+        }
+
+        .header-actions .logout-btn:hover {
+            background-color: #704d30;
+        }
+
+        .cashier-content {
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        @@media (max-width: 1024px) {
+            .cashier-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .cashier-sidebar {
+                display: none;
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 250px;
+                height: 100%;
+                z-index: 1000;
+            }
+
+            .cashier-sidebar.show {
+                display: flex;
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="cashier-wrapper">
+        <!-- Sidebar -->
+        <nav class="cashier-sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-mug-hot"></i>
+                <span>BrewPoint</span>
+            </div>
+
+            <ul class="sidebar-menu">
+                <li>
+                    <a asp-area="Cashier" asp-controller="Dashboard" asp-action="Index" 
+                       class="nav-link @(ViewContext.RouteData.Values["Controller"].ToString() == "Dashboard" ? "active" : "")">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Tổng Quan</span>
+                    </a>
+                </li>
+                <li>
+                    <a asp-area="Cashier" asp-controller="Orders" asp-action="Index"
+                       class="nav-link @(ViewContext.RouteData.Values["Controller"].ToString() == "Orders" ? "active" : "")">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Đơn Hàng</span>
+                    </a>
+                </li>
+                <li>
+                    <a asp-area="Cashier" asp-controller="Tables" asp-action="Index"
+                       class="nav-link @(ViewContext.RouteData.Values["Controller"].ToString() == "Tables" ? "active" : "")">
+                        <i class="fas fa-door-open"></i>
+                        <span>Quản Lý Bàn</span>
+                    </a>
+                </li>
+                <li>
+                    <a asp-area="Cashier" asp-controller="Payments" asp-action="Index"
+                       class="nav-link @(ViewContext.RouteData.Values["Controller"].ToString() == "Payments" ? "active" : "")">
+                        <i class="fas fa-cash-register"></i>
+                        <span>Thanh Toán</span>
+                    </a>
+                </li>
+                <li>
+                    <a asp-area="Cashier" asp-controller="POS" asp-action="Index"
+                       class="nav-link @(ViewContext.RouteData.Values["Controller"].ToString() == "POS" ? "active" : "")">
+                        <i class="fas fa-receipt"></i>
+                        <span>POS</span>
+                    </a>
+                </li>
+                <li>
+                    <a asp-area="Cashier" asp-controller="Dashboard" asp-action="History"
+                       class="nav-link">
+                        <i class="fas fa-history"></i>
+                        <span>Lịch Sử</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <div style="display: flex; flex-direction: column; height: 100vh;">
+            <!-- Header -->
+            <header class="cashier-header">
+                <div class="header-title">
+                    @ViewData["Title"] - BrewPoint
+                </div>
+                <div class="header-actions">
+                    <div class="user-info">
+                        <i class="fas fa-user-circle" style="font-size: 24px; color: var(--primary-color);"></i>
+                        <span id="employeeName">Nhân Viên</span>
+                    </div>
+                    <a asp-area="Admin" asp-controller="Account" asp-action="Logout" class="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i> Đăng Xuất
+                    </a>
+                </div>
+            </header>
+
+            <!-- Content -->
+            <main class="cashier-content">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/cashier.js" asp-append-version="true"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+    <script>
+        // Get employee name from session or localStorage
+        document.addEventListener('DOMContentLoaded', function() {
+            const employeeName = localStorage.getItem('employeeName') || 'Nhân Viên';
+            document.getElementById('employeeName').textContent = employeeName;
+        });
+    </script>
+</body>
+</html>

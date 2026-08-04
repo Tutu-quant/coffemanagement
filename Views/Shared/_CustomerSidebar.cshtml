@@ -7,13 +7,13 @@
         <ul class="nav-menu">
             <li class="nav-item">
                 <a asp-area="Customer" asp-controller="Orders" asp-action="Menu"
-                   class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Menu" ? "active" : "")">
+                   class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Menu" || ViewContext.RouteData.Values["action"]?.ToString() == "Index" || ViewContext.RouteData.Values["action"]?.ToString() == "Place" ? "active" : "")">
                     <i class="bi bi-cup-straw"></i><span>Đặt món</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a asp-area="Customer" asp-controller="Orders" asp-action="History"
-                   class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "History" ? "active" : "")">
+                <a asp-area="Customer" asp-controller="Orders" asp-action="MyOrders"
+                   class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "MyOrders" || ViewContext.RouteData.Values["action"]?.ToString() == "History" ? "active" : "")">
                     <i class="bi bi-receipt"></i><span>Đơn của tôi</span>
                 </a>
             </li>
@@ -25,10 +25,10 @@
         </ul>
     </nav>
     <div class="sidebar-footer">
-        <div class="user-profile">
+        <a asp-area="Customer" asp-controller="Profile" asp-action="Edit" class="user-profile" style="text-decoration: none; cursor: pointer;">
             <div class="user-avatar">@(Context.Session.GetString("Username")?.Substring(0, 1).ToUpper() ?? "K")</div>
             <div class="user-info"><p class="user-name">@Context.Session.GetString("Username")</p><p class="user-role">Khách hàng</p></div>
-        </div>
+        </a>
         <a asp-area="" asp-controller="Account" asp-action="Logout" class="btn-logout">
             <i class="bi bi-box-arrow-right"></i> Đăng xuất
         </a>

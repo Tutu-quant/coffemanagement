@@ -159,6 +159,34 @@ public class OrdersController(ApplicationDbContext context, Quản_lý_quán_caf
 
         return View(orders);
     }
+
+    [HttpGet]
+    public async Task<IActionResult> MyOrders()
+    {
+        if (!IsCustomer()) return RedirectToLogin();
+        var customer = await _customerSessionService.GetOrCreateCustomerAsync();
+
+        var orders = await context.Orders
+            .Include(o => o.Table)
+            .Include(o => o.OrderDetails)
+                .ThenInclude(d => d.Product)
+            .Where(o => !o.IsDeleted && o.CustomerID == customer.CustomerID)
+            .OrderByDescending(o => o.OrderDate)
+            .AsNoTracking()
+            .ToListAsync();
+
+        // Get reservations for this customer
+        var reservations = await context.Reservations
+            .Include(r => r.Table)
+            .Where(r => !r.IsDeleted && r.CustomerID == customer.CustomerID)
+            .OrderByDescending(r => r.ReservationDate)
+            .AsNoTracking()
+            .ToListAsync();
+
+        ViewBag.Reservations = reservations;
+
+        return View(orders);
+    }
     [HttpGet]
     public async Task<IActionResult> Details(int id)
     {

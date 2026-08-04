@@ -2,38 +2,97 @@
 @using TableStatuses = Quản_lý_quán_cafe.Models.Enums.TableStatus
 @{
     ViewData["Title"] = "Quản lý bàn";
-    Layout = "~/Views/Shared/_UnifiedLayout.cshtml";
+    Layout = "~/Areas/Cashier/Views/Shared/_CashierLayout.cshtml";
 }
 
-<div class="page-header-cashier"><h1 class="page-title">Quản lý bàn</h1></div>
-@if (TempData["SuccessMessage"] is not null) { <div class="alert alert-success">@TempData["SuccessMessage"]</div> }
-@if (TempData["ErrorMessage"] is not null) { <div class="alert alert-danger">@TempData["ErrorMessage"]</div> }
+<div class="cashier-content">
+    <div style="padding: 20px;">
+        <h2 style="color: var(--primary-color); margin-bottom: 20px;">Quản lý bàn</h2>
 
-<div class="row g-3 mb-4">
-    <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3>@Model.Count(t => t.TableStatus == TableStatuses.Available)</h3><p class="mb-0">Bàn trống</p></div></div></div>
-    <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3>@Model.Count(t => t.TableStatus == TableStatuses.Occupied)</h3><p class="mb-0">Đang sử dụng</p></div></div></div>
-    <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3>@Model.Count(t => t.TableStatus == TableStatuses.WaitingPayment)</h3><p class="mb-0">Chờ thanh toán</p></div></div></div>
-    <div class="col-md-3"><div class="card text-center"><div class="card-body"><h3>@Model.Count(t => t.TableStatus == TableStatuses.Reserved)</h3><p class="mb-0">Đã đặt trước</p></div></div></div>
-</div>
+        @if (TempData["SuccessMessage"] is not null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] is not null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
 
-<div class="row g-3">
-@foreach (var table in Model)
-{
-    <div class="col-lg-3 col-md-4 col-sm-6">
-        <div class="card h-100 shadow-sm"><div class="card-body">
-            <h5>@table.TableNumber</h5>
-            <p class="text-muted">@table.Capacity khách · @table.Location</p>
-            <form asp-action="UpdateStatus" method="post">
-                <input type="hidden" name="tableId" value="@table.TableID" />
-                <select name="status" class="form-select form-select-sm mb-2">
-                @foreach (var status in TableStatuses.All)
-                {
-                    <option value="@status" selected="@(status == table.TableStatus)">@status</option>
-                }
-                </select>
-                <button class="btn btn-sm btn-outline-primary w-100">Cập nhật trạng thái</button>
-            </form>
-        </div></div>
+        <!-- Statistics Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card text-center" style="border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #28a745;">
+                    <div class="card-body">
+                        <h3 style="color: #28a745; margin: 0;">@Model.Count(t => t.TableStatus == TableStatuses.Available)</h3>
+                        <p class="mb-0" style="color: #666; margin-top: 8px;">Bàn trống</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center" style="border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #ffc107;">
+                    <div class="card-body">
+                        <h3 style="color: #ffc107; margin: 0;">@Model.Count(t => t.TableStatus == TableStatuses.Occupied)</h3>
+                        <p class="mb-0" style="color: #666; margin-top: 8px;">Đang sử dụng</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center" style="border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #dc3545;">
+                    <div class="card-body">
+                        <h3 style="color: #dc3545; margin: 0;">@Model.Count(t => t.TableStatus == TableStatuses.WaitingPayment)</h3>
+                        <p class="mb-0" style="color: #666; margin-top: 8px;">Chờ thanh toán</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center" style="border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #6c757d;">
+                    <div class="card-body">
+                        <h3 style="color: #6c757d; margin: 0;">@Model.Count(t => t.TableStatus == TableStatuses.Reserved)</h3>
+                        <p class="mb-0" style="color: #666; margin-top: 8px;">Đã đặt trước</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tables Grid -->
+        <div class="row g-4">
+            @foreach (var table in Model)
+            {
+                <div class="col-lg-3 col-md-4 col-sm-6">
+                    <div class="card h-100" style="border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden;">
+                        <div class="card-header" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: white; padding: 15px;">
+                            <h5 style="margin: 0; font-size: 20px; font-weight: 600;">@table.TableNumber</h5>
+                            <small style="opacity: 0.9;">Bàn số @table.TableNumber</small>
+                        </div>
+                        <div class="card-body">
+                            <p style="margin-bottom: 12px; color: #666;">
+                                <i class="fas fa-users"></i> @table.Capacity khách
+                            </p>
+                            <p style="margin-bottom: 12px; color: #666;">
+                                <i class="fas fa-map-marker-alt"></i> @table.Location
+                            </p>
+                            <form asp-action="UpdateStatus" method="post">
+                                <input type="hidden" name="tableId" value="@table.TableID" />
+                                <select name="status" class="form-select form-select-sm mb-3" style="border-color: var(--primary-color);">
+                                    @foreach (var status in TableStatuses.All)
+                                    {
+                                        <option value="@status" selected="@(status == table.TableStatus)">@status</option>
+                                    }
+                                </select>
+                                <button type="submit" class="btn w-100" style="background: var(--primary-color); color: white; border: none; font-weight: 500; padding: 8px 12px;">
+                                    <i class="fas fa-save"></i> Cập nhật
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
     </div>
-}
 </div>

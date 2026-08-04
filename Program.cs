@@ -59,6 +59,9 @@ builder.Services.AddScoped<CustomerSessionService>();
 // Payment
 builder.Services.AddSingleton<PaymentGatewaySecretProtector>();
 
+// Logging
+builder.Services.AddLogging();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

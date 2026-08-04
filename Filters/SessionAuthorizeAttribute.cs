@@ -41,7 +41,7 @@ namespace Quản_lý_quán_cafe.Filters
                 if (!allowed)
                 {
                     // Forbidden for authenticated user without required role
-                    context.Result = new ForbidResult();
+                    context.Result = new StatusCodeResult(StatusCodes.Status403Forbidden);
                     return;
                 }
             }

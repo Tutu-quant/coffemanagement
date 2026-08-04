@@ -5,53 +5,302 @@
 }
 
 @{
-    ViewData["Title"] = "Chỉnh sửa thông tin";
+    ViewData["Title"] = "Hồ sơ cá nhân";
     Layout = "_UnifiedLayout";
+    var customer = ViewBag.Customer as Quản_lý_quán_cafe.Models.Entities.Customer;
 }
 
-<div class="d-flex">
-    <aside class="flex-shrink-0">
-        @await Html.PartialAsync("_CustomerSidebar")
-    </aside>
+<style>
+    .profile-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-top: 20px;
+    }
 
-    <main class="flex-grow-1 px-4 py-3">
-        <div class="page-header mb-4">
-            <h4 class="m-0">Chỉnh sửa thông tin</h4>
+    .profile-section {
+        background: #fff;
+        border: 1px solid #E8E6E1;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .profile-section h5 {
+        font-size: 16px;
+        font-weight: 700;
+        color: #3D2C27;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .profile-section h5 i {
+        color: #8B6F47;
+        font-size: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-group label {
+        font-size: 12px;
+        font-weight: 700;
+        color: #3D2C27;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+        display: block;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #E8E6E1;
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: inherit;
+        transition: all 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #8B6F47;
+        box-shadow: 0 0 0 3px rgba(139, 111, 71, 0.1);
+    }
+
+    .form-group textarea {
+        resize: vertical;
+        min-height: 80px;
+    }
+
+    .validation-error {
+        color: #c62828;
+        font-size: 12px;
+        margin-top: 4px;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 24px;
+    }
+
+    .btn-save {
+        flex: 1;
+        padding: 12px 16px;
+        background: #8B6F47;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-save:hover {
+        background: #5D4037;
+    }
+
+    .btn-cancel {
+        flex: 1;
+        padding: 12px 16px;
+        background: #F5F2E8;
+        color: #3D2C27;
+        border: 1px solid #E8E6E1;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-cancel:hover {
+        background: #E8E6E1;
+        text-decoration: none;
+    }
+
+    .points-section {
+        text-align: center;
+    }
+
+    .points-header {
+        font-size: 12px;
+        font-weight: 700;
+        color: #999;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+    }
+
+    .points-value {
+        font-size: 48px;
+        font-weight: 800;
+        color: #8B6F47;
+        margin: 12px 0;
+    }
+
+    .points-description {
+        font-size: 13px;
+        color: #666;
+        line-height: 1.5;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #E8E6E1;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #F5F2E8;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-size: 13px;
+        color: #666;
+    }
+
+    .info-value {
+        font-size: 13px;
+        font-weight: 600;
+        color: #3D2C27;
+    }
+
+    .success-message {
+        background: #E8F5E9;
+        border: 1px solid #4CAF50;
+        color: #2E7D32;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-size: 14px;
+    }
+
+    @@media (max-width: 768px) {
+        .profile-container {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="page-header mb-4">
+            <h4 class="m-0">Hồ sơ cá nhân</h4>
         </div>
 
-        <form asp-area="Customer" asp-controller="Profile" asp-action="Edit" method="post" class="card p-3">
-            @Html.AntiForgeryToken()
-            <input asp-for="Id" type="hidden" />
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="success-message">
+                <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            </div>
+        }
 
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+        <div class="profile-container">
+            <!-- LEFT: EDIT PROFILE FORM -->
+            <div class="profile-section">
+                <h5>
+                    <i class="bi bi-pencil-square"></i>
+                    Chỉnh sửa thông tin
+                </h5>
 
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label asp-for="Name" class="form-label"></label>
-                    <input asp-for="Name" class="form-control" />
-                    <span asp-validation-for="Name" class="text-danger small"></span>
+                <form asp-area="Customer" asp-controller="Profile" asp-action="Edit" method="post">
+                    @Html.AntiForgeryToken()
+                    <input asp-for="Id" type="hidden" />
+
+                    @if (ViewData.ModelState.Any(ms => ms.Value.Errors.Count > 0))
+                    {
+                        <div class="alert alert-danger mb-3">
+                            <strong>Có lỗi xảy ra:</strong>
+                            <ul class="mb-0">
+                                @foreach (var modelState in ViewData.ModelState.Values)
+                                {
+                                    @foreach (var error in modelState.Errors)
+                                    {
+                                        <li>@error.ErrorMessage</li>
+                                    }
+                                }
+                            </ul>
+                        </div>
+                    }
+
+                    <div class="form-group">
+                        <label asp-for="Name">Họ và tên</label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="validation-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Phone">Số điện thoại</label>
+                        <input asp-for="Phone" class="form-control" type="tel" />
+                        <span asp-validation-for="Phone" class="validation-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="Address">Địa chỉ</label>
+                        <input asp-for="Address" class="form-control" />
+                        <span asp-validation-for="Address" class="validation-error"></span>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-save">
+                            <i class="bi bi-check-lg"></i> Lưu thay đổi
+                        </button>
+                        <a asp-area="Customer" asp-controller="Orders" asp-action="MyOrders" class="btn-cancel">
+                            <i class="bi bi-x-lg"></i> Hủy
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- RIGHT: POINTS & INFO DISPLAY -->
+            <div class="profile-section points-section">
+                <h5>
+                    <i class="bi bi-star-fill"></i>
+                    Tích điểm khách hàng
+                </h5>
+
+                <div class="points-header">Điểm hiện có</div>
+                <div class="points-value">@(customer?.RewardPoints ?? 0)</div>
+
+                <div class="points-description">
+                    <p><strong>Quy đổi điểm:</strong></p>
+                    <p>1 điểm = 10.000đ khi thanh toán</p>
                 </div>
 
-                <div class="col-md-6">
-                    <label asp-for="Phone" class="form-label"></label>
-                    <input asp-for="Phone" class="form-control" />
-                    <span asp-validation-for="Phone" class="text-danger small"></span>
-                </div>
-
-                <div class="col-12">
-                    <label asp-for="Address" class="form-label"></label>
-                    <input asp-for="Address" class="form-control" />
-                    <span asp-validation-for="Address" class="text-danger small"></span>
-                </div>
-
-                <div class="col-12 d-flex gap-2">
-                    <button type="submit" class="btn btn-success">Lưu thay đổi</button>
-                    <a asp-area="Customer" asp-controller="Profile" asp-action="Index" class="btn btn-secondary">Hủy</a>
+                <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #E8E6E1;">
+                    <div class="info-row">
+                        <span class="info-label">Tên khách hàng:</span>
+                        <span class="info-value">@Model.Name</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email:</span>
+                        <span class="info-value">@(customer?.Email ?? "Chưa cập nhật")</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Điện thoại:</span>
+                        <span class="info-value">@(customer?.Phone ?? "Chưa cập nhật")</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Địa chỉ:</span>
+                        <span class="info-value">@(customer?.Address ?? "Chưa cập nhật")</span>
+                    </div>
                 </div>
             </div>
-        </form>
-    </main>
-</div>
+        </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

@@ -53,57 +53,6 @@
 
         <!-- Main Content -->
         <div class="admin-main">
-            <!-- Header -->
-            <header class="admin-header">
-                <div class="header-left">
-                    <button class="btn-sidebar-toggle" id="sidebarToggle">
-                        <i class="bi bi-list"></i>
-                    </button>
-                    <div class="header-title">
-                        <h1>@ViewData["PageTitle"]</h1>
-                        @if (ViewData["PageBreadcrumb"] != null)
-                        {
-                            <nav class="breadcrumb">
-                                <span class="breadcrumb-item">
-                                    @if (currentArea == "Cashier")
-                                    {
-                                        <a href="@Url.Action("Index", "Dashboard", new { area = "Cashier" })">
-                                            <i class="bi bi-house"></i> Tổng quan
-                                        </a>
-                                    }
-                                    else if (currentArea == "Customer")
-                                    {
-                                        <a href="@Url.Action("Index", "Orders", new { area = "Customer" })">
-                                            <i class="bi bi-house"></i> Menu
-                                        </a>
-                                    }
-                                    else
-                                    {
-                                        <a href="@Url.Action("Index", "Dashboard", new { area = "Admin" })">
-                                            <i class="bi bi-house"></i> Tổng quan
-                                        </a>
-                                    }
-                                </span>
-                                @Html.Raw(ViewData["PageBreadcrumb"])
-                            </nav>
-                        }
-                    </div>
-                </div>
-
-                <div class="header-right">
-                    <div class="header-user">
-                        <div class="user-avatar-small">
-                            @(Context.Session.GetString("FullName")?.Substring(0, 1).ToUpper() ?? "A")
-                        </div>
-                        <div class="user-info-small">
-                            <p class="user-name-small">@Context.Session.GetString("FullName")</p>
-                            <p class="user-role-small">@(currentArea == "Cashier" ? "Thu ngân" : Context.Session.GetString("RoleName"))</p>
-                        </div>
-                        <i class="bi bi-chevron-down"></i>
-                    </div>
-                </div>
-            </header>
-
             <!-- Page Content -->
             <main class="admin-content">
                 @if (TempData["SuccessMessage"] != null)

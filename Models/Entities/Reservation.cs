@@ -10,6 +10,8 @@
 
         public DateTime ReservationDate { get; set; }
 
+        public DateTime ReservationTime { get; set; }
+
         public DateTime? CheckinTime { get; set; }
 
         public DateTime? CheckoutTime { get; set; }

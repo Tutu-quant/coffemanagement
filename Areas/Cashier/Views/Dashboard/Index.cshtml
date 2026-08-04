@@ -1,157 +1,412 @@
-@model Quản_lý_quán_cafe.Areas.Cashier.ViewModels.CashierDashboardViewModel
-
 @{
-    ViewData["Title"] = "Tổng quan";
-    ViewData["PageTitle"] = "Tổng quan";
-    ViewData["PageBreadcrumb"] = "<span class='breadcrumb-item'><i class='bi bi-speedometer2'></i> Tổng quan</span>";
+    ViewData["Title"] = "Tổng Quan";
+    Layout = "~/Areas/Cashier/Views/Shared/_CashierLayout.cshtml";
 }
 
-<div class="page-header-cashier">
-    <h1 class="page-title">📊 Tổng quan hôm nay</h1>
-    <div>
-        <span class="text-muted" id="current-time">@DateTime.Now.ToString("HH:mm:ss")</span>
-    </div>
-</div>
+@model Quản_lý_quán_cafe.Areas.Cashier.ViewModels.CashierDashboardViewModel
 
-<!-- Stat Cards -->
-<div class="stat-cards">
-    <div class="stat-card">
-        <div class="stat-card-content">
-            <h3>Bàn đang hoạt động</h3>
-            <p class="stat-card-value">@Model.ActiveTablesCount</p>
+<div class="cashier-dashboard">
+    <!-- Header -->
+    <div class="dashboard-header">
+        <div class="header-left">
+            <h1 class="page-title">
+                <i class="fas fa-chart-line"></i>
+                Tổng quan hôm nay
+            </h1>
+            <div class="current-time">
+                <i class="fas fa-clock"></i>
+                <span id="dateDisplay">Chủ nhật, 1 tháng 6 năm 2025</span> • <span id="timeDisplay">14:32</span>
+            </div>
         </div>
-        <div class="stat-card-icon">
-            <i class="bi bi-door-open"></i>
+        <div class="header-right">
+            <button class="btn-icon" title="Thông báo">
+                <i class="fas fa-bell"></i>
+                @if (Model.Notifications.Count > 0)
+                {
+                    <span class="notification-badge">@Model.Notifications.Count</span>
+                }
+            </button>
+            <a href="#" class="btn-quick-action" style="flex: 0 0 auto; padding: 8px 16px; margin: 0;">
+                <i class="fas fa-tv"></i> Màn hình bếp
+            </a>
+            <a href="@Url.Action("Index", "POS", new { area = "Cashier" })" class="btn-quick-action btn-primary" style="flex: 0 0 auto; padding: 8px 16px; margin: 0;">
+                <i class="fas fa-cash-register"></i> Thu ngân POS
+            </a>
+            <div style="display: flex; align-items: center; gap: 10px; margin-left: 15px; padding-left: 15px; border-left: 1px solid #e8e3dd;">
+                <div style="width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px;" id="avatarInitials">
+                    NV
+                </div>
+                <div>
+                    <p style="margin: 0; font-size: 13px; color: #333; font-weight: 500;" id="employeeName">Nhân Viên</p>
+                    <a asp-area="Admin" asp-controller="Account" asp-action="Logout" style="font-size: 12px; color: var(--primary-color); text-decoration: none; font-weight: 500;">Đăng xuất</a>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="stat-card">
-        <div class="stat-card-content">
-            <h3>Đơn hôm nay</h3>
-            <p class="stat-card-value">@Model.TodayOrdersCount</p>
-        </div>
-        <div class="stat-card-icon">
-            <i class="bi bi-receipt"></i>
-        </div>
-    </div>
-
-    <div class="stat-card">
-        <div class="stat-card-content">
-            <h3>Chờ thanh toán</h3>
-            <p class="stat-card-value">@Model.WaitingPaymentCount</p>
-        </div>
-        <div class="stat-card-icon">
-            <i class="bi bi-cash-coin"></i>
-        </div>
-    </div>
-
-    <div class="stat-card">
-        <div class="stat-card-content">
-            <h3>Doanh thu hôm nay</h3>
-            <p class="stat-card-value">@Model.TodayRevenue.ToString("N0")đ</p>
-        </div>
-        <div class="stat-card-icon">
-            <i class="bi bi-graph-up"></i>
-        </div>
-    </div>
-</div>
-
-<!-- Quick billing -->
-<div class="order-panel" style="margin-top: 2rem;">
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <h3 class="order-panel-title mb-0">
-            <i class="bi bi-calculator"></i>
-            Tính tiền nhanh
-        </h3>
-        <strong>Tạm tính: @Model.PendingPaymentTotal.ToString("N0")đ</strong>
-    </div>
-    @if (Model.PendingBills.Any())
-    {
-        <div class="order-list">
-            @foreach (var bill in Model.PendingBills)
-            {
-                <div class="order-item d-flex align-items-center justify-content-between gap-3">
-                    <div>
-                        <div class="order-item-code">Bàn @bill.TableName · #@bill.OrderCode</div>
-                        <div class="order-item-table">@bill.ItemCount món · vào lúc @bill.CreatedAt.ToString("HH:mm")</div>
+    <div class="dashboard-container">
+        <div class="dashboard-main">
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <!-- Bàn Trống -->
+                <div class="stat-card stat-card-empty">
+                    <div class="stat-icon">
+                        <i class="fas fa-chair"></i>
                     </div>
-                    <div class="d-flex align-items-center gap-3">
-                        <strong class="order-item-amount">@bill.TotalAmount.ToString("N0")đ</strong>
-                        <a asp-area="Cashier" asp-controller="POS" asp-action="Index" asp-route-tableId="@bill.TableID"
-                           class="btn btn-success btn-sm">
-                            <i class="bi bi-cash-coin"></i> Tính tiền
-                        </a>
+                    <div class="stat-content">
+                        <p class="stat-label">Bàn Trống</p>
+                        <div class="stat-value">@Model.EmptyTables</div>
+                        <p class="stat-desc">Sẵn sàng phục vụ</p>
+                    </div>
+                </div>
+
+                <!-- Bàn Đã Đặt -->
+                <div class="stat-card stat-card-reserved">
+                    <div class="stat-icon">
+                        <i class="fas fa-bookmark"></i>
+                    </div>
+                    <div class="stat-content">
+                        <p class="stat-label">Bàn Đã Đặt</p>
+                        <div class="stat-value">@Model.ReservedTables</div>
+                        <p class="stat-desc">Khách sắp tới</p>
+                    </div>
+                </div>
+
+                <!-- Bàn Đang Phục Vụ -->
+                <div class="stat-card stat-card-serving">
+                    <div class="stat-icon">
+                        <i class="fas fa-utensils"></i>
+                    </div>
+                    <div class="stat-content">
+                        <p class="stat-label">Đang Phục Vụ</p>
+                        <div class="stat-value">@Model.ServingTables</div>
+                        <p class="stat-desc">Đang ăn</p>
+                    </div>
+                </div>
+
+                <!-- Chờ Thanh Toán -->
+                <div class="stat-card stat-card-pending">
+                    <div class="stat-icon">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <div class="stat-content">
+                        <p class="stat-label">Chờ Thanh Toán</p>
+                        <div class="stat-value">@Model.PendingPaymentTables</div>
+                        <p class="stat-desc">Chờ thanh toán</p>
+                    </div>
+                </div>
+
+                <!-- Doanh Thu Hôm Nay -->
+                <div class="stat-card stat-card-revenue">
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div class="stat-content">
+                        <p class="stat-label">Doanh Thu Hôm Nay</p>
+                        <div class="stat-value">@Model.TodayRevenue.ToString("N0")</div>
+                        <p class="stat-desc">đ</p>
+                    </div>
+                </div>
+
+                <!-- Lượt Đặt Bàn -->
+                <div class="stat-card stat-card-reservation">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <p class="stat-label">Lượt Đặt Hôm Nay</p>
+                        <div class="stat-value">@Model.TodayReservations</div>
+                        <p class="stat-desc">lượt đặt bàn</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table Legend -->
+            <div class="table-legend">
+                <div class="legend-item">
+                    <div class="legend-color legend-empty"></div>
+                    <span>Trống</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-reserved"></div>
+                    <span>Đã đặt</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-serving"></div>
+                    <span>Đang phục vụ</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-pending"></div>
+                    <span>Chờ thanh toán</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-overdue"></div>
+                    <span>Quá giờ</span>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <button class="btn-quick-action btn-success" onclick="window.location.href='@Url.Action("Index", "Orders")'">
+                    <i class="fas fa-plus"></i> Tạo Order
+                </button>
+                <button class="btn-quick-action" style="background-color: var(--status-reserved); color: white;">
+                    <i class="fas fa-calendar-alt"></i> Đặt Bàn
+                </button>
+                <button class="btn-quick-action btn-info" onclick="window.location.href='@Url.Action("Index", "Payments")'">
+                    <i class="fas fa-cash-register"></i> Thanh Toán
+                </button>
+                <button class="btn-quick-action" style="background-color: #6B7280; color: white;">
+                    <i class="fas fa-sync"></i> Làm mới
+                </button>
+            </div>
+
+            <!-- Tables Grid -->
+            <div>
+                <div class="section-title">
+                    <h2>Sơ đồ bàn</h2>
+                    <span class="table-count">@Model.TotalTables bàn</span>
+                </div>
+                <div class="tables-grid">
+                    @foreach (var table in Model.Tables)
+                    {
+                        var cardClass = table.TableStatus switch
+                        {
+                            "Empty" => "table-card-empty",
+                            "Reserved" => "table-card-reserved",
+                            "Serving" => "table-card-serving",
+                            "PendingPayment" => "table-card-pendinypayment",
+                            _ => "table-card-empty"
+                        };
+
+                        var statusIndicatorClass = table.TableStatus switch
+                        {
+                            "Empty" => "status-empty",
+                            "Reserved" => "status-reserved",
+                            "Serving" => "status-serving",
+                            "PendingPayment" => "status-pending",
+                            _ => "status-empty"
+                        };
+
+                        <div class="table-card @cardClass" onclick="handleTableClick(@table.TableID, '@table.TableStatus')" title="Bàn @table.TableNumber">
+                            <div class="table-header">
+                                <h3 class="table-number">@table.TableNumber</h3>
+                                <span class="table-capacity">@table.Capacity chỗ</span>
+                            </div>
+
+                            <div class="table-body">
+                                @switch (table.TableStatus)
+                                {
+                                    case "Empty":
+                                        <span class="status-indicator status-empty">
+                                            <i class="fas fa-check-circle"></i> Trống
+                                        </span>
+                                        break;
+
+                                    case "Reserved":
+                                        <span class="status-indicator status-reserved">
+                                            <i class="fas fa-clock"></i> Đã đặt
+                                        </span>
+                                        <p class="table-time">@table.ReservationTime?.ToString("HH:mm")</p>
+                                        <p class="table-customer">@table.ReservationCustomerName</p>
+                                        <p class="table-guest">@table.ReservationGuestCount người</p>
+                                        <p class="table-countdown">Còn @table.MinutesUntilReservation phút</p>
+                                        break;
+
+                                    case "Serving":
+                                        <span class="status-indicator status-serving">
+                                            <i class="fas fa-utensils"></i> Đang phục vụ
+                                        </span>
+                                        <p class="table-order-info">@(table.OrderItemCount ?? 0) món</p>
+                                        <p class="table-order-info">@table.MinutesUsed phút</p>
+                                        @if (table.OrderTotalAmount.HasValue)
+                                        {
+                                            <p class="table-amount">@table.OrderTotalAmount.Value.ToString("N0")đ</p>
+                                        }
+                                        break;
+
+                                    case "PendingPayment":
+                                        <span class="status-indicator status-pending">
+                                            <i class="fas fa-credit-card"></i> Chờ TT
+                                        </span>
+                                        @if (table.OrderTotalAmount.HasValue)
+                                        {
+                                            <p class="table-amount">@table.OrderTotalAmount.Value.ToString("N0")đ</p>
+                                        }
+                                        <p class="table-order-info">@table.MinutesUsed phút</p>
+                                        break;
+                                }
+                            </div>
+
+                            <div class="table-footer">
+                                <p class="table-location">
+                                    <i class="fas fa-map-marker-alt"></i> @table.Location
+                                </p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="dashboard-sidebar">
+            <!-- Upcoming Reservations -->
+            @if (Model.UpcomingReservations.Count > 0)
+            {
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title">
+                        <i class="fas fa-users"></i> Khách sắp đến
+                    </h3>
+                    <div class="sidebar-content">
+                        <div class="reservations-list">
+                            @foreach (var reservation in Model.UpcomingReservations)
+                            {
+                                <div class="reservation-item">
+                                    <div class="reservation-time">@reservation.ReservationTime.ToString("HH:mm")</div>
+                                    <div class="reservation-details">
+                                        <p class="reservation-table"><strong>@reservation.TableNumber</strong></p>
+                                        <p class="reservation-customer">@reservation.CustomerName</p>
+                                        <p class="reservation-guest">@reservation.GuestCount người</p>
+                                    </div>
+                                    <div class="reservation-countdown">
+                                        <span class="countdown-text">Còn @reservation.MinutesUntilArrival phút</span>
+                                        <button class="btn-small btn-success" style="width: 100%;">Chuẩn bị</button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
                     </div>
                 </div>
             }
-        </div>
-    }
-    else
-    {
-        <div class="text-muted text-center py-3">Không có hóa đơn đang chờ thanh toán.</div>
-    }
-</div>
-
-<!-- Floor Map -->
-<div class="floor-map">
-    <h2 class="floor-map-title">📍 Sơ đồ bàn</h2>
-    <div class="tables-grid">
-        @foreach (var table in Model.Tables)
-        {
-            var statusClass = table.Status.ToLower() switch
+            else
             {
-                "occupied" => "occupied",
-                "waitingpayment" => "waiting",
-                "reserved" => "reserved",
-                _ => "empty"
-            };
-
-            <a href="~/Cashier/POS?tableId=@table.TableID" 
-               class="table-item @statusClass"
-               title="@table.StatusLabel">
-                <div class="table-name">
-                    <i class="bi bi-table"></i> @table.TableName
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title">
+                        <i class="fas fa-users"></i> Khách sắp đến
+                    </h3>
+                    <div class="sidebar-content">
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <p>Không có lịch đặt bàn</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="table-info">
-                    @if (table.Status == "Occupied" && table.GuestCount.HasValue)
+            }
+
+            <!-- Notifications -->
+            <div class="sidebar-section">
+                <h3 class="sidebar-title">
+                    <i class="fas fa-bell"></i> Thông báo
+                </h3>
+                <div class="sidebar-content">
+                    @if (Model.Notifications.Count > 0)
                     {
-                        <span>👥 @table.GuestCount khách</span>
-                    }
-                    else if (table.Status == "WaitingPayment")
-                    {
-                        <span style="color: #FF6B6B; font-weight: 600;">⏳ @table.TotalAmount?.ToString("N0")đ</span>
+                        <div class="notifications-list">
+                            @foreach (var notification in Model.Notifications)
+                            {
+                                var notifClass = notification.Type switch
+                                {
+                                    "info" => "notification-info",
+                                    "warning" => "notification-warning",
+                                    "danger" => "notification-danger",
+                                    "success" => "notification-success",
+                                    _ => "notification-info"
+                                };
+
+                                <div class="notification-item @notifClass">
+                                    <div class="notification-icon">
+                                        <i class="fas fa-@notification.Icon"></i>
+                                    </div>
+                                    <div class="notification-body">
+                                        <p class="notification-title">@notification.Title</p>
+                                        <p class="notification-message">@notification.Message</p>
+                                        <small class="notification-time">@notification.TimeAgo</small>
+                                    </div>
+                                </div>
+                            }
+                        </div>
                     }
                     else
                     {
-                        <span>Trống</span>
+                        <div class="empty-state">
+                            <i class="fas fa-check-circle"></i>
+                            <p>Không có thông báo mới</p>
+                        </div>
                     }
                 </div>
-                @if (!string.IsNullOrEmpty(table.OrderCode))
-                {
-                    <div class="table-info" style="margin-top: 0.5rem;">
-                        <span style="background: rgba(139, 69, 19, 0.1); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 11px;">
-                            #@table.OrderCode
-                        </span>
-                    </div>
-                }
-            </a>
-        }
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Recent Orders removed for Cashier UI -->
-
 @section Scripts {
     <script>
-        // Update time every second
-        setInterval(() => {
+        // Update time and date
+        function updateTimeAndDate() {
             const now = new Date();
-            document.getElementById('current-time').textContent = now.toLocaleTimeString('vi-VN');
-        }, 1000);
 
-        // Auto-refresh dashboard every 30 seconds (realtime table status)
-        setInterval(() => {
-            location.reload();
-        }, 30000);
+            // Format time
+            const timeString = now.toLocaleString('vi-VN', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            // Format date
+            const dateString = now.toLocaleString('vi-VN', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+
+            document.getElementById('timeDisplay').textContent = timeString;
+            document.getElementById('dateDisplay').textContent = dateString;
+        }
+
+        // Get employee name and set avatar
+        function initializeEmployee() {
+            const employeeName = localStorage.getItem('employeeName') || 'Nhân Viên';
+            document.getElementById('employeeName').textContent = employeeName;
+
+            // Get initials for avatar
+            const initials = employeeName
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase())
+                .join('')
+                .slice(0, 2);
+            document.getElementById('avatarInitials').textContent = initials || 'NV';
+        }
+
+        updateTimeAndDate();
+        initializeEmployee();
+        setInterval(updateTimeAndDate, 60000);
+
+        // Handle table click
+        function handleTableClick(tableId, status) {
+            switch (status) {
+                case 'Empty':
+                    window.location.href = `@Url.Action("Create", "Orders", new { area = "Cashier" })?tableId=${tableId}`;
+                    break;
+                case 'Reserved':
+                    window.location.href = `@Url.Action("Details", "Orders", new { area = "Cashier" })?tableId=${tableId}`;
+                    break;
+                case 'Serving':
+                    window.location.href = `@Url.Action("Details", "Orders", new { area = "Cashier" })?tableId=${tableId}`;
+                    break;
+                case 'PendingPayment':
+                    window.location.href = `@Url.Action("Index", "Payments", new { area = "Cashier" })?tableId=${tableId}`;
+                    break;
+            }
+        }
+
+        // Refresh button
+        document.querySelectorAll('.btn-quick-action').forEach(btn => {
+            if (btn.innerHTML.includes('Làm mới')) {
+                btn.addEventListener('click', function() {
+                    location.reload();
+                });
+            }
+        });
     </script>
 }

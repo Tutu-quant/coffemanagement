@@ -75,11 +75,11 @@ namespace Quản_lý_quán_cafe.Data
                 // Seed Roles
                 await SeedRolesAsync(context);
 
-                // Seed Employees
-                await SeedEmployeesAsync(context);
-
-                // Seed Users
+                // Seed Users (which also creates Employees)
                 await SeedUsersAsync(context);
+
+                // Seed Employees (if needed separately)
+                await SeedEmployeesAsync(context);
 
                 // Seed Categories
                 await SeedCategoriesAsync(context);
@@ -144,38 +144,7 @@ namespace Quản_lý_quán_cafe.Data
             if (await context.Employees.AnyAsync())
                 return;
 
-            var employees = new List<Employee>
-            {
-                new Employee
-                {
-                    FullName = "Quản trị viên",
-                    Gender = "Male",
-                    Email = "admin@cafe.com",
-                    Phone = "0123456789",
-                    Address = "123 Main Street",
-                    HireDate = DateTime.UtcNow.AddYears(-1),
-                    Salary = 10000000,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    IsDeleted = false
-                },
-                new Employee
-                {
-                    FullName = "Thu ngân",
-                    Gender = "Female",
-                    Email = "cashier@cafe.com",
-                    Phone = "0123456790",
-                    Address = "123 Main Street",
-                    HireDate = DateTime.UtcNow.AddMonths(-6),
-                    Salary = 5000000,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    IsDeleted = false
-                }
-            };
-
-            await context.Employees.AddRangeAsync(employees);
-            await context.SaveChangesAsync();
+            // Employees will be created with Users later
         }
 
         private static async Task SeedUsersAsync(ApplicationDbContext context)
@@ -187,49 +156,84 @@ namespace Quản_lý_quán_cafe.Data
             var cashierRole = await context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Cashier");
             var customerRole = await context.Roles.FirstOrDefaultAsync(r => r.RoleName == "Customer");
 
-            var adminEmployee = await context.Employees.FirstOrDefaultAsync(e => e.FullName == "Quản trị viên");
-            var cashierEmployee = await context.Employees.FirstOrDefaultAsync(e => e.FullName == "Thu ngân");
-
             var hashedPassword = HashPassword("123456");
 
-            var users = new List<User>
+            // Create Admin User and Employee together
+            var adminEmployee = new Employee
             {
-                new User
-                {
-                    Username = "admin",
-                    PasswordHash = hashedPassword,
-                    RoleID = adminRole?.RoleID ?? 1,
-                    EmployeeID = adminEmployee?.EmployeeID,
-                    IsActive = true,
-                    CreatedBy = "System",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    IsDeleted = false
-                },
-                new User
-                {
-                    Username = "cashier",
-                    PasswordHash = hashedPassword,
-                    RoleID = cashierRole?.RoleID ?? 2,
-                    EmployeeID = cashierEmployee?.EmployeeID,
-                    IsActive = true,
-                    CreatedBy = "System",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    IsDeleted = false
-                },
-                new User
-                {
-                    Username = "customer",
-                    PasswordHash = hashedPassword,
-                    RoleID = customerRole?.RoleID ?? 3,
-                    IsActive = true,
-                    CreatedBy = "System",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    IsDeleted = false
-                }
+                FullName = "Quản trị viên",
+                Gender = "Male",
+                Email = "admin@cafe.com",
+                Phone = "0123456789",
+                Address = "123 Main Street",
+                Position = "Quản lý",
+                Department = "Quản trị",
+                HireDate = DateTime.UtcNow.AddYears(-1),
+                Salary = 10000000,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                IsDeleted = false
             };
+
+            var adminUser = new User
+            {
+                Username = "admin",
+                PasswordHash = hashedPassword,
+                RoleID = adminRole?.RoleID ?? 1,
+                Employee = adminEmployee,
+                IsActive = true,
+                CreatedBy = "System",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                IsDeleted = false
+            };
+
+            // Create Cashier User and Employee together
+            var cashierEmployee = new Employee
+            {
+                FullName = "Thu ngân",
+                Gender = "Female",
+                Email = "cashier@cafe.com",
+                Phone = "0123456790",
+                Address = "123 Main Street",
+                Position = "Thu ngân",
+                Department = "Thu ngân",
+                HireDate = DateTime.UtcNow.AddMonths(-6),
+                Salary = 5000000,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                IsDeleted = false
+            };
+
+            var cashierUser = new User
+            {
+                Username = "cashier",
+                PasswordHash = hashedPassword,
+                RoleID = cashierRole?.RoleID ?? 2,
+                Employee = cashierEmployee,
+                IsActive = true,
+                CreatedBy = "System",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                IsDeleted = false
+            };
+
+            // Customer User (no Employee)
+            var customerUser = new User
+            {
+                Username = "customer",
+                PasswordHash = hashedPassword,
+                RoleID = customerRole?.RoleID ?? 3,
+                IsActive = true,
+                CreatedBy = "System",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                IsDeleted = false
+            };
+
+            var users = new List<User> { adminUser, cashierUser, customerUser };
 
             await context.Users.AddRangeAsync(users);
             await context.SaveChangesAsync();

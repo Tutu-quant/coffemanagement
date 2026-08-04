@@ -1,6 +1,263 @@
-﻿namespace Quản_lý_quán_cafe.Areas.Admin.View.Employees
-{
-    public class Details
-    {
-    }
+@model EmployeeDetailViewModel
+
+@{
+    ViewData["Title"] = "Chi tiết nhân viên";
+    ViewData["PageTitle"] = "Chi tiết nhân viên";
+    ViewData["PageBreadcrumb"] = "<span class='breadcrumb-item'><a href='" + Url.Action("Index", "Employees", new { area = "Admin" }) + "'><i class='bi bi-people'></i> Nhân viên</a></span><span class='breadcrumb-item'>Chi tiết</span>";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="page-header">
+    <a href="@Url.Action("Index")" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Quay lại
+    </a>
+    <div class="d-flex gap-2">
+        <a href="@Url.Action("Edit", new { id = Model.EmployeeID })" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Chỉnh sửa
+        </a>
+        <a href="@Url.Action("ChangePassword", new { id = Model.EmployeeID })" class="btn btn-secondary">
+            <i class="bi bi-key"></i> Đổi mật khẩu
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-4">
+        <!-- Employee Card -->
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="employee-avatar-large">
+                    @Model.FullName.First()
+                </div>
+                <h4 class="mt-3 mb-0">@Model.FullName</h4>
+                <p class="text-muted mb-3">@Model.Position</p>
+
+                @if (Model.IsActive)
+                {
+                    <span class="badge bg-success">
+                        <i class="bi bi-check-circle"></i>
+                        Hoạt động
+                    </span>
+                }
+                else
+                {
+                    <span class="badge bg-warning">
+                        <i class="bi bi-exclamation-circle"></i>
+                        Không hoạt động
+                    </span>
+                }
+
+                <hr class="my-3" />
+
+                <div class="employee-contact-info">
+                    <div class="contact-item">
+                        <i class="bi bi-envelope"></i>
+                        <div>
+                            <p class="contact-label">Email</p>
+                            <p class="contact-value">@Model.Email</p>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Phone))
+                    {
+                        <div class="contact-item">
+                            <i class="bi bi-telephone"></i>
+                            <div>
+                                <p class="contact-label">Số điện thoại</p>
+                                <p class="contact-value">@Model.Phone</p>
+                            </div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Address))
+                    {
+                        <div class="contact-item">
+                            <i class="bi bi-geo-alt"></i>
+                            <div>
+                                <p class="contact-label">Địa chỉ</p>
+                                <p class="contact-value">@Model.Address</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <!-- Information Cards -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-briefcase"></i> Thông tin công việc
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Chức vụ</label>
+                        <p>@Model.Position</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Phòng ban</label>
+                        <p>@Model.Department</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Ngày tuyển dụng</label>
+                        <p>
+                            @if (Model.HireDate.HasValue)
+                            {
+                                @Model.HireDate.Value.ToString("dd/MM/yyyy")
+                            }
+                            else
+                            {
+                                <span class="text-muted">Chưa cập nhật</span>
+                            }
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-lock"></i> Thông tin tài khoản
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Tên đăng nhập</label>
+                        <p class="monospace">@Model.Username</p>
+                    </div>
+                    <div class="info-item">
+                        <label>ID người dùng</label>
+                        <p class="monospace">@Model.UserID</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Ngày tạo</label>
+                        <p>@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                    </div>
+                    <div class="info-item">
+                        <label>Cập nhật lần cuối</label>
+                        <p>
+                            @if (Model.UpdatedAt.HasValue)
+                            {
+                                @Model.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")
+                            }
+                            else
+                            {
+                                <span class="text-muted">Chưa cập nhật</span>
+                            }
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Head {
+    <style>
+        .employee-avatar-large {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8B6F47 0%, #D4A574 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 32px;
+            margin: 0 auto;
+        }
+
+        .employee-contact-info {
+            text-align: left;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .contact-item:last-child {
+            border-bottom: none;
+        }
+
+        .contact-item i {
+            font-size: 20px;
+            color: var(--coffee-brown);
+            margin-top: 2px;
+        }
+
+        .contact-label {
+            margin: 0;
+            font-size: 12px;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .contact-value {
+            margin: 4px 0 0 0;
+            font-weight: 500;
+            color: var(--text-dark);
+            word-break: break-all;
+        }
+
+        .card-header {
+            background-color: #FAFAF8;
+            border-bottom: 2px solid var(--border-color);
+            padding: 16px;
+        }
+
+        .card-header h6 {
+            color: var(--coffee-dark);
+            font-weight: 600;
+        }
+
+        .card-header i {
+            margin-right: 8px;
+            color: var(--coffee-brown);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+        }
+
+        .info-item {
+            padding: 12px 0;
+        }
+
+        .info-item label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .info-item p {
+            margin: 0;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .monospace {
+            font-family: 'Courier New', monospace;
+            background-color: #FAFAF8;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+    </style>
 }
