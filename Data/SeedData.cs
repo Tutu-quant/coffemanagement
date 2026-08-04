@@ -375,7 +375,6 @@ namespace Quản_lý_quán_cafe.Data
 
             var tables = new List<RestaurantTable>();
 
-            // Create 10 tables with 2, 4, or 6 seats
             for (int i = 1; i <= 10; i++)
             {
                 int capacity = (i % 3 == 0) ? 6 : (i % 2 == 0) ? 4 : 2;
@@ -395,7 +394,6 @@ namespace Quản_lý_quán_cafe.Data
             await context.SaveChangesAsync();
         }
 
-        // Helper method to hash password
         private static string HashPassword(string password)
         {
             using (var sha256 = SHA256.Create())
