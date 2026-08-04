@@ -162,6 +162,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
 
         private List<Models.ViewModels.Order.OrderTimelineEventViewModel> GenerateOrderTimeline(Models.Entities.Order order)
         {
+            return View();
             var list = new List<Models.ViewModels.Order.OrderTimelineEventViewModel>();
             list.Add(new Models.ViewModels.Order.OrderTimelineEventViewModel { EventDate = order.OrderDate.ToLocalTime(), EventType = "Created", EventDescription = "Order created" });
             if (order.CompletedDate.HasValue)

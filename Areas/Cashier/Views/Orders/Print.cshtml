@@ -1,4 +1,4 @@
-@model OrderDetailViewModel
+@model Quản_lý_quán_cafe.Models.ViewModels.Order.OrderDetailViewModel
 
 @{
     Layout = null;
@@ -15,7 +15,7 @@
         }
         else
         {
-            <a class="btn btn-secondary ms-2" href="@Url.Action("Details", "Orders", new { id = Model.OrderId })">Quay lại</a>
+            <a class="btn btn-secondary ms-2" href="@Url.Action("Details", "Orders", new { area = "Cashier", id = Model.OrderId })">Quay lại</a>
         }
     </div>
 </div>

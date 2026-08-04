@@ -23,9 +23,7 @@
     </div>
 </div>
 
-<!-- Order Info Cards Grid -->
 <div class="row mb-4">
-    <!-- Order Info Card -->
     <div class="col-lg-6 mb-3">
         <div class="card h-100">
             <div class="card-header">
@@ -62,7 +60,6 @@
         </div>
     </div>
 
-    <!-- Customer Info Card -->
     <div class="col-lg-6 mb-3">
         <div class="card h-100">
             <div class="card-header">
@@ -110,7 +107,6 @@
         </div>
     </div>
 
-    <!-- Table Info Card -->
     <div class="col-lg-6 mb-3">
         <div class="card h-100">
             <div class="card-header">
@@ -136,7 +132,6 @@
         </div>
     </div>
 
-    <!-- Payment Info Card -->
     <div class="col-lg-6 mb-3">
         <div class="card h-100">
             <div class="card-header">
@@ -175,7 +170,6 @@
     </div>
 </div>
 
-<!-- Items Section -->
 @if (Model.Items.Any())
 {
     <div class="card mb-4">
@@ -223,7 +217,6 @@
     </div>
 }
 
-<!-- Timeline Section -->
 @if (Model.Timeline.Any())
 {
     <div class="card mb-4">
@@ -265,7 +258,6 @@
     </div>
 }
 
-<!-- Error Alert -->
 @if (TempData["Error"] != null)
 {
     <div class="alert alert-danger" role="alert">
@@ -308,7 +300,6 @@
         text-decoration: underline;
     }
 
-    /* Timeline Styles */
     .timeline {
         position: relative;
         padding: 20px 0;
