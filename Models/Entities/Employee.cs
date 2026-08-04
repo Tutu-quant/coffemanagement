@@ -34,12 +34,7 @@ namespace Quản_lý_quán_cafe.Models.Entities
 
         public bool IsDeleted { get; set; }
 
-<<<<<<< HEAD
         // Navigation Properties
         public virtual User? User { get; set; }
-=======
-
-        public virtual ICollection<User> Users { get; set; } = new List<User>();
->>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073
     }
 }

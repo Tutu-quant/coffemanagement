@@ -53,38 +53,34 @@
 
 
         <div class="admin-main">
-<<<<<<< HEAD
-            <!-- Page Content -->
-=======
-
+            @{
+                var fullName = Context.Session.GetString("FullName") ?? string.Empty;
+                var avatarInitial = string.IsNullOrWhiteSpace(fullName)
+                    ? "A"
+                    : fullName.Trim()[0].ToString().ToUpperInvariant();
+            }
             <header class="admin-header">
                 <div class="header-left">
-                    <button class="btn-sidebar-toggle" id="sidebarToggle">
+                    <button type="button" class="btn-sidebar-toggle" id="sidebarToggle" aria-label="Mở menu điều hướng">
                         <i class="bi bi-list"></i>
                     </button>
                     <div class="header-title">
                         <h1>@ViewData["PageTitle"]</h1>
                         @if (ViewData["PageBreadcrumb"] != null)
                         {
-                            <nav class="breadcrumb">
+                            <nav class="breadcrumb" aria-label="Đường dẫn trang">
                                 <span class="breadcrumb-item">
                                     @if (currentArea == "Cashier")
                                     {
-                                        <a href="@Url.Action("Index", "Dashboard", new { area = "Cashier" })">
-                                            <i class="bi bi-house"></i> Tổng quan
-                                        </a>
+                                        <a href="@Url.Action("Index", "Dashboard", new { area = "Cashier" })"><i class="bi bi-house"></i> Tổng quan</a>
                                     }
                                     else if (currentArea == "Customer")
                                     {
-                                        <a href="@Url.Action("Index", "Orders", new { area = "Customer" })">
-                                            <i class="bi bi-house"></i> Menu
-                                        </a>
+                                        <a href="@Url.Action("Menu", "Orders", new { area = "Customer" })"><i class="bi bi-house"></i> Menu</a>
                                     }
                                     else
                                     {
-                                        <a href="@Url.Action("Index", "Dashboard", new { area = "Admin" })">
-                                            <i class="bi bi-house"></i> Tổng quan
-                                        </a>
+                                        <a href="@Url.Action("Index", "Dashboard", new { area = "Admin" })"><i class="bi bi-house"></i> Tổng quan</a>
                                     }
                                 </span>
                                 @Html.Raw(ViewData["PageBreadcrumb"])
@@ -92,23 +88,17 @@
                         }
                     </div>
                 </div>
-
                 <div class="header-right">
                     <div class="header-user">
-                        <div class="user-avatar-small">
-                            @(Context.Session.GetString("FullName")?.Substring(0, 1).ToUpper() ?? "A")
-                        </div>
+                        <div class="user-avatar-small">@avatarInitial</div>
                         <div class="user-info-small">
-                            <p class="user-name-small">@Context.Session.GetString("FullName")</p>
+                            <p class="user-name-small">@fullName</p>
                             <p class="user-role-small">@(currentArea == "Cashier" ? "Thu ngân" : Context.Session.GetString("RoleName"))</p>
                         </div>
-                        <i class="bi bi-chevron-down"></i>
                     </div>
                 </div>
             </header>
 
-
->>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073
             <main class="admin-content">
                 @if (TempData["SuccessMessage"] != null)
                 {

@@ -221,7 +221,7 @@
                     @Html.AntiForgeryToken()
                     <input asp-for="Id" type="hidden" />
 
-                    @if (ViewData.ModelState.Any(ms => ms.Value.Errors.Count > 0))
+                    @if (ViewData.ModelState.Any(ms => ms.Value?.Errors.Count > 0))
                     {
                         <div class="alert alert-danger mb-3">
                             <strong>Có lỗi xảy ra:</strong>

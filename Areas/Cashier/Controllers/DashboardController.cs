@@ -28,21 +28,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             var today = DateTime.Today;
             var model = new CashierDashboardViewModel();
 
-<<<<<<< HEAD
             try
-=======
-
-            var tables = await _context.RestaurantTables
-                .Where(t => !t.IsDeleted)
-                .Include(t => t.Orders.Where(o => !o.IsDeleted && o.OrderDate >= today && o.OrderDate < tomorrow))
-                    .ThenInclude(o => o.OrderDetails)
-                .OrderBy(t => t.TableNumber)
-                .ToListAsync();
-
-
-            var tableStatuses = new List<CashierDashboardViewModel.TableStatusDto>();
-            foreach (var table in tables)
->>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073
             {
                 // Lấy tất cả bàn
                 var tables = await _context.RestaurantTables
@@ -217,64 +203,10 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 });
             }
 
-<<<<<<< HEAD
             // Notification: Bàn quá giờ
             var overdueTablesList = model.Tables
                 .Where(t => t.IsOverdue)
                 .Take(3)
-=======
-
-            var todayOrders = await _context.Orders
-                .Where(o => !o.IsDeleted && o.OrderDate >= today && o.OrderDate < tomorrow)
-                .Include(o => o.Table)
-                .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
-                .ToListAsync();
-
-            var todayRevenue = await _context.Payments
-                .Where(p => !p.IsDeleted && p.PaymentStatus == "Completed" &&
-                            p.PaymentDate >= today && p.PaymentDate < tomorrow)
-                .SumAsync(p => (decimal?)p.Amount) ?? 0;
-
-            var pendingBills = await _context.Orders
-                .AsNoTracking()
-                .Where(o => !o.IsDeleted && o.TableID != null &&
-                            o.OrderStatus != "Completed" && o.OrderStatus != "Cancelled" &&
-                            o.OrderDetails.Any(d => !d.IsDeleted))
-                .Include(o => o.Table)
-                .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
-                .OrderBy(o => o.OrderDate)
-                .Select(o => new CashierDashboardViewModel.OrderSummaryDto
-                {
-                    OrderID = o.OrderID,
-                    OrderCode = $"{o.OrderID:D6}",
-                    TableID = o.TableID!.Value,
-                    TableName = o.Table != null ? o.Table.TableNumber : "N/A",
-                    TotalAmount = o.OrderDetails.Where(d => !d.IsDeleted).Sum(d => d.Subtotal),
-                    Status = o.OrderStatus,
-                    CreatedAt = o.OrderDate.ToLocalTime(),
-                    ItemCount = o.OrderDetails.Where(d => !d.IsDeleted).Sum(d => d.Quantity)
-                })
-                .ToListAsync();
-
-            var activeTablesCount = tableStatuses.Count(t => t.Status == "Occupied");
-            var waitingPaymentCount = pendingBills.Count;
-
-
-            var recentOrders = todayOrders
-                .OrderByDescending(o => o.OrderDate)
-                .Take(5)
-                .Select(o => new CashierDashboardViewModel.OrderSummaryDto
-                {
-                    OrderID = o.OrderID,
-                    OrderCode = $"{o.OrderID:D6}",
-                    TableID = o.TableID ?? 0,
-                    TableName = o.Table?.TableNumber ?? "N/A",
-                    TotalAmount = o.TotalAmount,
-                    Status = o.OrderStatus,
-                    CreatedAt = o.OrderDate.ToLocalTime(),
-                    ItemCount = o.OrderDetails.Count
-                })
->>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073
                 .ToList();
 
             foreach (var table in overdueTablesList)

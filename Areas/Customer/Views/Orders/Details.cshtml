@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 @using Quản_lý_quán_cafe.Models.ViewModels.Order
 @model OrderDetailViewModel
 
@@ -430,63 +429,14 @@
 </div>
 
 @functions {
-    private string GetStatusDisplay(string status)
+    private string GetStatusDisplay(string? status)
     {
         return status?.ToLower() switch
         {
             "pending" => "Đang chờ",
             "completed" => "Đã hoàn thành",
             "cancelled" => "Đã hủy",
-            _ => status
+            _ => status ?? string.Empty
         };
     }
 }
-=======
-@model Quản_lý_quán_cafe.Models.ViewModels.Order.OrderDetailViewModel
-@{
-    ViewData["Title"] = "Chi tiết đơn hàng";
-    ViewData["PageTitle"] = "Đơn của tôi";
-}
-
-<div class="container py-4" style="max-width: 900px;">
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
-            <a asp-action="History" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Đơn của tôi</a>
-            <h2 class="mt-2 mb-1">@Model.OrderCode</h2>
-            <div class="text-muted">@Model.OrderDate.ToLocalTime().ToString("HH:mm · dd/MM/yyyy")</div>
-        </div>
-        <span class="badge bg-primary fs-6">@Model.OrderStatus</span>
-    </div>
-
-    <div class="card shadow-sm mb-3">
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-4"><small class="text-muted d-block">Bàn</small><strong>@(Model.TableNumber ?? "Mang đi")</strong></div>
-                <div class="col-md-4"><small class="text-muted d-block">Thanh toán</small><strong>@(Model.PaymentStatus ?? "Pending")</strong></div>
-                <div class="col-md-4"><small class="text-muted d-block">Tổng tiền</small><strong class="text-primary">@Model.TotalAmount.ToString("N0")đ</strong></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card shadow-sm">
-        <div class="card-header bg-white"><strong>Các món đã gọi</strong></div>
-        <div class="list-group list-group-flush">
-            @foreach (var item in Model.Items)
-            {
-                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
-                    <div>
-                        <strong>@item.ProductName</strong>
-                        <div class="text-muted small">@item.Quantity × @item.UnitPrice.ToString("N0")đ</div>
-                        @if (!string.IsNullOrWhiteSpace(item.Notes)) { <div class="small"><i class="bi bi-chat-left-text"></i> @item.Notes</div> }
-                    </div>
-                    <strong>@item.TotalPrice.ToString("N0")đ</strong>
-                </div>
-            }
-        </div>
-        @if (!string.IsNullOrWhiteSpace(Model.Notes))
-        {
-            <div class="card-footer bg-white"><span class="text-muted">Ghi chú:</span> @Model.Notes</div>
-        }
-    </div>
-</div>
->>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073

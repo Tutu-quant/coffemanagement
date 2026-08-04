@@ -160,11 +160,6 @@ namespace Quản_lý_quán_cafe.Controllers
             }
         }
 
-        public IActionResult GenerateHash()
-        {
-            return Content(UserRepository.HashPassword("123456"));
-        }
-
         public async Task<IActionResult> Logout()
         {
             await _accountService.LogoutAsync();

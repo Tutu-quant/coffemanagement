@@ -75,7 +75,6 @@ namespace Quản_lý_quán_cafe.Data
 
                 await SeedRolesAsync(context);
 
-<<<<<<< HEAD
                 // Seed Users (which also creates Employees)
                 await SeedUsersAsync(context);
 
@@ -83,15 +82,6 @@ namespace Quản_lý_quán_cafe.Data
                 await SeedEmployeesAsync(context);
 
                 // Seed Categories
-=======
-
-                await SeedEmployeesAsync(context);
-
-
-                await SeedUsersAsync(context);
-
-
->>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073
                 await SeedCategoriesAsync(context);
 
 

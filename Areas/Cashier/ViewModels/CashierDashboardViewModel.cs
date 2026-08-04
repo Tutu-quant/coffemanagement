@@ -3,11 +3,6 @@ using System.Collections.Generic;
 
 namespace Quản_lý_quán_cafe.Areas.Cashier.ViewModels
 {
-<<<<<<< HEAD
-=======
-
-
->>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073
     public class CashierDashboardViewModel
     {
         // Thống kê bàn
@@ -30,9 +25,9 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.ViewModels
     public class TableDashboardItemViewModel
     {
         public int TableID { get; set; }
-        public string TableNumber { get; set; }
+        public string TableNumber { get; set; } = string.Empty;
         public int Capacity { get; set; }
-        public string TableStatus { get; set; } // Empty, Reserved, Serving, PendingPayment
+        public string TableStatus { get; set; } = "Empty"; // Empty, Reserved, Serving, PendingPayment
         public string? ReservationCustomerName { get; set; }
         public DateTime? ReservationTime { get; set; }
         public int? ReservationGuestCount { get; set; }
@@ -55,8 +50,8 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.ViewModels
     {
         public int ReservationID { get; set; }
         public DateTime ReservationTime { get; set; }
-        public string TableNumber { get; set; }
-        public string CustomerName { get; set; }
+        public string TableNumber { get; set; } = string.Empty;
+        public string CustomerName { get; set; } = string.Empty;
         public int GuestCount { get; set; }
         public string? Notes { get; set; }
 
@@ -67,49 +62,22 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.ViewModels
 
         private string FormatTimeDisplay()
         {
-<<<<<<< HEAD
             int minutes = MinutesUntilArrival;
             if (minutes < 0) return "Đã quá giờ";
             if (minutes < 60) return $"Còn {minutes} phút";
             int hours = minutes / 60;
             int mins = minutes % 60;
             return $"Còn {hours}h {mins}p";
-=======
-            public int TableID { get; set; }
-            public string TableName { get; set; } = string.Empty;
-            public string Status { get; set; } = "Empty";
-            public int? OrderID { get; set; }
-            public string? OrderCode { get; set; }
-            public int? GuestCount { get; set; }
-            public DateTime? StartTime { get; set; }
-            public decimal? TotalAmount { get; set; }
-
-            public string StatusColor => Status switch
-            {
-                "Occupied" => "#FFB84D",
-                "WaitingPayment" => "#FF6B6B",
-                "Reserved" => "#95E1D3",
-                _ => "#E8E6E1"
-            };
-
-            public string StatusLabel => Status switch
-            {
-                "Occupied" => "Có khách",
-                "WaitingPayment" => "Chờ thanh toán",
-                "Reserved" => "Đã đặt",
-                _ => "Trống"
-            };
->>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073
         }
     }
 
     public class DashboardNotificationViewModel
     {
         public int NotificationID { get; set; }
-        public string Title { get; set; }
-        public string Message { get; set; }
-        public string Type { get; set; } // "info", "warning", "danger", "success"
-        public string Icon { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public string Type { get; set; } = "info"; // "info", "warning", "danger", "success"
+        public string Icon { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
         public bool IsRead { get; set; }
 
@@ -118,22 +86,11 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.ViewModels
 
         private string FormatTimeAgo()
         {
-<<<<<<< HEAD
             TimeSpan timeSpan = DateTime.Now - CreatedAt;
             if (timeSpan.TotalSeconds < 60) return "Vừa xong";
             if (timeSpan.TotalMinutes < 60) return $"{(int)timeSpan.TotalMinutes}m";
             if (timeSpan.TotalHours < 24) return $"{(int)timeSpan.TotalHours}h";
             return $"{(int)timeSpan.TotalDays}d";
-=======
-            public int OrderID { get; set; }
-            public string OrderCode { get; set; } = string.Empty;
-            public int TableID { get; set; }
-            public string TableName { get; set; } = string.Empty;
-            public decimal TotalAmount { get; set; }
-            public string Status { get; set; } = "Pending";
-            public DateTime CreatedAt { get; set; }
-            public int ItemCount { get; set; }
->>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073
         }
     }
 }

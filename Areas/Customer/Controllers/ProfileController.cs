@@ -21,8 +21,8 @@ public class ProfileController(ApplicationDbContext context, CustomerSessionServ
         var model = new CustomerEditViewModel
         {
             Id = customer.CustomerID,
-            Name = customer.CustomerName,
-            Phone = customer.Phone,
+            Name = customer.CustomerName ?? string.Empty,
+            Phone = customer.Phone ?? string.Empty,
             Address = customer.Address
         };
 
