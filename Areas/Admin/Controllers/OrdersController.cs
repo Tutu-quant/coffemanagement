@@ -17,6 +17,26 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
         }
 
         /// <summary>
+        /// Print-friendly bill view
+        /// GET: /Admin/Orders/Print/5
+        /// </summary>
+        public async Task<IActionResult> Print(int id)
+        {
+            if (id <= 0) return RedirectToAction(nameof(Index));
+            try
+            {
+                var order = await _orderService.GetOrderByIdAsync(id);
+                if (order == null) return RedirectToAction(nameof(Index));
+                var viewModel = MapToOrderDetailViewModel(order);
+                return View(viewModel);
+            }
+            catch
+            {
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        /// <summary>
         /// Danh sách đơn hàng với phân trang
         /// GET: /Admin/Orders
         /// </summary>
@@ -171,7 +191,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 OrderStatus = o.OrderStatus ?? "Unknown",
                 PaymentStatus = o.Payment?.PaymentStatus ?? "Pending",
                 TotalAmount = o.TotalAmount,
-                OrderDate = o.OrderDate,
+                OrderDate = o.OrderDate.ToLocalTime(),
                 ItemCount = o.OrderDetails?.Count ?? 0,
                 StatusBadgeClass = GetStatusBadgeClass(o.OrderStatus)
             }).ToList();
@@ -186,9 +206,9 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             {
                 OrderId = order.OrderID,
                 OrderCode = $"#{order.OrderID:D6}",
-                OrderDate = order.OrderDate,
+                OrderDate = order.OrderDate.ToLocalTime(),
                 OrderStatus = order.OrderStatus ?? "Unknown",
-                CompletedDate = order.CompletedDate,
+                CompletedDate = order.CompletedDate?.ToLocalTime(),
                 Notes = order.Notes,
 
                 // Customer info
@@ -207,7 +227,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 PaymentStatus = order.Payment?.PaymentStatus ?? "Pending",
                 TotalAmount = order.TotalAmount,
                 PaidAmount = order.Payment?.Amount ?? 0,
-                PaidDate = order.Payment?.CreatedAt,
+                PaidDate = order.Payment != null ? order.Payment.CreatedAt.ToLocalTime() : (DateTime?)null,
 
                 // Items
                 Items = order.OrderDetails?.Select(od => new OrderItemViewModel
@@ -254,7 +274,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             {
                 new OrderTimelineEventViewModel
                 {
-                    EventDate = order.OrderDate,
+                    EventDate = order.OrderDate.ToLocalTime(),
                     EventType = "Created",
                     EventDescription = "Đơn hàng được tạo",
                     EventDetails = $"Order #{order.OrderID:D6}"
@@ -265,10 +285,10 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             {
                 timeline.Add(new OrderTimelineEventViewModel
                 {
-                    EventDate = order.CompletedDate.Value,
+                    EventDate = order.CompletedDate.Value.ToLocalTime(),
                     EventType = "Completed",
                     EventDescription = "Đơn hàng hoàn thành",
-                    EventDetails = $"Tổng tiền: {order.TotalAmount:C}"
+                    EventDetails = $"Tổng tiền: {order.TotalAmount:N0}đ"
                 });
             }
 
@@ -276,10 +296,10 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             {
                 timeline.Add(new OrderTimelineEventViewModel
                 {
-                    EventDate = order.Payment.CreatedAt,
+                    EventDate = order.Payment.CreatedAt.ToLocalTime(),
                     EventType = "Payment",
                     EventDescription = "Thanh toán",
-                    EventDetails = $"Trạng thái: {order.Payment.PaymentStatus}, Số tiền: {order.Payment.Amount:C}"
+                    EventDetails = $"Trạng thái: {order.Payment.PaymentStatus}, Số tiền: {order.Payment.Amount:N0}đ"
                 });
             }
 

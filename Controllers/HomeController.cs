@@ -8,7 +8,7 @@ namespace Quản_lý_quán_cafe.Controllers
     {
         public IActionResult Index()
         {
-            return View();
+            return RedirectToAction("Login", "Account");
         }
 
         public IActionResult Privacy()

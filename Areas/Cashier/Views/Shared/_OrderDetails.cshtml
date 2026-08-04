@@ -71,6 +71,10 @@
                     <div class="customer-badge">⭐ @Model.Customer.MembershipTier</div>
                     <div class="customer-name">@Model.Customer.Name</div>
                     <div class="customer-phone">@Model.Customer.Phone</div>
+                    @if (!string.IsNullOrEmpty(Model.Customer.Email))
+                    {
+                        <div class="customer-email"><a href="mailto:@Model.Customer.Email">@Model.Customer.Email</a></div>
+                    }
                     <div class="customer-points">
                         <i class="bi bi-gift"></i> @Model.Customer.RewardPoints điểm
                     </div>

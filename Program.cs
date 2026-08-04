@@ -11,6 +11,7 @@ using Quản_lý_quán_cafe.Services.Interfaces;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
+<<<<<<< HEAD
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-CSRF-TOKEN";
@@ -18,6 +19,8 @@ builder.Services.AddAntiforgery(options =>
 });
 builder.Services.Configure<QrPaymentOptions>(
     builder.Configuration.GetSection(QrPaymentOptions.SectionName));
+=======
+>>>>>>> 2c132e90f4590d4c50705f7b1e933a689778226d
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 

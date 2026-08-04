@@ -104,7 +104,7 @@ public class DashboardController : Controller
             .ToListAsync();
 
         var paymentAccount = await _context.PaymentAccountSettings.AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Provider == "MoMo");
+            .FirstOrDefaultAsync(x => x.Provider == "Placeholder");
 
         var viewModel = new DashboardViewModel
         {
@@ -155,12 +155,12 @@ public class DashboardController : Controller
         }
 
         var setting = await _context.PaymentAccountSettings
-            .FirstOrDefaultAsync(x => x.Provider == "MoMo");
+            .FirstOrDefaultAsync(x => x.Provider == "Placeholder");
         if (setting is null)
         {
             setting = new PaymentAccountSetting
             {
-                Provider = "MoMo",
+                Provider = "Placeholder",
                 CreatedAt = DateTime.UtcNow
             };
             _context.PaymentAccountSettings.Add(setting);
@@ -172,7 +172,7 @@ public class DashboardController : Controller
         setting.UpdatedAt = DateTime.UtcNow;
         setting.UpdatedBy = HttpContext.Session.GetString("Username");
         await _context.SaveChangesAsync();
-        TempData["PaymentAccountSuccess"] = "Đã cập nhật tài khoản nhận tiền MoMo.";
+        TempData["PaymentAccountSuccess"] = "Đã cập nhật placeholder tài khoản nhận tiền.";
         return RedirectToAction(nameof(Index), new { paymentSettings = true });
     }
 }

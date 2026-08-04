@@ -8,15 +8,15 @@
     <div class="payment-summary">
         <div class="summary-row">
             <span>Tạm tính:</span>
-            <span id="subtotalDisplay">0đ</span>
+            <span id="subtotalDisplay">@($"{Model.Subtotal:N0}đ")</span>
         </div>
         <div class="summary-row">
             <span>Giảm giá:</span>
-            <span id="discountDisplay">0đ</span>
+            <span id="discountDisplay">@($"{Model.DiscountAmount:N0}đ")</span>
         </div>
         <div class="summary-row total">
             <span>Tổng cộng:</span>
-            <span id="totalDisplay">0đ</span>
+            <span id="totalDisplay">@($"{Model.Total:N0}đ")</span>
         </div>
     </div>
 
@@ -35,19 +35,23 @@
     <div class="payment-methods">
         <div class="payment-header-small">PHƯƠNG THỨC THANH TOÁN</div>
         <div class="method-buttons">
-            <button class="method-btn active" onclick="selectPaymentMethod('cash', this)">
+            <button class="method-btn @(Model.PaymentMethod == "cash" ? "active" : "")" onclick="selectPaymentMethod('cash', this)">
                 <i class="bi bi-wallet2"></i> Tiền mặt
             </button>
-            <button class="method-btn" onclick="selectPaymentMethod('qr', this)">
-                <i class="bi bi-wallet2"></i> MoMo
+            <button class="method-btn @(Model.PaymentMethod == "qr" ? "active" : "")" onclick="selectPaymentMethod('qr', this)">
+                <i class="bi bi-qr-code"></i> QR (placeholder)
             </button>
         </div>
     </div>
 
-    <!-- Nhập tiền khách đưa -->
-    <div class="payment-input">
+    <!-- Nhập tiền khách đưa (chỉ hiện khi tiền mặt) -->
+    <div class="payment-input" id="cashPaymentFields" style="display:@(Model.PaymentMethod == "cash" ? "block" : "none")">
         <label>Tiền khách đưa (ngàn đồng)</label>
-        <input type="number" class="form-control" placeholder="VD: 200" id="paidAmount" onchange="calculateChange()" />
+        <input type="number" class="form-control" placeholder="VD: 200" id="paidAmount" onchange="calculateChange()" value="@(Model.PaidAmount > 0 ? (Model.PaidAmount/1000).ToString() : string.Empty)" @(Model.PaymentMethod == "qr" ? "disabled" : "") />
+        <div class="change-row" id="changeRow" style="display:@(Model.PaymentMethod == "cash" ? "block" : "none"); margin-top:8px;">
+            <label for="changeAmountDisplay">Tiền trả lại</label>
+            <input type="text" id="changeAmountDisplay" class="form-control" readonly value="@($"{Model.ChangeAmount:N0}đ")" />
+        </div>
     </div>
 
     <!-- Nút thanh toán -->
@@ -65,14 +69,14 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Thanh toán MoMo</h5>
+                <h5 class="modal-title">Thanh toán QR (placeholder)</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center">
-                <img id="qrPaymentImage" alt="Mã thanh toán MoMo" class="img-fluid mb-3 d-none" style="max-height: 360px" />
+                <img id="qrPaymentImage" alt="Mã thanh toán QR" class="img-fluid mb-3 d-none" style="max-height: 360px" />
                 <div class="border rounded p-3 mb-3 bg-light">
-                    <div>Tài khoản MoMo: <strong id="momoReceiverAccount"></strong></div>
-                    <div>Người nhận: <strong id="momoReceiverName"></strong></div>
+                    <div>Tài khoản: <strong id="placeholderReceiverAccount"></strong></div>
+                    <div>Người nhận: <strong id="placeholderReceiverName"></strong></div>
                 </div>
                 <div class="fw-bold fs-4" id="qrPaymentAmount"></div>
                 <div class="text-muted">Nội dung: <code id="qrPaymentContent"></code></div>
