@@ -86,6 +86,7 @@ namespace Quản_lý_quán_cafe.Data
 
                 // Seed Products
                 await SeedProductsAsync(context);
+                await SeedDemoProductsAsync(context);
 
                 // Seed Customers
                 await SeedCustomersAsync(context);
@@ -382,6 +383,26 @@ namespace Quản_lý_quán_cafe.Data
             };
 
             await context.Products.AddRangeAsync(products);
+            await context.SaveChangesAsync();
+        }
+
+        private static async Task SeedDemoProductsAsync(ApplicationDbContext context)
+        {
+            var coffeeCategory = await context.Categories.FirstAsync(c => c.CategoryName == "Cà Phê");
+            var teaCategory = await context.Categories.FirstAsync(c => c.CategoryName == "Trà");
+            var cakeCategory = await context.Categories.FirstAsync(c => c.CategoryName == "Bánh");
+            var now = DateTime.UtcNow;
+            var demoProducts = new[]
+            {
+                new Product { ProductName = "Cà phê sữa đá", Description = "Cà phê pha phin cùng sữa đặc", CategoryID = coffeeCategory.CategoryID, Price = 35000, Quantity = 100, IsActive = true, CreatedAt = now, UpdatedAt = now },
+                new Product { ProductName = "Bạc xỉu", Description = "Sữa thơm béo với một chút cà phê", CategoryID = coffeeCategory.CategoryID, Price = 40000, Quantity = 100, IsActive = true, CreatedAt = now, UpdatedAt = now },
+                new Product { ProductName = "Trà đào cam sả", Description = "Trà đào thanh mát cùng cam và sả", CategoryID = teaCategory.CategoryID, Price = 45000, Quantity = 100, IsActive = true, CreatedAt = now, UpdatedAt = now },
+                new Product { ProductName = "Matcha latte", Description = "Matcha và sữa tươi", CategoryID = teaCategory.CategoryID, Price = 49000, Quantity = 100, IsActive = true, CreatedAt = now, UpdatedAt = now },
+                new Product { ProductName = "Croissant bơ", Description = "Bánh sừng bò bơ nướng giòn", CategoryID = cakeCategory.CategoryID, Price = 32000, Quantity = 50, IsActive = true, CreatedAt = now, UpdatedAt = now }
+            };
+
+            var existingNames = await context.Products.Select(p => p.ProductName).ToListAsync();
+            await context.Products.AddRangeAsync(demoProducts.Where(p => !existingNames.Contains(p.ProductName)));
             await context.SaveChangesAsync();
         }
 

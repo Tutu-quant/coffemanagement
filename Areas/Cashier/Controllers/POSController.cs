@@ -22,7 +22,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             var viewModel = new POSViewModel();
 
             var openTables = await _context.RestaurantTables
-                .Where(t => !t.IsDeleted && (t.TableStatus == "Occupied" || t.TableStatus == "WaitingPayment"))
+                .Where(t => !t.IsDeleted && t.TableStatus != "Maintenance")
                 .Include(t => t.Orders.Where(o => !o.IsDeleted &&
                     (o.OrderStatus == "Pending" || o.OrderStatus == "WaitingPayment")))
                     .ThenInclude(o => o.OrderDetails.Where(d => !d.IsDeleted))
@@ -40,6 +40,20 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 Status = t.TableStatus.ToLower(),
                 StatusBadge = t.TableStatus == "WaitingPayment" ? "THANH TOÁN" : ""
             }).ToList();
+
+            viewModel.Products = await _context.Products.AsNoTracking()
+                .Where(p => !p.IsDeleted && p.IsActive && p.Quantity > 0)
+                .OrderBy(p => p.Category!.CategoryName)
+                .ThenBy(p => p.ProductName)
+                .Select(p => new POSProductViewModel
+                {
+                    ProductID = p.ProductID,
+                    ProductName = p.ProductName,
+                    Price = p.Price,
+                    Quantity = p.Quantity,
+                    CategoryName = p.Category != null ? p.Category.CategoryName : "Khác"
+                })
+                .ToListAsync();
 
             if (viewModel.OpenTables.Any())
             {

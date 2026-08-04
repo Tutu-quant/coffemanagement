@@ -49,6 +49,17 @@
             return Number(item?.querySelector('.qty')?.textContent || 0);
         }
 
+        function addProduct(productId) {
+            if (currentTableId === 0) return alert('Vui lòng chọn bàn');
+            postForm('/Cashier/POS/AddItem', {
+                tableId: currentTableId,
+                productId,
+                quantity: 1
+            }).then(() => {
+                window.location.href = `/Cashier/POS?tableId=${currentTableId}`;
+            }).catch(error => alert(error.message));
+        }
+
         function increaseQty(orderDetailId) {
             postForm('/Cashier/POS/UpdateItem', {
                 orderDetailId,
