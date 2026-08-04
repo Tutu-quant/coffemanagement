@@ -3,14 +3,16 @@
    ==================================== */
 
 :root {
-    --coffee-dark: #3d2c27;
+    --coffee-dark: #5D4037;
     --coffee-brown: #8B6F47;
     --coffee-light: #D4A574;
     --cream: #F8F4E8;
+    --bg-light: #FFFDF8;
     --white: #ffffff;
     --text-dark: #2d2d2d;
     --text-light: #666666;
-    --border-color: #e0d7c9;
+    --border-color: #E8E6E1;
+    --border-light: #E8E6E1;
     --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.08);
     --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.12);
     --transition: all 0.2s ease-in-out;
@@ -28,7 +30,7 @@
 
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background-color: var(--cream);
+    background-color: var(--bg-light);
     color: var(--text-dark);
     line-height: 1.6;
 }
@@ -784,11 +786,12 @@ html, body {
 @media (max-width: 768px) {
     .admin-sidebar {
         position: fixed;
-        left: -240px;
+        left: 0;
         top: 0;
         height: 100vh;
         z-index: 999;
         transition: left 0.3s ease-in-out;
+        width: 240px;
     }
 
     .admin-sidebar.show {

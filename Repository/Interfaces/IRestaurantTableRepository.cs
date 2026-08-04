@@ -17,5 +17,6 @@ namespace Quản_lý_quán_cafe.Repository.Interfaces
         Task DeleteAsync(int id);
         Task<bool> ExistsByTableNumberAsync(string tableNumber, int? excludeId = null);
         Task<bool> CanDeleteAsync(int tableId);
+        Task<List<RestaurantTable>> GetAvailableTablesAsync(int minCapacity);
     }
 }

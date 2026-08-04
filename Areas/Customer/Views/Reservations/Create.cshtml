@@ -2,6 +2,7 @@
 
 @section Head {
     <link rel="stylesheet" href="~/css/customers.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/reservation.css" asp-append-version="true" />
 }
 
 @{
@@ -9,70 +10,176 @@
     Layout = "_UnifiedLayout";
 }
 
-<div class="d-flex">
-    <aside class="flex-shrink-0">
-        @await Html.PartialAsync("_CustomerSidebar")
-    </aside>
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show mb-4">
+        <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
 
-    <main class="flex-grow-1 px-4 py-3">
-        <div class="page-header mb-4">
-            <h4 class="m-0">Đặt bàn</h4>
+<div class="container-fluid p-0">
+    <div class="page-title-section mb-4">
+        <h1 class="page-title">Đặt Bàn</h1>
+        <p class="page-subtitle">Chọn bàn yêu thích và xác nhận đặt chỗ của bạn</p>
+    </div>
+
+    <form id="reservationForm" asp-area="Customer" asp-controller="Reservations" asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+        <input asp-for="TableID" type="hidden" id="TableID" />
+
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger alert-dismissible fade show d-none">
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
 
-        @if (TempData["SuccessMessage"] != null)
-        {
-            <div class="alert alert-success">@TempData["SuccessMessage"]</div>
-        }
+        <div class="reservation-layout">
+            <div class="tables-section">
+                <div class="card form-card">
+                    <div class="card-header">
+                        <h5 class="m-0">
+                            <i class="bi bi-calendar3"></i> Chọn Thời Gian & Số Khách
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="ReservationDate" class="form-label fw-6">Ngày & Giờ <span class="text-danger">*</span></label>
+                                <input asp-for="ReservationDate" class="form-control form-control-lg" type="datetime-local" id="ReservationDate" value="@(Model.ReservationDate.ToString("yyyy-MM-ddTHH:mm"))" />
+                                <span asp-validation-for="ReservationDate" class="text-danger small"></span>
+                            </div>
 
-        <form asp-area="Customer" asp-controller="Reservations" asp-action="Create" method="post" class="card p-3">
-            @Html.AntiForgeryToken()
+                            <div class="col-md-6">
+                                <label asp-for="NumberOfGuests" class="form-label fw-6">Số Khách <span class="text-danger">*</span></label>
+                                <div class="input-group input-group-lg">
+                                    <button class="btn btn-outline-secondary" type="button" id="decreaseGuests">
+                                        <i class="bi bi-dash"></i>
+                                    </button>
+                                    <input asp-for="NumberOfGuests" class="form-control text-center fw-6" type="number" id="NumberOfGuests" min="1" max="50" />
+                                    <button class="btn btn-outline-secondary" type="button" id="increaseGuests">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div>
+                                <span asp-validation-for="NumberOfGuests" class="text-danger small"></span>
+                            </div>
+                        </div>
 
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
-
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">Họ và tên</label>
-                    <input name="customerName" class="form-control" placeholder="Nguyễn Văn A" />
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="button" class="btn btn-primary btn-lg" id="searchTablesBtn">
+                                <i class="bi bi-search"></i> Tìm Bàn Còn Trống
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="col-md-6">
-                    <label class="form-label">Số điện thoại</label>
-                    <input name="phone" class="form-control" placeholder="09xxxxxxxx" />
+                <div class="card form-card mt-4">
+                    <div class="card-header">
+                        <h5 class="m-0">
+                            <i class="bi bi-door-open"></i> Danh Sách Bàn
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="tablesLoading" class="text-center py-5 d-none">
+                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                                <span class="visually-hidden">Đang tìm kiếm...</span>
+                            </div>
+                            <span class="text-muted">Đang tìm bàn còn trống...</span>
+                        </div>
+
+                        <div id="tablesError" class="alert alert-warning d-none mb-0">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Vui lòng chọn ngày, giờ và số khách rồi nhấn "Tìm Bàn"
+                        </div>
+
+                        <div id="tablesResults" class="tables-grid">
+                            <div class="text-center py-5">
+                                <i class="bi bi-info-circle text-muted" style="font-size: 2rem;"></i>
+                                <p class="text-muted mt-2">Nhấn "Tìm Bàn" để xem danh sách bàn còn trống</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="col-md-6">
-                    <label asp-for="TableID" class="form-label"></label>
-                    <select asp-for="TableID" asp-items="Model.Tables" class="form-select"></select>
-                    <span asp-validation-for="TableID" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-6">
-                    <label asp-for="ReservationDate" class="form-label"></label>
-                    <input asp-for="ReservationDate" class="form-control" type="datetime-local" value="@(Model.ReservationDate.ToString("yyyy-MM-ddTHH:mm"))" />
-                    <span asp-validation-for="ReservationDate" class="text-danger small"></span>
-                </div>
-
-                <div class="col-md-4">
-                    <label asp-for="NumberOfGuests" class="form-label"></label>
-                    <input asp-for="NumberOfGuests" class="form-control" />
-                    <span asp-validation-for="NumberOfGuests" class="text-danger small"></span>
-                </div>
-
-                <div class="col-12">
-                    <label asp-for="Notes" class="form-label"></label>
-                    <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
-                    <span asp-validation-for="Notes" class="text-danger small"></span>
-                </div>
-
-                <div class="col-12 d-flex gap-2">
-                    <button type="submit" class="btn btn-success">Xác nhận</button>
-                    <a asp-area="Customer" asp-controller="Reservations" asp-action="Index" class="btn btn-secondary">Quay lại</a>
+                <div class="card form-card mt-4">
+                    <div class="card-header">
+                        <h5 class="m-0">
+                            <i class="bi bi-chat-dots"></i> Ghi Chú (Tùy Chọn)
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <label asp-for="Notes" class="form-label fw-6">Yêu Cầu Đặc Biệt</label>
+                        <textarea asp-for="Notes" class="form-control" rows="3" placeholder="Ví dụ: Yêu cầu bàn gần cửa, yêu cầu đèn nhẹ, đặc biệt hoặc khác..."></textarea>
+                        <small class="text-muted d-block mt-2">Tối đa 500 ký tự</small>
+                        <span asp-validation-for="Notes" class="text-danger small"></span>
+                    </div>
                 </div>
             </div>
-        </form>
-    </main>
+
+            <div class="summary-section">
+                <div class="sticky-top-wrapper">
+                    <div class="card summary-card">
+                        <div class="card-header">
+                            <h5 class="m-0">
+                                <i class="bi bi-clipboard-check"></i> Tóm Tắt Đặt Bàn
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="reservationSummary" class="summary-content">
+                                <div class="text-center py-4">
+                                    <i class="bi bi-info-circle text-muted" style="font-size: 1.5rem;"></i>
+                                    <p class="text-muted mt-2 small">Chọn bàn để xem tóm tắt</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-confirm fw-6" id="confirmBtn" disabled>
+                                <i class="bi bi-check-circle"></i> Xác Nhận Đặt Bàn
+                            </button>
+                            <div class="text-center mt-3" id="confirmDisabledMsg" style="display: none;">
+                                <small class="text-muted">Vui lòng chọn một bàn.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/reservation.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const decreaseBtn = document.getElementById('decreaseGuests');
+            const increaseBtn = document.getElementById('increaseGuests');
+            const guestInput = document.getElementById('NumberOfGuests');
+            const searchBtn = document.getElementById('searchTablesBtn');
+
+            if (decreaseBtn && increaseBtn && guestInput) {
+                decreaseBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    let value = parseInt(guestInput.value) || 1;
+                    if (value > 1) {
+                        guestInput.value = value - 1;
+                        guestInput.dispatchEvent(new Event('change'));
+                    }
+                });
+
+                increaseBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    let value = parseInt(guestInput.value) || 1;
+                    if (value < 50) {
+                        guestInput.value = value + 1;
+                        guestInput.dispatchEvent(new Event('change'));
+                    }
+                });
+            }
+
+            if (searchBtn) {
+                searchBtn.addEventListener('click', () => ReservationManager.searchAvailableTables());
+            }
+        });
+    </script>
 }
+
+

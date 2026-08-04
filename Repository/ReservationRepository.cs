@@ -98,5 +98,97 @@ namespace Quản_lý_quán_cafe.Repository
                 await UpdateAsync(reservation);
             }
         }
+
+        public async Task<bool> HasConflictAsync(int tableId, DateTime reservationStart, DateTime reservationEnd)
+        {
+            return await _context.Reservations.AnyAsync(r =>
+                r.TableID == tableId &&
+                !r.IsDeleted &&
+                r.ReservationStatus != "Cancelled" &&
+                r.ReservationStatus != "Completed" &&
+                r.ReservationDate < reservationEnd &&
+                r.ReservationDate.AddHours(2) > reservationStart);
+        }
+
+        public async Task<List<Reservation>> GetConflictingReservationsAsync(
+            int tableId,
+            DateTime reservationStart,
+            DateTime reservationEnd)
+        {
+            return await _context.Reservations
+                .Where(r =>
+                    r.TableID == tableId &&
+                    !r.IsDeleted &&
+                    r.ReservationStatus != "Cancelled" &&
+                    r.ReservationStatus != "Completed" &&
+                    r.ReservationDate < reservationEnd &&
+                    r.ReservationDate.AddHours(2) > reservationStart)
+                .OrderBy(r => r.ReservationDate)
+                .ToListAsync();
+        }
+
+        public async Task<List<Reservation>> GetAvailableTablesReservationsAsync(
+            int tableId,
+            DateTime reservationDate,
+            int durationMinutes = 120)
+        {
+            var reservationEnd = reservationDate.AddMinutes(durationMinutes);
+
+            return await _context.Reservations
+                .Include(r => r.Customer)
+                .Include(r => r.Table)
+                .Where(r =>
+                    r.TableID == tableId &&
+                    !r.IsDeleted &&
+                    r.ReservationStatus != "Cancelled" &&
+                    r.ReservationStatus != "Completed" &&
+                    r.ReservationDate < reservationEnd &&
+                    r.ReservationDate.AddHours(2) > reservationDate)
+                .OrderBy(r => r.ReservationDate)
+                .ToListAsync();
+        }
+
+        public async Task<bool> GetReservationConflictAsync(
+            int tableId,
+            DateTime reservationDate,
+            int durationMinutes = 120)
+        {
+            var reservationEnd = reservationDate.AddMinutes(durationMinutes);
+
+            return await _context.Reservations.AnyAsync(r =>
+                r.TableID == tableId &&
+                !r.IsDeleted &&
+                r.ReservationStatus != "Cancelled" &&
+                r.ReservationStatus != "Completed" &&
+                r.ReservationDate < reservationEnd &&
+                r.ReservationDate.AddHours(2) > reservationDate);
+        }
+
+        public async Task UpdateStatusAsync(int reservationId, string newStatus)
+        {
+            var reservation = await GetByIdAsync(reservationId);
+            if (reservation != null)
+            {
+                reservation.ReservationStatus = newStatus;
+                reservation.UpdatedAt = DateTime.UtcNow;
+                await UpdateAsync(reservation);
+            }
+        }
+
+        public async Task<List<Reservation>> GetReservationsByDateAsync(DateTime reservationDate)
+        {
+            var startOfDay = reservationDate.Date;
+            var endOfDay = startOfDay.AddDays(1);
+
+            return await _context.Reservations
+                .Include(r => r.Customer)
+                .Include(r => r.Table)
+                .Where(r =>
+                    !r.IsDeleted &&
+                    r.ReservationDate >= startOfDay &&
+                    r.ReservationDate < endOfDay)
+                .OrderBy(r => r.ReservationDate)
+                .ToListAsync();
+        }
     }
 }

@@ -173,5 +173,13 @@ namespace Quản_lý_quán_cafe.Repository
 
             return !hasActiveOrders && !hasActiveReservations;
         }
+
+        public async Task<List<RestaurantTable>> GetAvailableTablesAsync(int minCapacity)
+        {
+            return await _context.RestaurantTables
+                .Where(t => !t.IsDeleted && t.TableStatus != "Maintenance" && t.Capacity >= minCapacity)
+                .OrderBy(t => t.TableNumber)
+                .ToListAsync();
+        }
     }
 }

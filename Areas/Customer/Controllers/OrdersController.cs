@@ -5,12 +5,15 @@ using Microsoft.EntityFrameworkCore;
 using Quản_lý_quán_cafe.Areas.Customer.ViewModels;
 using Quản_lý_quán_cafe.Data;
 using Quản_lý_quán_cafe.Models.Entities;
+using Quản_lý_quán_cafe.Models.Enums;
+using Quản_lý_quán_cafe.Services;
 
 namespace Quản_lý_quán_cafe.Areas.Customer.Controllers;
 
 [Area("Customer")]
-public class OrdersController(ApplicationDbContext context) : Controller
+public class OrdersController(ApplicationDbContext context, Quản_lý_quán_cafe.Services.CustomerSessionService customerSessionService) : Controller
 {
+    private readonly Quản_lý_quán_cafe.Services.CustomerSessionService _customerSessionService = customerSessionService;
     [HttpGet]
     public async Task<IActionResult> Index(int? tableId = null)
     {
@@ -50,7 +53,7 @@ public class OrdersController(ApplicationDbContext context) : Controller
 
         var table = await context.RestaurantTables
             .FirstOrDefaultAsync(t => t.TableID == model.TableId && !t.IsDeleted);
-        if (table is null || table.TableStatus == "Maintenance")
+        if (table is null || table.TableStatus == TableStatus.Maintenance)
             ModelState.AddModelError(nameof(model.TableId), "Vui lòng chọn một bàn đang phục vụ.");
         if (cart is null || cart.Count == 0)
             ModelState.AddModelError(nameof(model.CartJson), "Giỏ hàng chưa có món.");
@@ -84,12 +87,12 @@ public class OrdersController(ApplicationDbContext context) : Controller
             return View("Menu", model);
         }
 
-        var customer = await GetOrCreateCustomerAsync();
+        var customer = await _customerSessionService.GetOrCreateCustomerAsync();
         var order = new Order
         {
             CustomerID = customer.CustomerID,
             TableID = table!.TableID,
-            OrderStatus = "Pending",
+            OrderStatus = OrderStatusConstants.Pending,
             OrderDate = DateTime.UtcNow,
             Notes = string.IsNullOrWhiteSpace(model.Notes) ? null : model.Notes.Trim(),
             CreatedAt = DateTime.UtcNow,
@@ -113,7 +116,7 @@ public class OrdersController(ApplicationDbContext context) : Controller
         }
 
         order.TotalAmount = order.OrderDetails.Sum(x => x.Subtotal);
-        table.TableStatus = "Occupied";
+        table.TableStatus = TableStatus.Occupied;
         table.UpdatedAt = DateTime.UtcNow;
 
         context.Orders.Add(order);
@@ -124,7 +127,7 @@ public class OrdersController(ApplicationDbContext context) : Controller
             OrderID = order.OrderID,
             Amount = order.TotalAmount,
             PaymentMethod = "Cash",
-            PaymentStatus = "Pending",
+            PaymentStatus = PaymentStatusConstants.Pending,
             PaymentDate = DateTime.UtcNow,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -143,15 +146,17 @@ public class OrdersController(ApplicationDbContext context) : Controller
     public async Task<IActionResult> History()
     {
         if (!IsCustomer()) return RedirectToLogin();
-        var customer = await GetOrCreateCustomerAsync();
+        var customer = await _customerSessionService.GetOrCreateCustomerAsync();
+
         var orders = await context.Orders
-            .AsNoTracking()
             .Include(o => o.Table)
-            .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
+            .Include(o => o.OrderDetails)
                 .ThenInclude(d => d.Product)
             .Where(o => !o.IsDeleted && o.CustomerID == customer.CustomerID)
             .OrderByDescending(o => o.OrderDate)
+            .AsNoTracking()
             .ToListAsync();
+
         return View(orders);
     }
     [HttpGet]
@@ -160,7 +165,7 @@ public class OrdersController(ApplicationDbContext context) : Controller
         if (!IsCustomer())
             return RedirectToLogin();
 
-        var customer = await GetOrCreateCustomerAsync();
+        var customer = await _customerSessionService.GetOrCreateCustomerAsync();
 
         var order = await context.Orders
             .AsNoTracking()
@@ -218,7 +223,7 @@ public class OrdersController(ApplicationDbContext context) : Controller
     private async Task LoadMenuAsync(OrderMenuViewModel model)
     {
         model.Tables = await context.RestaurantTables.AsNoTracking()
-            .Where(t => !t.IsDeleted && t.TableStatus != "Maintenance")
+            .Where(t => !t.IsDeleted && t.TableStatus != TableStatus.Maintenance)
             .OrderBy(t => t.TableNumber)
             .Select(t => new SelectListItem(
                 $"{t.TableNumber} · {t.Location} · {t.TableStatus}",
@@ -258,22 +263,6 @@ public class OrdersController(ApplicationDbContext context) : Controller
 
     private async Task<Models.Entities.Customer> GetOrCreateCustomerAsync()
     {
-        var username = HttpContext.Session.GetString("Username") ?? "customer";
-        var email = $"{username}@local.cafe";
-        var customer = await context.Customers
-            .FirstOrDefaultAsync(c => !c.IsDeleted && c.Email == email);
-        if (customer is not null) return customer;
-
-        customer = new Models.Entities.Customer
-        {
-            CustomerName = HttpContext.Session.GetString("FullName") ?? username,
-            Email = email,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-        context.Customers.Add(customer);
-        await context.SaveChangesAsync();
-        return customer;
+        return await _customerSessionService.GetOrCreateCustomerAsync();
     }
 }

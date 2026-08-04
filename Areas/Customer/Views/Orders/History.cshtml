@@ -3,37 +3,726 @@
 @{
     ViewData["Title"] = "Đơn của tôi";
     ViewData["PageTitle"] = "Lịch sử gọi món";
+
+    // Tính toán thống kê
+    var totalOrders = Model?.Count ?? 0;
+    var completedOrders = Model?.Count(o => o.OrderStatus.ToLower() == "completed") ?? 0;
+    var pendingOrders = Model?.Count(o => o.OrderStatus.ToLower() == "pending") ?? 0;
+    var cancelledOrders = Model?.Count(o => o.OrderStatus.ToLower() == "cancelled") ?? 0;
+
+    // Lấy trạng thái từ query string
+    var selectedStatus = Context.Request.Query["status"].ToString();
 }
 
-@section Head {
-    <link rel="stylesheet" href="~/css/customer.css" asp-append-version="true" />
-}
+<style>
+    /* ===== HEADER & TITLE ===== */
+    .history-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 30px;
+        padding: 24px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #5D4037, #8B6F47);
+        color: #fff;
+    }
 
+    .history-header > div {
+        flex: 1;
+    }
+
+    .history-header span {
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+        color: #e6b98c;
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    .history-header h2 {
+        color: #fff;
+        font-size: 24px;
+        margin: 4px 0 8px 0;
+    }
+
+    .history-header p {
+        margin: 0;
+        opacity: 0.72;
+        font-size: 14px;
+    }
+
+    .new-order-btn {
+        width: auto;
+        padding: 10px 15px;
+        background: rgba(255,255,255,0.2);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 8px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .new-order-btn:hover {
+        background: rgba(255,255,255,0.3);
+        color: white;
+        text-decoration: none;
+    }
+
+    /* ===== STATISTICS CARDS ===== */
+    .statistics-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: #fff;
+        border: 1px solid #E8E6E1;
+        border-radius: 16px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .stat-card:hover {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        transform: translateY(-4px);
+    }
+
+    .stat-label {
+        font-size: 12px;
+        font-weight: 700;
+        color: #999;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .stat-value {
+        font-size: 32px;
+        font-weight: 800;
+        color: #8B6F47;
+    }
+
+    /* ===== FILTER & SEARCH ===== */
+    .filter-section {
+        background: #fff;
+        border: 1px solid #E8E6E1;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
+        align-items: flex-end;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .filter-group label {
+        font-size: 12px;
+        font-weight: 700;
+        color: #3D2C27;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .filter-group input,
+    .filter-group select {
+        padding: 10px 12px;
+        border: 1px solid #E8E6E1;
+        border-radius: 8px;
+        font-size: 13px;
+        font-family: inherit;
+        transition: all 0.3s ease;
+    }
+
+    .filter-group input:focus,
+    .filter-group select:focus {
+        outline: none;
+        border-color: #8B6F47;
+        box-shadow: 0 0 0 3px rgba(139, 111, 71, 0.1);
+    }
+
+    .filter-buttons {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn-filter,
+    .btn-reset {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 13px;
+    }
+
+    .btn-filter {
+        background: #8B6F47;
+        color: white;
+        flex: 1;
+    }
+
+    .btn-filter:hover {
+        background: #5D4037;
+    }
+
+    .btn-reset {
+        background: #F5F2E8;
+        color: #3D2C27;
+        flex: 1;
+    }
+
+    .btn-reset:hover {
+        background: #E8E6E1;
+    }
+
+    /* ===== STATUS TABS ===== */
+    .status-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+    }
+
+    .tab-pill {
+        padding: 8px 16px;
+        border: 2px solid #E8E6E1;
+        background: #fff;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        color: #3D2C27;
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
+
+    .tab-pill:hover {
+        border-color: #8B6F47;
+        color: #8B6F47;
+    }
+
+    .tab-pill.active {
+        background: #8B6F47;
+        color: white;
+        border-color: #8B6F47;
+    }
+
+    /* ===== ORDERS CONTAINER ===== */
+    .orders-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+
+    .customer-order {
+        background: #fff;
+        border: 1px solid #E8E6E1;
+        border-radius: 16px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .customer-order:hover {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        transform: translateY(-4px);
+    }
+
+    .order-header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid #F5F2E8;
+    }
+
+    .order-id-section {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .order-id {
+        font-size: 12px;
+        font-weight: 800;
+        color: #8B6F47;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+
+    .order-table {
+        font-size: 18px;
+        font-weight: 700;
+        color: #3D2C27;
+    }
+
+    .order-time {
+        font-size: 11px;
+        color: #999;
+    }
+
+    .order-status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-pending {
+        background: #FFF3E0;
+        color: #E65100;
+    }
+
+    .status-completed {
+        background: #E8F5E9;
+        color: #2E7D32;
+    }
+
+    .status-cancelled {
+        background: #FFEBEE;
+        color: #C62828;
+    }
+
+    .order-items-section {
+        margin-bottom: 16px;
+    }
+
+    .order-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #F5F2E8;
+    }
+
+    .order-item:last-child {
+        border-bottom: none;
+    }
+
+    .item-details {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .item-quantity {
+        font-weight: 700;
+        color: #8B6F47;
+        min-width: 30px;
+        background: #F5F2E8;
+        padding: 4px 8px;
+        border-radius: 4px;
+        text-align: center;
+        font-size: 12px;
+    }
+
+    .item-name {
+        font-size: 13px;
+        color: #3D2C27;
+        flex: 1;
+    }
+
+    .item-price {
+        font-weight: 700;
+        color: #5D4037;
+        min-width: 80px;
+        text-align: right;
+        font-size: 13px;
+    }
+
+    .no-items-message {
+        text-align: center;
+        padding: 20px;
+        color: #999;
+        font-style: italic;
+        background: #F9F8F6;
+        border-radius: 8px;
+    }
+
+    .order-note {
+        background: #FFF8E1;
+        border-left: 4px solid #FBC02D;
+        padding: 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        color: #5D4037;
+        margin-bottom: 16px;
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+    }
+
+    .order-note i {
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+    .order-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 16px;
+        border-top: 2px solid #F5F2E8;
+        margin-top: 16px;
+    }
+
+    .order-footer-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 2px solid #F5F2E8;
+    }
+
+    .btn-action {
+        flex: 1;
+        padding: 10px 12px;
+        border: 1px solid #E8E6E1;
+        background: #fff;
+        color: #3D2C27;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 12px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        text-align: center;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .btn-action:hover {
+        border-color: #8B6F47;
+        color: #8B6F47;
+        text-decoration: none;
+    }
+
+    .btn-action.btn-primary {
+        background: #8B6F47;
+        color: white;
+        border-color: #8B6F47;
+    }
+
+    .btn-action.btn-primary:hover {
+        background: #5D4037;
+        border-color: #5D4037;
+        color: white;
+    }
+
+    .item-count {
+        font-size: 12px;
+        color: #999;
+        font-weight: 600;
+    }
+
+    .order-total {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    .total-label {
+        font-size: 11px;
+        color: #999;
+        margin-bottom: 2px;
+    }
+
+    .total-amount {
+        font-size: 20px;
+        font-weight: 800;
+        color: #5D4037;
+    }
+
+    .orders-empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        background: linear-gradient(135deg, #F5F2E8, #FEFDFB);
+        border: 2px dashed #E8E6E1;
+        border-radius: 16px;
+        color: #8f827a;
+    }
+
+    .orders-empty-state i {
+        font-size: 48px;
+        display: block;
+        margin-bottom: 16px;
+        color: #D9D0C1;
+    }
+
+    .orders-empty-state h3 {
+        font-size: 18px;
+        margin: 0 0 12px 0;
+        color: #3D2C27;
+    }
+
+    .orders-empty-state p {
+        font-size: 14px;
+        margin: 0 0 16px 0;
+        color: #999;
+    }
+
+    .orders-empty-state a {
+        display: inline-block;
+        padding: 10px 20px;
+        background: #8B6F47;
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .orders-empty-state a:hover {
+        background: #5D4037;
+        text-decoration: none;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @@media (max-width: 1024px) {
+        .orders-container {
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .orders-container {
+            grid-template-columns: 1fr;
+        }
+
+        .statistics-section {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .filter-row {
+            grid-template-columns: 1fr;
+        }
+
+        .filter-buttons {
+            flex-direction: column;
+        }
+
+        .history-header {
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .new-order-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .status-tabs {
+            justify-content: flex-start;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+
+        .tab-pill {
+            white-space: nowrap;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .statistics-section {
+            grid-template-columns: 1fr;
+        }
+
+        .order-footer-actions {
+            flex-direction: column;
+        }
+
+        .btn-action {
+            padding: 12px;
+        }
+    }
+</style>
+
+<!-- HEADER SECTION -->
 <div class="history-header">
-    <div><span>ĐƠN HÀNG</span><h2>Theo dõi món đã gọi</h2><p>Đơn mới sẽ được gửi trực tiếp tới quầy thu ngân.</p></div>
-    <a asp-action="Index" class="new-order-btn"><i class="bi bi-plus-lg"></i> Đặt món mới</a>
+    <div>
+        <span>ĐƠN HÀNG</span>
+        <h2>Theo dõi món đã gọi</h2>
+        <p>Đơn mới sẽ được gửi trực tiếp tới quầy thu ngân.</p>
+    </div>
+    <a asp-action="Index" class="new-order-btn">
+        <i class="bi bi-plus-lg"></i> Đặt món mới
+    </a>
 </div>
 
-<div class="customer-orders">
-    @if (Model.Count == 0)
-    {
-        <div class="orders-empty"><i class="bi bi-receipt"></i><h3>Chưa có đơn hàng</h3><a asp-action="Index">Khám phá menu</a></div>
-    }
-    @foreach (var order in Model)
-    {
-        <article class="customer-order">
-            <header>
-                <div><span class="order-code">#@order.OrderID</span><strong>@(order.Table?.TableNumber ?? "Mang đi")</strong><small>@order.OrderDate.ToLocalTime().ToString("HH:mm · dd/MM/yyyy")</small></div>
-                <span class="order-status status-@order.OrderStatus.ToLowerInvariant()">@order.OrderStatus</span>
-            </header>
-            <div class="order-lines">
-                @foreach (var item in order.OrderDetails)
-                {
-                    <div><span><b>@item.Quantity×</b> @(item.Product?.ProductName ?? $"Sản phẩm #{item.ProductID}")</span><strong>@item.Subtotal.ToString("N0")đ</strong></div>
-                }
+@if (Model != null && Model.Count > 0)
+{
+    <!-- STATISTICS SECTION -->
+    <div class="statistics-section">
+        <div class="stat-card">
+            <span class="stat-label">Tổng lượt đặt</span>
+            <span class="stat-value">@totalOrders</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Đã hoàn thành</span>
+            <span class="stat-value">@completedOrders</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Đang chờ</span>
+            <span class="stat-value">@pendingOrders</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Đã hủy</span>
+            <span class="stat-value">@cancelledOrders</span>
+        </div>
+    </div>
+
+    <!-- FILTER SECTION -->
+    <form method="get" asp-action="History" class="filter-section">
+        <div class="filter-row">
+            <div class="filter-group">
+                <label>Mã đơn</label>
+                <input type="text" name="searchOrderId" placeholder="Tìm mã đơn..." value="@Context.Request.Query["searchOrderId"]" />
             </div>
-            @if (!string.IsNullOrWhiteSpace(order.Notes)) { <p class="order-note"><i class="bi bi-chat-left-text"></i> @order.Notes</p> }
-            <footer><span>@order.OrderDetails.Sum(x => x.Quantity) món</span><strong>@order.TotalAmount.ToString("N0")đ</strong></footer>
-        </article>
-    }
-</div>
+            <div class="filter-group">
+                <label>Tên bàn</label>
+                <input type="text" name="searchTable" placeholder="Tìm tên bàn..." value="@Context.Request.Query["searchTable"]" />
+            </div>
+            <div class="filter-group">
+                <label>Trạng thái</label>
+                <select name="status">
+                    <option value="">-- Tất cả trạng thái --</option>
+                    <option value="pending" selected="@(selectedStatus == "pending" ? "selected" : null)">Đang chờ</option>
+                    <option value="completed" selected="@(selectedStatus == "completed" ? "selected" : null)">Đã hoàn thành</option>
+                    <option value="cancelled" selected="@(selectedStatus == "cancelled" ? "selected" : null)">Đã hủy</option>
+                </select>
+            </div>
+            <div class="filter-group filter-buttons">
+                <button type="submit" class="btn-filter">
+                    <i class="bi bi-funnel"></i> Lọc
+                </button>
+                <a href="@Url.Action("History")" class="btn-reset">
+                    <i class="bi bi-arrow-clockwise"></i> Reset
+                </a>
+            </div>
+        </div>
+    </form>
+
+    <!-- STATUS TABS -->
+    <div class="status-tabs">
+        <a href="@Url.Action("History")" class="tab-pill @(string.IsNullOrEmpty(selectedStatus) ? "active" : "")">
+            Tất cả
+        </a>
+        <a href="@Url.Action("History", new { status = "pending" })" class="tab-pill @(selectedStatus == "pending" ? "active" : "")">
+            Đang chờ
+        </a>
+        <a href="@Url.Action("History", new { status = "completed" })" class="tab-pill @(selectedStatus == "completed" ? "active" : "")">
+            Đã hoàn thành
+        </a>
+        <a href="@Url.Action("History", new { status = "cancelled" })" class="tab-pill @(selectedStatus == "cancelled" ? "active" : "")">
+            Đã hủy
+        </a>
+    </div>
+
+    <!-- ORDERS CONTAINER -->
+    <div class="orders-container">
+        @foreach (var order in Model)
+        {
+            <article class="customer-order" data-status="@order.OrderStatus.ToLower()">
+                <!-- Header Section -->
+                <div class="order-header-section">
+                    <div class="order-id-section">
+                        <span class="order-id">Đơn #@order.OrderID</span>
+                        <span class="order-table">@(order.Table?.TableNumber ?? "Mang đi")</span>
+                        <span class="order-time">@order.OrderDate.ToLocalTime().ToString("HH:mm · dd/MM/yyyy")</span>
+                    </div>
+                    <span class="order-status-badge status-@order.OrderStatus.ToLowerInvariant()">
+                        @order.OrderStatus
+                    </span>
+                </div>
+
+                <!-- Items Section -->
+                <div class="order-items-section">
+                    @if (order.OrderDetails != null && order.OrderDetails.Count > 0)
+                    {
+                        @foreach (var item in order.OrderDetails)
+                        {
+                            <div class="order-item">
+                                <div class="item-details">
+                                    <span class="item-quantity">@item.Quantity×</span>
+                                    <span class="item-name">@(item.Product?.ProductName ?? $"Sản phẩm #{item.ProductID}")</span>
+                                </div>
+                                <span class="item-price">@item.Subtotal.ToString("N0")đ</span>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="no-items-message">Không có chi tiết đơn hàng</div>
+                    }
+                </div>
+
+                <!-- Notes Section -->
+                @if (!string.IsNullOrWhiteSpace(order.Notes))
+                {
+                    <div class="order-note">
+                        <i class="bi bi-chat-left-text"></i>
+                        <span>@order.Notes</span>
+                    </div>
+                }
+
+                <!-- Footer Section -->
+                <div class="order-footer">
+                    <span class="item-count">@(order.OrderDetails?.Count() ?? 0) mục</span>
+                    <div class="order-total">
+                        <span class="total-label">Tổng cộng</span>
+                        <span class="total-amount">@order.TotalAmount.ToString("N0")đ</span>
+                    </div>
+                </div>
+
+                <!-- Actions Section -->
+                <div class="order-footer-actions">
+                    <a href="@Url.Action("Details", new { id = order.OrderID })" class="btn-action btn-primary">
+                        <i class="bi bi-eye"></i> Xem chi tiết
+                    </a>
+                    <a href="@Url.Action("Index")" class="btn-action">
+                        <i class="bi bi-arrow-repeat"></i> Đặt lại
+                    </a>
+                </div>
+            </article>
+        }
+    </div>
+}
+else
+{
+    <div class="orders-empty-state">
+        <i class="bi bi-receipt"></i>
+        <h3>Chưa có đơn hàng nào</h3>
+        <p>Bạn chưa đặt bất kỳ đơn hàng nào. Hãy khám phá menu của chúng tôi!</p>
+        <a asp-action="Index">Bắt đầu đặt món</a>
+    </div>
+}
+

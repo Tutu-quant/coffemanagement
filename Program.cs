@@ -11,6 +11,11 @@ using Quản_lý_quán_cafe.Services.Interfaces;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-CSRF-TOKEN";
+    options.FormFieldName = "__RequestVerificationToken";
+});
 builder.Services.Configure<QrPaymentOptions>(
     builder.Configuration.GetSection(QrPaymentOptions.SectionName));
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -25,6 +30,8 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
 });
+
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
@@ -41,6 +48,8 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRestaurantTableService, RestaurantTableService>();
+builder.Services.AddScoped<IReservationService, ReservationService>();
+builder.Services.AddScoped<CustomerSessionService>();
 
 var app = builder.Build();
 
@@ -53,6 +62,20 @@ else
     app.UseMiddleware<ExceptionMiddleware>();
     app.UseHsts();
 }
+
+// Add cache-busting headers for static files
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/css") || 
+        context.Request.Path.StartsWithSegments("/js") ||
+        context.Request.Path.StartsWithSegments("/lib"))
+    {
+        context.Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
+        context.Response.Headers.Pragma = "no-cache";
+        context.Response.Headers.Expires = "0";
+    }
+    await next();
+});
 
 app.UseStaticFiles();
 app.UseRouting();

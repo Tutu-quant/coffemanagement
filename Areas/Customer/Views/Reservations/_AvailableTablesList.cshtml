@@ -1,0 +1,40 @@
+@model List<Quản_lý_quán_cafe.Areas.Customer.ViewModels.AvailableTableViewModel>
+
+@if (Model == null || Model.Count == 0)
+{
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> Không có bàn còn trống cho khung giờ này.
+    </div>
+}
+else
+{
+    <div class="row g-2">
+        @foreach (var table in Model)
+        {
+            <div class="col-sm-6 col-md-4">
+                <div class="table-card card" data-table-id="@table.TableID" style="cursor: pointer;">
+                    <div class="card-body">
+                        <h6 class="card-title">Bàn @table.TableNumber</h6>
+                        <p class="card-text small mb-2">
+                            <i class="bi bi-people"></i> @table.Capacity khách
+                        </p>
+                        @if (!string.IsNullOrEmpty(table.Location))
+                        {
+                            <p class="card-text small text-muted">@table.Location</p>
+                        }
+                        <button type="button" class="btn btn-sm btn-outline-primary w-100 select-btn">
+                            @if (table.IsSelected)
+                            {
+                                <span>✓ Đã chọn</span>
+                            }
+                            else
+                            {
+                                <span>Chọn</span>
+                            }
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

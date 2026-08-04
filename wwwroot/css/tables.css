@@ -217,4 +217,17 @@
     button {
         width: 100%;
     }
+
+    /* Stack buttons vertically on small screens */
+    .table-tile .d-flex.gap-2 {
+        flex-direction: column;
+    }
+
+    .table-tile .btn {
+        width: 100%;
+        min-height: 38px;
+        line-height: 1.5;
+        padding: 0.5rem 1rem;
+        white-space: normal;
+    }
 }

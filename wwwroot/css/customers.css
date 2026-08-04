@@ -1,12 +1,14 @@
 :root {
-    --coffee-dark: #3d2c27;
+    --coffee-dark: #5D4037;
     --coffee-brown: #8B6F47;
     --coffee-light: #D4A574;
     --cream: #F8F4E8;
+    --bg-light: #FFFDF8;
     --white: #ffffff;
     --text-dark: #2d2d2d;
     --text-light: #666666;
-    --border-color: #e0d7c9;
+    --border-color: #E8E6E1;
+    --border-light: #E8E6E1;
     --shadow-light: 0 2px 8px rgba(0,0,0,0.08);
     --shadow-medium: 0 4px 12px rgba(0,0,0,0.12);
     --radius: 12px; 
@@ -276,6 +278,18 @@
     padding: 0.55rem 1rem;
     transition: all 0.2s;
     border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 12px;
+    min-height: 32px;
 }
 
 .btn-primary {
