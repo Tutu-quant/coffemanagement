@@ -1,28 +1,24 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Quản_lý_quán_cafe.Data;
 using Quản_lý_quán_cafe.Models.Entities;
-using Quản_lý_quán_cafe.Services;
 
 namespace Quản_lý_quán_cafe.Controllers.Api;
 
 [ApiController, Route("api/payments/qr")]
-public class QrPaymentsApiController(
-    ApplicationDbContext context,
-    IOptions<QrPaymentOptions> options) : ControllerBase
+public class QrPaymentsApiController(ApplicationDbContext context) : ControllerBase
 {
     [HttpPost("intents")]
     public async Task<IActionResult> CreateIntent([FromBody] CreateQrIntentRequest request)
     {
         if (!IsStaff()) return Unauthorized();
         var receiver = await context.PaymentAccountSettings.AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Provider == "MoMo" && x.IsActive);
+            .FirstOrDefaultAsync(x => x.Provider == "Placeholder" && x.IsActive);
         if (receiver is null)
             return Problem(
                 statusCode: StatusCodes.Status503ServiceUnavailable,
-                title: "MoMo payment is not configured",
-                detail: "Admin chưa cấu hình tài khoản nhận tiền MoMo.");
+                title: "QR payment placeholder is not configured",
+                detail: "Admin chưa cấu hình tài khoản nhận tiền cho placeholder QR.");
 
         var order = await context.Orders
             .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
@@ -38,7 +34,7 @@ public class QrPaymentsApiController(
         var discount = CalculateDiscount(subtotal, request.DiscountType, request.DiscountValue);
         var amount = subtotal - discount;
         if (amount <= 0 || decimal.Truncate(amount) != amount)
-            return BadRequest(new { message = "VietQR yêu cầu số tiền nguyên dương." });
+            return BadRequest(new { message = "Placeholder QR yêu cầu số tiền nguyên dương." });
 
         var payment = order.Payment ?? new Payment
         {
@@ -46,7 +42,7 @@ public class QrPaymentsApiController(
             CreatedAt = DateTime.UtcNow
         };
         payment.Amount = amount;
-        payment.PaymentMethod = "MoMo";
+        payment.PaymentMethod = "QRPlaceholder";
         payment.PaymentStatus = "Pending";
         payment.PaymentDate = DateTime.UtcNow;
         payment.TransactionCode = $"BP{order.OrderID}";
@@ -69,7 +65,7 @@ public class QrPaymentsApiController(
             qrImageUrl = (string?)null,
             receiverAccount = receiver.AccountNumber,
             receiverName = receiver.AccountName,
-            merchantApiConfigured = options.Value.HasMerchantCredentials,
+            isPlaceholder = true,
             status = payment.PaymentStatus
         });
     }
@@ -85,47 +81,6 @@ public class QrPaymentsApiController(
             : Ok(new { orderId, paymentId = payment.PaymentID, payment.PaymentStatus, payment.Amount, payment.TransactionCode });
     }
 
-    [HttpPost("webhook")]
-    public async Task<IActionResult> Webhook(
-        [FromHeader(Name = "X-Webhook-Secret")] string? secret,
-        [FromBody] QrWebhookRequest request)
-    {
-        var configuredSecret = options.Value.WebhookSecret;
-        if (string.IsNullOrWhiteSpace(configuredSecret) ||
-            !System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
-                System.Text.Encoding.UTF8.GetBytes(secret ?? string.Empty),
-                System.Text.Encoding.UTF8.GetBytes(configuredSecret)))
-            return Unauthorized();
-
-        var payment = await context.Payments
-            .Include(p => p.Order)!.ThenInclude(o => o!.Table)
-            .FirstOrDefaultAsync(p => p.OrderID == request.OrderId && !p.IsDeleted);
-        if (payment is null) return NotFound();
-        if (payment.PaymentStatus == "Completed") return Ok(new { success = true, duplicate = true });
-        if (request.Amount != payment.Amount)
-            return BadRequest(new { message = "Số tiền callback không khớp." });
-
-        payment.PaymentStatus = "Completed";
-        payment.TransactionCode = string.IsNullOrWhiteSpace(request.TransactionCode)
-            ? payment.TransactionCode
-            : request.TransactionCode.Trim();
-        payment.PaymentDate = DateTime.UtcNow;
-        payment.UpdatedAt = DateTime.UtcNow;
-        if (payment.Order is not null)
-        {
-            payment.Order.OrderStatus = "Completed";
-            payment.Order.CompletedDate = DateTime.UtcNow;
-            payment.Order.UpdatedAt = DateTime.UtcNow;
-            if (payment.Order.Table is not null)
-            {
-                payment.Order.Table.TableStatus = "Available";
-                payment.Order.Table.UpdatedAt = DateTime.UtcNow;
-            }
-        }
-        await context.SaveChangesAsync();
-        return Ok(new { success = true });
-    }
-
     private bool IsStaff() => HttpContext.Session.GetString("RoleName") is "Admin" or "Cashier";
 
     private static decimal CalculateDiscount(decimal subtotal, string? type, decimal value) =>
@@ -137,5 +92,4 @@ public class QrPaymentsApiController(
         };
 
     public sealed record CreateQrIntentRequest(int TableId, string? DiscountType, decimal DiscountValue);
-    public sealed record QrWebhookRequest(int OrderId, decimal Amount, string? TransactionCode);
 }

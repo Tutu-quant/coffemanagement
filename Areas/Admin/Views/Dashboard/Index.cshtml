@@ -53,7 +53,7 @@
             <span class="panel-label">THANH TOÁN</span>
             <h3>Tài khoản nhận tiền</h3>
         </div>
-        <span class="badge text-bg-danger">MoMo</span>
+        <span class="badge text-bg-secondary">Placeholder QR</span>
     </header>
 
     @if (TempData["PaymentAccountSuccess"] is string successMessage)
@@ -70,7 +70,7 @@
         <div class="col-md-4">
             <label asp-for="PaymentAccount.AccountNumber" class="form-label"></label>
             <input asp-for="PaymentAccount.AccountNumber" class="form-control" inputmode="numeric"
-                   autocomplete="off" placeholder="0901234567" />
+                   autocomplete="off" placeholder="Chưa cấu hình" />
             <span asp-validation-for="PaymentAccount.AccountNumber" class="text-danger"></span>
         </div>
         <div class="col-md-4">
@@ -92,7 +92,7 @@
         </div>
         <div class="col-12">
             <small class="text-muted">
-                Chỉ Admin có thể thay đổi thông tin này. Không nhập access key hoặc secret key MoMo tại đây.
+                Chỉ Admin có thể thay đổi. Đây là placeholder, chưa kết nối cổng thanh toán thật.
             </small>
         </div>
     </form>
