@@ -34,21 +34,14 @@
                         <th class="col-code">Mã đơn</th>
                         <th class="col-table">Bàn</th>
                         <th class="col-customer">Khách</th>
-                        <th class="col-employee">Nhân viên</th>
-                        <th class="col-items">Món</th>
                         <th class="col-status">Trạng thái</th>
-
                         <th class="col-amount">Tổng tiền</th>
                         <th class="col-time">Thời gian</th>
                         <th class="col-action">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
-                            <i class="bi bi-inbox"></i> Chưa có dữ liệu
-                        </td>
-                    </tr>
+                    @* placeholder removed so list doesn't show 'no data' when orders exist *@
                     @foreach (var order in Model.Orders)
                     {
                         <tr>
