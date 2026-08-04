@@ -1,19 +1,24 @@
-// Password Show/Hide Toggle
 document.addEventListener('DOMContentLoaded', function() {
     const passwordInput = document.getElementById('password');
     const passwordToggle = document.getElementById('passwordToggle');
 
-    if (passwordToggle) {
+    if (passwordToggle && passwordInput) {
         passwordToggle.addEventListener('click', function(e) {
             e.preventDefault();
             const isPassword = passwordInput.type === 'password';
             passwordInput.type = isPassword ? 'text' : 'password';
-            this.classList.toggle('bi-eye');
-            this.classList.toggle('bi-eye-slash');
+
+            const icon = this.querySelector('i');
+            if (icon) {
+                icon.classList.toggle('bi-eye');
+                icon.classList.toggle('bi-eye-slash');
+            }
+
+            const pressed = this.getAttribute('aria-pressed') === 'true';
+            this.setAttribute('aria-pressed', String(!pressed));
         });
     }
 
-    // Form submission - Loading state
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
         loginForm.addEventListener('submit', function(e) {
@@ -26,11 +31,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Auto-hide alerts after 5 seconds
     const alerts = document.querySelectorAll('.alert');
     alerts.forEach(alert => {
         setTimeout(() => {
-            const alertClone = alert.cloneNode(true);
             alert.style.animation = 'slideUp 0.3s ease-in-out forwards';
             setTimeout(() => {
                 alert.remove();
@@ -39,9 +42,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Keyboard shortcuts
 document.addEventListener('keydown', function(e) {
-    // Enter to submit form
+
     if (e.key === 'Enter') {
         const form = document.getElementById('loginForm');
         if (form && !e.shiftKey && !e.ctrlKey) {
