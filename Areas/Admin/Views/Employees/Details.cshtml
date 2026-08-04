@@ -1,6 +1,8 @@
-﻿namespace Quản_lý_quán_cafe.Areas.Admin.View.Employees
-{
-    public class Details
-    {
-    }
-}
+@model Quản_lý_quán_cafe.Models.Entities.Employee
+@{ ViewData["Title"] = "Chi tiết nhân viên"; }
+<div class="card shadow-sm"><div class="card-body">
+    <div class="d-flex justify-content-between"><div><h2>@Model.FullName</h2><p class="text-muted">Nhân viên #@Model.EmployeeID</p></div><a asp-action="Edit" asp-route-id="@Model.EmployeeID" class="btn btn-warning align-self-start">Sửa</a></div>
+    <div class="row g-3 mt-2"><div class="col-md-4"><small class="text-muted">Số điện thoại</small><div>@(Model.Phone ?? "-")</div></div><div class="col-md-4"><small class="text-muted">Email</small><div>@(Model.Email ?? "-")</div></div><div class="col-md-4"><small class="text-muted">Ngày vào làm</small><div>@(Model.HireDate?.ToString("dd/MM/yyyy") ?? "-")</div></div><div class="col-12"><small class="text-muted">Địa chỉ</small><div>@(Model.Address ?? "-")</div></div></div>
+    <hr /><a asp-action="Index" class="btn btn-outline-secondary">Quay lại</a>
+    <form asp-action="Delete" asp-route-id="@Model.EmployeeID" method="post" class="d-inline" onsubmit="return confirm('Xóa nhân viên này?')"><button class="btn btn-outline-danger">Xóa</button></form>
+</div></div>

@@ -1,6 +1,13 @@
-﻿namespace Quản_lý_quán_cafe.Areas.Admin.View.Reservations
-{
-    public class Details
-    {
-    }
-}
+@model Quản_lý_quán_cafe.Models.Entities.Reservation
+@{ ViewData["Title"] = "Chi tiết đặt bàn"; }
+<div class="card shadow-sm"><div class="card-body">
+    <div class="d-flex justify-content-between align-items-start"><div><a asp-action="Index" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Danh sách</a><h2 class="mt-2">Lịch đặt #@Model.ReservationID</h2></div><span class="badge bg-primary fs-6">@Model.ReservationStatus</span></div>
+    <div class="row g-3 my-3"><div class="col-md-4"><small class="text-muted">Khách hàng</small><div><strong>@Model.Customer?.CustomerName</strong></div><div>@(Model.Customer?.Phone ?? Model.Customer?.Email)</div></div><div class="col-md-4"><small class="text-muted">Bàn</small><div><strong>@Model.Table?.TableNumber</strong> · @Model.Table?.Location</div></div><div class="col-md-4"><small class="text-muted">Thời gian</small><div><strong>@Model.ReservationDate.ToLocalTime().ToString("HH:mm · dd/MM/yyyy")</strong></div><div>@Model.NumberOfGuests khách</div></div></div>
+    @if (!string.IsNullOrWhiteSpace(Model.Notes)) { <div class="alert alert-light"><strong>Ghi chú:</strong> @Model.Notes</div> }
+    <div class="d-flex flex-wrap gap-2"><a asp-action="Edit" asp-route-id="@Model.ReservationID" class="btn btn-outline-warning">Sửa</a>
+    @if (Model.ReservationStatus == "Pending") { <form asp-action="Confirm" asp-route-id="@Model.ReservationID" method="post"><button class="btn btn-success">Xác nhận</button></form> }
+    @if (Model.ReservationStatus == "Confirmed") { <form asp-action="CheckIn" asp-route-id="@Model.ReservationID" method="post"><button class="btn btn-primary">Khách đã đến</button></form> }
+    @if (Model.ReservationStatus == "CheckedIn") { <form asp-action="Complete" asp-route-id="@Model.ReservationID" method="post"><button class="btn btn-success">Hoàn tất</button></form> }
+    @if (Model.ReservationStatus is "Pending" or "Confirmed") { <form asp-action="Cancel" asp-route-id="@Model.ReservationID" method="post" onsubmit="return confirm('Hủy lịch đặt này?')"><button class="btn btn-outline-danger">Hủy lịch</button></form> }
+    </div>
+</div></div>

@@ -33,7 +33,13 @@
                 }
             </div>
             @if (!string.IsNullOrWhiteSpace(order.Notes)) { <p class="order-note"><i class="bi bi-chat-left-text"></i> @order.Notes</p> }
-            <footer><span>@order.OrderDetails.Sum(x => x.Quantity) món</span><strong>@order.TotalAmount.ToString("N0")đ</strong></footer>
+            <footer>
+                <span>@order.OrderDetails.Sum(x => x.Quantity) món</span>
+                <div class="d-flex align-items-center gap-3">
+                    <strong>@order.TotalAmount.ToString("N0")đ</strong>
+                    <a asp-action="Details" asp-route-id="@order.OrderID" class="btn btn-sm btn-outline-primary">Chi tiết</a>
+                </div>
+            </footer>
         </article>
     }
 </div>
