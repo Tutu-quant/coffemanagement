@@ -7,6 +7,7 @@
 
         public POSTableViewModel CurrentTable { get; set; } = new();
         public List<POSOrderItemViewModel> OrderItems { get; set; } = new();
+        public List<POSProductViewModel> Products { get; set; } = new();
         public POSCustomerViewModel Customer { get; set; } = new();
         public string Notes { get; set; } = string.Empty;
 
@@ -21,6 +22,15 @@
 
         public string DiscountType { get; set; } = "None";
         public decimal DiscountValue { get; set; }
+    }
+
+    public class POSProductViewModel
+    {
+        public int ProductID { get; set; }
+        public string ProductName { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public int Quantity { get; set; }
+        public string CategoryName { get; set; } = string.Empty;
     }
 
     public class POSTableViewModel

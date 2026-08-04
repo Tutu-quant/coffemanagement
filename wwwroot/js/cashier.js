@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /**
  * CASHIER DASHBOARD - JavaScript
  * Xử lý các tương tác, refresh dữ liệu, và thông báo real-time
@@ -98,6 +99,28 @@ function capitalizeStatus(status) {
 function redirectTo(url) {
     window.location.href = url;
 }
+=======
+
+
+
+function updateTime() {
+    const now = new Date();
+    const timeDisplay = document.getElementById('current-time');
+    if (timeDisplay) {
+        timeDisplay.textContent = now.toLocaleTimeString('vi-VN');
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    setInterval(updateTime, 1000);
+});
+
+
+function showNotification(message, type = 'success') {
+    const alertClass = type === 'success' ? 'alert-success' :
+                       type === 'error' ? 'alert-danger' : 'alert-info';
+>>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073
 
 // ================================================
 // NOTIFICATION SYSTEM
@@ -134,6 +157,7 @@ function showNotification(title, message, type = 'info') {
     }, DASHBOARD_CONFIG.NOTIFICATION_TIMEOUT);
 }
 
+<<<<<<< HEAD
 // ================================================
 // REFRESH & AUTO-UPDATE
 // ================================================
@@ -155,6 +179,26 @@ function startAutoRefresh() {
 function manualRefresh() {
     console.log('🔄 Manual refresh');
     location.reload();
+=======
+
+function formatCurrency(value) {
+    return new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND',
+        minimumFractionDigits: 0
+    }).format(value);
+}
+
+
+function selectTable(tableId) {
+    window.location.href = `/Cashier/POS?tableId=${tableId}`;
+}
+
+function callCustomer(tableId) {
+
+    playSound('/sounds/call.mp3');
+    showNotification(`Gọi khách bàn ${tableId}`);
+>>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073
 }
 
 function updateDashboardData() {

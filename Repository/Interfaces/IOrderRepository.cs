@@ -1,4 +1,4 @@
-﻿using Quản_lý_quán_cafe.Models.Entities;
+using Quản_lý_quán_cafe.Models.Entities;
 
 namespace Quản_lý_quán_cafe.Repository.Interfaces
 {
@@ -32,7 +32,7 @@ namespace Quản_lý_quán_cafe.Repository.Interfaces
             int skip = 0,
             int take = 50);
 
-        // Lấy Order theo nhiều trạng thái
+
         Task<List<Order>> GetByStatusesAsync(
             string[] statuses,
             int skip = 0,

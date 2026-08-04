@@ -367,7 +367,7 @@
     text-align: right;
 }
 
-/* Responsive */
+
 @media (max-width: 1100px) {
     .metric-grid {
         grid-template-columns: repeat(2, 1fr);

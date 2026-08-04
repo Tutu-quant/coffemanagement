@@ -1,8 +1,6 @@
-/* ====================================
-   ORDER MANAGEMENT MODULE STYLES
-   ==================================== */
 
-/* Compact Statistics Cards */
+
+
 body .admin-content .stat-cards-compact {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -58,7 +56,7 @@ body .admin-content .stat-card-compact-value {
     margin: 0;
 }
 
-/* Compact Filter Bar */
+
 body .admin-content .filter-bar-compact {
     background: var(--white);
     border: 1px solid var(--border-color);
@@ -146,7 +144,7 @@ body .admin-content .btn-secondary-compact:hover {
     background-color: #d0c8bb;
 }
 
-/* Compact Table */
+
 body .admin-content .orders-card {
     border-radius: 12px;
     overflow: hidden;
@@ -177,7 +175,7 @@ body .admin-content .table-compact tbody tr:hover {
     background-color: var(--cream);
 }
 
-/* Table Column Widths */
+
 .col-code { width: 10%; }
 .col-table { width: 8%; }
 .col-customer { width: 12%; }
@@ -189,7 +187,7 @@ body .admin-content .table-compact tbody tr:hover {
 .col-time { width: 8%; text-align: center; }
 .col-action { width: 14%; text-align: center; }
 
-/* Action Buttons */
+
 .action-buttons {
     display: flex;
     gap: 6px;
@@ -230,7 +228,7 @@ body .admin-content .table-compact tbody tr:hover {
     color: #1565C0;
 }
 
-/* Compact Pagination */
+
 body .admin-content .pagination-compact {
     display: flex;
     justify-content: center;
@@ -269,7 +267,7 @@ body .admin-content .pagination-compact {
     font-weight: 500;
 }
 
-/* Empty State - Compact */
+
 .empty-state-compact {
     text-align: center;
     padding: 40px 20px;
@@ -299,9 +297,6 @@ body .admin-content .pagination-compact {
     font-size: 14px;
 }
 
-/* ====================================
-   RESPONSIVE DESIGN
-   ==================================== */
 
 @media (max-width: 1200px) {
     .stat-cards-compact {
@@ -339,7 +334,7 @@ body .admin-content .pagination-compact {
         display: none;
     }
 
-    /* Adjust column widths for mobile */
+
     .col-code { width: 12%; }
     .col-table { width: 8%; }
     .col-items { width: 8%; }

@@ -3,6 +3,7 @@
     Layout = "~/Areas/Cashier/Views/Shared/_CashierLayout.cshtml";
 }
 
+<<<<<<< HEAD
 @model Quản_lý_quán_cafe.Areas.Cashier.ViewModels.CashierDashboardViewModel
 
 <div class="cashier-dashboard">
@@ -17,6 +18,19 @@
                 <i class="fas fa-clock"></i>
                 <span id="dateDisplay">Chủ nhật, 1 tháng 6 năm 2025</span> • <span id="timeDisplay">14:32</span>
             </div>
+=======
+<div class="page-header-cashier">
+    <h1 class="page-title">📊 Tổng quan hôm nay</h1>
+    <div>
+        <span class="text-muted" id="current-time">@DateTime.Now.ToString("HH:mm:ss")</span>
+    </div>
+</div>
+<div class="stat-cards">
+    <div class="stat-card">
+        <div class="stat-card-content">
+            <h3>Bàn đang hoạt động</h3>
+            <p class="stat-card-value">@Model.ActiveTablesCount</p>
+>>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073
         </div>
         <div class="header-right">
             <button class="btn-icon" title="Thông báo">
@@ -44,6 +58,7 @@
         </div>
     </div>
 
+<<<<<<< HEAD
     <div class="dashboard-container">
         <div class="dashboard-main">
             <!-- Statistics Cards -->
@@ -52,6 +67,56 @@
                 <div class="stat-card stat-card-empty">
                     <div class="stat-icon">
                         <i class="fas fa-chair"></i>
+=======
+    <div class="stat-card">
+        <div class="stat-card-content">
+            <h3>Đơn hôm nay</h3>
+            <p class="stat-card-value">@Model.TodayOrdersCount</p>
+        </div>
+        <div class="stat-card-icon">
+            <i class="bi bi-receipt"></i>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-card-content">
+            <h3>Chờ thanh toán</h3>
+            <p class="stat-card-value">@Model.WaitingPaymentCount</p>
+        </div>
+        <div class="stat-card-icon">
+            <i class="bi bi-cash-coin"></i>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-card-content">
+            <h3>Doanh thu hôm nay</h3>
+            <p class="stat-card-value">@Model.TodayRevenue.ToString("N0")đ</p>
+        </div>
+        <div class="stat-card-icon">
+            <i class="bi bi-graph-up"></i>
+        </div>
+    </div>
+</div>
+
+<div class="order-panel" style="margin-top: 2rem;">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h3 class="order-panel-title mb-0">
+            <i class="bi bi-calculator"></i>
+            Tính tiền nhanh
+        </h3>
+        <strong>Tạm tính: @Model.PendingPaymentTotal.ToString("N0")đ</strong>
+    </div>
+    @if (Model.PendingBills.Any())
+    {
+        <div class="order-list">
+            @foreach (var bill in Model.PendingBills)
+            {
+                <div class="order-item d-flex align-items-center justify-content-between gap-3">
+                    <div>
+                        <div class="order-item-code">Bàn @bill.TableName · #@bill.OrderCode</div>
+                        <div class="order-item-table">@bill.ItemCount món · vào lúc @bill.CreatedAt.ToString("HH:mm")</div>
+>>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073
                     </div>
                     <div class="stat-content">
                         <p class="stat-label">Bàn Trống</p>
@@ -279,6 +344,7 @@
                     </div>
                 </div>
             }
+<<<<<<< HEAD
             else
             {
                 <div class="sidebar-section">
@@ -344,8 +410,84 @@
     <script>
         // Update time and date
         function updateTimeAndDate() {
+=======
+        </div>
+    }
+    else
+    {
+        <div class="text-muted text-center py-3">Không có hóa đơn đang chờ thanh toán.</div>
+    }
+</div>
+
+<div class="floor-map">
+    <h2 class="floor-map-title">📍 Sơ đồ bàn</h2>
+    @Html.AntiForgeryToken()
+    <div class="tables-grid">
+        @foreach (var table in Model.Tables)
+        {
+            var statusClass = table.Status.ToLower() switch
+            {
+                "occupied" => "occupied",
+                "waitingpayment" => "waiting",
+                "reserved" => "reserved",
+                _ => "empty"
+            };
+            <div class="table-item @statusClass" title="@table.StatusLabel" data-table-id="@table.TableID">
+                <a href="~/Cashier/POS?tableId=@table.TableID" class="table-link">
+                    <div class="table-name">
+                        <i class="bi bi-table"></i> @table.TableName
+                    </div>
+                    <div class="table-info">
+                        @if (table.Status == "Occupied" && table.GuestCount.HasValue)
+                        {
+                            <span>👥 @table.GuestCount khách</span>
+                        }
+                        else if (table.Status == "WaitingPayment")
+                        {
+                            <span style="color: #FF6B6B; font-weight: 600;">⏳ @table.TotalAmount?.ToString("N0")đ</span>
+                        }
+                        else
+                        {
+                            <span>Trống</span>
+                        }
+                    </div>
+                    @if (!string.IsNullOrEmpty(table.OrderCode))
+                    {
+                        <div class="table-info" style="margin-top: 0.5rem;">
+                            <span style="background: rgba(139, 69, 19, 0.1); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 11px;">
+                                #@table.OrderCode
+                            </span>
+                        </div>
+                    }
+                </a>
+
+                <div class="table-actions" style="margin-top:6px; display:flex; gap:6px; justify-content:center;">
+                    <button type="button" class="btn btn-outline-secondary btn-sm p-1 rounded-circle" title="Available" onclick="changeTableStatus(@table.TableID, 'Available')">
+                        <i class="bi bi-check-lg"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm p-1 rounded-circle" title="Occupy" onclick="changeTableStatus(@table.TableID, 'Occupied')">
+                        <i class="bi bi-person-fill"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm p-1 rounded-circle" title="Waiting" onclick="changeTableStatus(@table.TableID, 'WaitingPayment')">
+                        <i class="bi bi-hourglass-split"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm p-1 rounded-circle" title="Maintenance" onclick="changeTableStatus(@table.TableID, 'Maintenance')">
+                        <i class="bi bi-tools"></i>
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+
+@section Scripts {
+    <script>
+        setInterval(() => {
+>>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073
             const now = new Date();
 
+<<<<<<< HEAD
             // Format time
             const timeString = now.toLocaleString('vi-VN', {
                 hour: '2-digit',
@@ -408,5 +550,46 @@
                 });
             }
         });
+=======
+        setInterval(() => {
+            location.reload();
+        }, 30000);
+
+        async function changeTableStatus(tableId, status) {
+            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            const token = tokenInput ? tokenInput.value : null;
+            const formData = new URLSearchParams();
+            formData.append('tableId', tableId);
+            formData.append('status', status);
+            if (token) formData.append('__RequestVerificationToken', token);
+
+            try {
+                const res = await fetch('/Cashier/Tables/UpdateStatus', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: formData.toString()
+                });
+                if (res.redirected) {
+                    window.location.reload();
+                    return;
+                }
+                if (!res.ok) {
+                    const txt = await res.text();
+                    alert('Không thể cập nhật trạng thái: ' + txt);
+                    return;
+                }
+                const el = document.querySelector(`.table-item[data-table-id="${tableId}"]`);
+                if (el) {
+                    el.classList.remove('empty','occupied','waiting','reserved','maintenance');
+                    const st = status.toLowerCase();
+                    const cls = st === 'waitingpayment' ? 'waiting' : (st === 'available' ? 'empty' : st);
+                    el.classList.add(cls);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Lỗi khi cập nhật trạng thái');
+            }
+        }
+>>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073
     </script>
 }

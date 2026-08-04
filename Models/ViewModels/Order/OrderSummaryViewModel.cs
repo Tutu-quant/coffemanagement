@@ -1,8 +1,7 @@
 namespace Quản_lý_quán_cafe.Models.ViewModels.Order
 {
-    /// <summary>
-    /// ViewModel cho tóm tắt đơn hàng (dùng cho Dashboard)
-    /// </summary>
+
+
     public class OrderSummaryViewModel
     {
         public int PendingCount { get; set; }

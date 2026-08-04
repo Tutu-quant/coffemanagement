@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Quản_lý_quán_cafe.Models.ViewModels.Customer;
 using Quản_lý_quán_cafe.Services.Interfaces;
 
@@ -68,7 +68,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 return View(model);
             }
 
-            // Validate phone
+
             var isValidPhone = await _service.ValidatePhoneAsync(model.Phone);
             if (!isValidPhone)
             {
@@ -131,7 +131,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 return View(model);
             }
 
-            // Validate phone
+
             var isValidPhone = await _service.ValidatePhoneAsync(model.Phone, id);
             if (!isValidPhone)
             {

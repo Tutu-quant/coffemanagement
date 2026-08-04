@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="~/css/order.css" />
 }
 
-<!-- Page Header -->
+
 <div class="page-header mb-3">
     <div>
         <p style="color: var(--text-light); margin: 0; font-size: 14px;">BrewPoint Cafe · Quản trị</p>
@@ -28,7 +28,7 @@
     </div>
 </div>
 
-<!-- Statistics Cards - Compact Version -->
+
 <div class="stat-cards-compact mb-3">
     <div class="stat-card-compact">
         <div class="stat-card-compact-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
@@ -77,7 +77,7 @@
     </div>
 </div>
 
-<!-- Filter Bar - Compact -->
+
 <div class="filter-bar-compact mb-3">
     <form method="get" class="filter-form-compact">
         <div class="filter-input-group">
@@ -112,7 +112,7 @@
     </form>
 </div>
 
-<!-- Orders Table -->
+
 <div class="card orders-card">
     @if (Model.Orders.Any())
     {
@@ -198,7 +198,7 @@
             </table>
         </div>
 
-        <!-- Pagination -->
+
         @if (Model.TotalPages > 1)
         {
             <div class="pagination-compact mt-3">
@@ -236,7 +236,7 @@
     }
     else
     {
-        <!-- Empty State - Compact -->
+
         <div class="empty-state-compact">
             <div class="empty-icon">📭</div>
             <h5>Chưa có đơn hàng</h5>
@@ -248,7 +248,7 @@
     }
 </div>
 
-<!-- Error Alert -->
+
 @if (TempData["Error"] != null)
 {
     <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">

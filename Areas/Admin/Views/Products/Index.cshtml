@@ -17,7 +17,7 @@
     </a>
 </div>
 
-<!-- Search & Filter Bar -->
+
 <div class="card">
     <div class="card-body">
         <form method="get" class="search-filter-bar">
@@ -91,7 +91,7 @@
     </div>
 </div>
 
-<!-- Products Table -->
+
 <div class="card">
     <div class="card-body">
         @if (Model?.Products?.Count > 0)
@@ -167,7 +167,7 @@
                 </table>
             </div>
 
-            <!-- Table Footer -->
+
             <div class="table-footer">
                 <span class="footer-info">Hiển thị @(((Model.PageNumber - 1) * Model.PageSize + 1)) đến @(Math.Min(Model.PageNumber * Model.PageSize, Model.TotalItems)) / @(Model.TotalItems) sản phẩm</span>
 

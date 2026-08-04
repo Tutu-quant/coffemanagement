@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System;
@@ -22,14 +22,14 @@ namespace Quản_lý_quán_cafe.Filters
             var http = context.HttpContext;
             var userId = http.Session.GetInt32("UserId");
 
-            // Not authenticated -> redirect to Login
+
             if (userId == null)
             {
                 context.Result = new RedirectToActionResult("Login", "Account", null);
                 return;
             }
 
-            // If roles specified, check RoleName in session
+
             if (!string.IsNullOrWhiteSpace(Roles))
             {
                 var roleName = http.Session.GetString("RoleName") ?? string.Empty;
@@ -40,8 +40,13 @@ namespace Quản_lý_quán_cafe.Filters
 
                 if (!allowed)
                 {
+<<<<<<< HEAD
                     // Forbidden for authenticated user without required role
                     context.Result = new StatusCodeResult(StatusCodes.Status403Forbidden);
+=======
+
+                    context.Result = new ForbidResult();
+>>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073
                     return;
                 }
             }

@@ -1,4 +1,4 @@
-﻿namespace Quản_lý_quán_cafe.Models.Entities
+namespace Quản_lý_quán_cafe.Models.Entities
 {
     public class Product
     {
@@ -24,7 +24,7 @@
 
         public bool IsDeleted { get; set; }
 
-        // Navigation Properties
+
         public virtual Category? Category { get; set; }
         public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
         public virtual ICollection<Promotion> Promotions { get; set; } = new List<Promotion>();

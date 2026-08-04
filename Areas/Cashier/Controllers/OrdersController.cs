@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Quản_lý_quán_cafe.Services.Interfaces;
 using Quản_lý_quán_cafe.Models.ViewModels.Order;
 
@@ -80,8 +80,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 var order = await _orderService.GetOrderByIdAsync(id);
                 if (order == null) return RedirectToAction(nameof(Index));
                 var viewModel = MapToOrderDetailViewModel(order);
-                // reuse Admin details view for now
-                return View("~/Areas/Admin/Views/Orders/Details.cshtml", viewModel);
+                return View("~/Areas/Cashier/Views/Orders/Index.cshtml", viewModel);
             }
             catch
             {
@@ -98,8 +97,6 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 var order = await _orderService.GetOrderByIdAsync(id);
                 if (order == null) return RedirectToAction(nameof(Index));
                 var viewModel = MapToOrderDetailViewModel(order);
-                // reuse Admin print view for printing in cashier area
-                // only allow local returnUrl values to avoid open redirects
                 if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 {
                     ViewData["ReturnUrl"] = returnUrl;
@@ -108,7 +105,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 {
                     ViewData["ReturnUrl"] = null;
                 }
-                return View("~/Areas/Admin/Views/Orders/Print.cshtml", viewModel);
+                return View("~/Areas/Cashier/Views/Orders/Print.cshtml", viewModel);
             }
             catch
             {
@@ -163,11 +160,23 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
         private List<Models.ViewModels.Order.OrderTimelineEventViewModel> GenerateOrderTimeline(Models.Entities.Order order)
         {
             var list = new List<Models.ViewModels.Order.OrderTimelineEventViewModel>();
-            list.Add(new Models.ViewModels.Order.OrderTimelineEventViewModel { EventDate = order.OrderDate.ToLocalTime(), EventType = "Created", EventDescription = "Order created" });
+            list.Add(new Models.ViewModels.Order.OrderTimelineEventViewModel
+            {
+                EventDate = order.OrderDate.ToLocalTime(),
+                EventType = "Created",
+                EventDescription = "Order created"
+            });
+
             if (order.CompletedDate.HasValue)
             {
-                list.Add(new Models.ViewModels.Order.OrderTimelineEventViewModel { EventDate = order.CompletedDate.Value.ToLocalTime(), EventType = "Completed", EventDescription = "Order completed" });
+                list.Add(new Models.ViewModels.Order.OrderTimelineEventViewModel
+                {
+                    EventDate = order.CompletedDate.Value.ToLocalTime(),
+                    EventType = "Completed",
+                    EventDescription = "Order completed"
+                });
             }
+
             return list;
         }
     }

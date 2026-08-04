@@ -1,10 +1,10 @@
 @model Quản_lý_quán_cafe.Areas.Cashier.ViewModels.POSViewModel
 
-<!-- Cột phải: Tổng kết & Thanh toán -->
+
 <div class="pos-payment">
     <div class="payment-header">Tổng kết</div>
 
-    <!-- Tính toán -->
+
     <div class="payment-summary">
         <div class="summary-row">
             <span>Tạm tính:</span>
@@ -22,7 +22,7 @@
 
     <div class="payment-divider"></div>
 
-    <!-- Khách tích thêm điểm -->
+
     @if (Model.Customer?.CustomerID.HasValue == true)
     {
         <div class="customer-reward">
@@ -31,7 +31,7 @@
         </div>
     }
 
-    <!-- Phương thức thanh toán -->
+
     <div class="payment-methods">
         <div class="payment-header-small">PHƯƠNG THỨC THANH TOÁN</div>
         <div class="method-buttons">
@@ -44,7 +44,7 @@
         </div>
     </div>
 
-    <!-- Nhập tiền khách đưa (chỉ hiện khi tiền mặt) -->
+
     <div class="payment-input" id="cashPaymentFields" style="display:@(Model.PaymentMethod == "cash" ? "block" : "none")">
         <label>Tiền khách đưa (ngàn đồng)</label>
         <input type="number" class="form-control" placeholder="VD: 200" id="paidAmount" onchange="calculateChange()" value="@(Model.PaidAmount > 0 ? (Model.PaidAmount/1000).ToString() : string.Empty)" @(Model.PaymentMethod == "qr" ? "disabled" : "") />
@@ -54,7 +54,7 @@
         </div>
     </div>
 
-    <!-- Nút thanh toán -->
+
     <div class="payment-actions">
         <button class="btn-checkout" id="btnCheckout" onclick="proceedCheckout()">
             <i class="bi bi-credit-card"></i> Xác nhận thanh toán

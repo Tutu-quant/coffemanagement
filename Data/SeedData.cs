@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Quản_lý_quán_cafe.Models.Entities;
 using Quản_lý_quán_cafe.Repository;
 using System.Security.Cryptography;
@@ -12,7 +12,7 @@ namespace Quản_lý_quán_cafe.Data
         {
             try
             {
-                // Create database if not exists
+
                 await context.Database.EnsureCreatedAsync();
                 await context.Database.ExecuteSqlRawAsync("""
                     CREATE TABLE IF NOT EXISTS PaymentAccountSettings (
@@ -72,9 +72,10 @@ namespace Quản_lý_quán_cafe.Data
                     );
                     """);
 
-                // Seed Roles
+
                 await SeedRolesAsync(context);
 
+<<<<<<< HEAD
                 // Seed Users (which also creates Employees)
                 await SeedUsersAsync(context);
 
@@ -82,15 +83,25 @@ namespace Quản_lý_quán_cafe.Data
                 await SeedEmployeesAsync(context);
 
                 // Seed Categories
+=======
+
+                await SeedEmployeesAsync(context);
+
+
+                await SeedUsersAsync(context);
+
+
+>>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073
                 await SeedCategoriesAsync(context);
 
-                // Seed Products
-                await SeedProductsAsync(context);
 
-                // Seed Customers
+                await SeedProductsAsync(context);
+                await SeedDemoProductsAsync(context);
+
+
                 await SeedCustomersAsync(context);
 
-                // Seed RestaurantTables
+
                 await SeedRestaurantTablesAsync(context);
 
                 await context.SaveChangesAsync();
@@ -386,6 +397,26 @@ namespace Quản_lý_quán_cafe.Data
             };
 
             await context.Products.AddRangeAsync(products);
+            await context.SaveChangesAsync();
+        }
+
+        private static async Task SeedDemoProductsAsync(ApplicationDbContext context)
+        {
+            var coffeeCategory = await context.Categories.FirstAsync(c => c.CategoryName == "Cà Phê");
+            var teaCategory = await context.Categories.FirstAsync(c => c.CategoryName == "Trà");
+            var cakeCategory = await context.Categories.FirstAsync(c => c.CategoryName == "Bánh");
+            var now = DateTime.UtcNow;
+            var demoProducts = new[]
+            {
+                new Product { ProductName = "Cà phê sữa đá", Description = "Cà phê pha phin cùng sữa đặc", CategoryID = coffeeCategory.CategoryID, Price = 35000, Quantity = 100, IsActive = true, CreatedAt = now, UpdatedAt = now },
+                new Product { ProductName = "Bạc xỉu", Description = "Sữa thơm béo với một chút cà phê", CategoryID = coffeeCategory.CategoryID, Price = 40000, Quantity = 100, IsActive = true, CreatedAt = now, UpdatedAt = now },
+                new Product { ProductName = "Trà đào cam sả", Description = "Trà đào thanh mát cùng cam và sả", CategoryID = teaCategory.CategoryID, Price = 45000, Quantity = 100, IsActive = true, CreatedAt = now, UpdatedAt = now },
+                new Product { ProductName = "Matcha latte", Description = "Matcha và sữa tươi", CategoryID = teaCategory.CategoryID, Price = 49000, Quantity = 100, IsActive = true, CreatedAt = now, UpdatedAt = now },
+                new Product { ProductName = "Croissant bơ", Description = "Bánh sừng bò bơ nướng giòn", CategoryID = cakeCategory.CategoryID, Price = 32000, Quantity = 50, IsActive = true, CreatedAt = now, UpdatedAt = now }
+            };
+
+            var existingNames = await context.Products.Select(p => p.ProductName).ToListAsync();
+            await context.Products.AddRangeAsync(demoProducts.Where(p => !existingNames.Contains(p.ProductName)));
             await context.SaveChangesAsync();
         }
 

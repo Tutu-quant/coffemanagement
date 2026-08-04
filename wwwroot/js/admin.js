@@ -1,6 +1,6 @@
-// =============================================
-// SIDEBAR TOGGLE
-// =============================================
+
+
+
 document.addEventListener('DOMContentLoaded', function() {
     const sidebarToggle = document.getElementById('sidebarToggle');
     const sidebar = document.querySelector('.admin-sidebar');
@@ -11,15 +11,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Close sidebar when clicking outside
+
     document.addEventListener('click', function(event) {
-        if (!event.target.closest('.admin-sidebar') && 
+        if (!event.target.closest('.admin-sidebar') &&
             !event.target.closest('.btn-sidebar-toggle')) {
             sidebar.classList.remove('show');
         }
     });
 
-    // Auto-hide alerts after 5 seconds
+
     const alerts = document.querySelectorAll('.alert');
     alerts.forEach(alert => {
         setTimeout(() => {
@@ -29,11 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// =============================================
-// SWEETALERT2 UTILITIES
-// =============================================
 
-// Confirm Delete
 function confirmDelete(title = 'Xóa mục này?', message = 'Bạn không thể khôi phục dữ liệu bị xóa.') {
     return Swal.fire({
         title: title,
@@ -48,7 +44,7 @@ function confirmDelete(title = 'Xóa mục này?', message = 'Bạn không thể
     });
 }
 
-// Success Notification
+
 function showSuccess(title = 'Thành công!', message = 'Thao tác hoàn thành.') {
     Swal.fire({
         title: title,
@@ -59,7 +55,7 @@ function showSuccess(title = 'Thành công!', message = 'Thao tác hoàn thành.
     });
 }
 
-// Error Notification
+
 function showError(title = 'Lỗi!', message = 'Có lỗi xảy ra. Vui lòng thử lại.') {
     Swal.fire({
         title: title,
@@ -70,7 +66,7 @@ function showError(title = 'Lỗi!', message = 'Có lỗi xảy ra. Vui lòng th
     });
 }
 
-// Info Notification
+
 function showInfo(title = 'Thông báo', message = 'Có thông tin cần bạn biết.') {
     Swal.fire({
         title: title,
@@ -81,9 +77,6 @@ function showInfo(title = 'Thông báo', message = 'Có thông tin cần bạn b
     });
 }
 
-// =============================================
-// FORM VALIDATION
-// =============================================
 
 function validateForm(formId) {
     const form = document.getElementById(formId);
@@ -104,11 +97,7 @@ function validateForm(formId) {
     return isValid;
 }
 
-// =============================================
-// FORM HELPERS
-// =============================================
 
-// Handle Delete Button with Confirmation
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('btn-delete-confirm')) {
         e.preventDefault();
@@ -122,7 +111,7 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Format Currency
+
 function formatCurrency(value) {
     return new Intl.NumberFormat('vi-VN', {
         style: 'currency',
@@ -130,7 +119,7 @@ function formatCurrency(value) {
     }).format(value);
 }
 
-// Format Date
+
 function formatDate(date) {
     return new Date(date).toLocaleDateString('vi-VN');
 }

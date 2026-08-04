@@ -5,6 +5,9 @@
     Layout = "~/Areas/Cashier/Views/Shared/_POSLayout.cshtml";
 }
 
+
+@Html.AntiForgeryToken()
+
 @section Head {
     <link rel="stylesheet" href="~/css/pos.css" asp-append-version="true" />
 }
@@ -49,24 +52,35 @@
             return Number(item?.querySelector('.qty')?.textContent || 0);
         }
 
+        function addProduct(productId) {
+            if (currentTableId === 0) return alert('Vui lòng chọn bàn');
+            postForm('/Cashier/POS/AddItem', {
+                tableId: currentTableId,
+                productId,
+                quantity: 1
+            }).then(() => {
+                try { refreshSidebar(); } catch (e) {}
+                window.location.href = `/Cashier/POS?tableId=${currentTableId}`;
+            }).catch(error => alert(error.message));
+        }
         function increaseQty(orderDetailId) {
             postForm('/Cashier/POS/UpdateItem', {
                 orderDetailId,
                 quantity: getItemQuantity(orderDetailId) + 1
-            }).then(() => location.reload()).catch(error => alert(error.message));
+            }).then(() => { try { refreshSidebar(); } catch (e) {} ; window.location.href = `/Cashier/POS?tableId=${currentTableId}`; }).catch(error => alert(error.message));
         }
 
         function decreaseQty(orderDetailId) {
             postForm('/Cashier/POS/UpdateItem', {
                 orderDetailId,
                 quantity: getItemQuantity(orderDetailId) - 1
-            }).then(() => location.reload()).catch(error => alert(error.message));
+            }).then(() => { try { refreshSidebar(); } catch (e) {} ; window.location.href = `/Cashier/POS?tableId=${currentTableId}`; }).catch(error => alert(error.message));
         }
 
         function removeItem(orderDetailId) {
             if (!confirm('Xóa món này?')) return;
             postForm('/Cashier/POS/RemoveItem', { orderDetailId })
-                .then(() => location.reload()).catch(error => alert(error.message));
+                .then(() => { try { refreshSidebar(); } catch (e) {} ; window.location.href = `/Cashier/POS?tableId=${currentTableId}`; }).catch(error => alert(error.message));
         }
 
         function searchCustomer() {
@@ -137,7 +151,6 @@
             calculateChange();
         }
 
-        // initialize visibility on load
         document.addEventListener('DOMContentLoaded', function() {
             const cashFields = document.getElementById('cashPaymentFields');
             const paidInput = document.getElementById('paidAmount');
@@ -145,6 +158,43 @@
             if (paidInput) paidInput.disabled = (currentPaymentMethod === 'qr');
             calculateTotal();
         });
+      function refreshSidebar() {
+            fetch('/Cashier/POS/OpenTables')
+                .then(async r => {
+                    if (!r.ok) throw new Error('Không thể tải sơ đồ bàn');
+                    const html = await r.text();
+                    const el = document.querySelector('.pos-sidebar');
+                    if (el) el.outerHTML = html;
+                })
+                .catch(err => console.error(err));
+        }
+
+        function changeTableStatus(tableId, status) {
+            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            const token = tokenInput ? tokenInput.value : null;
+            const formData = new URLSearchParams();
+            formData.append('tableId', tableId);
+            formData.append('status', status);
+            if (token) formData.append('__RequestVerificationToken', token);
+
+            fetch('/Cashier/Tables/UpdateStatus', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: formData.toString()
+            }).then(async res => {
+                if (res.redirected) {
+                    await refreshSidebar();
+                    window.location.reload();
+                    return;
+                }
+                if (!res.ok) {
+                    const txt = await res.text();
+                    alert('Không thể cập nhật trạng thái: ' + txt);
+                    return;
+                }
+                await refreshSidebar();
+            }).catch(err => { console.error(err); alert('Lỗi khi cập nhật trạng thái'); });
+        }
 
         function proceedCheckout() {
             if (currentTableId === 0) {
@@ -168,11 +218,10 @@
                 discountValue: document.getElementById('discountValue')?.value || 0,
                 notes: document.getElementById('orderNotes')?.value || ''
             }).then(data => {
-                // Open printable bill in new tab, then reload POS
                 try {
-                    const printUrl = `/Admin/Orders/Print/${data.orderId}?returnUrl=${encodeURIComponent('/Cashier/POS')}`;
+                    const printUrl = `/Cashier/Orders/Print/${data.orderId}?returnUrl=${encodeURIComponent('/Cashier/POS')}`;
                     window.open(printUrl, '_blank');
-                } catch (e) { /* ignore */ }
+                } catch (e) {  }
                 alert(`Thanh toán thành công. Tiền thừa: ${formatMoney(data.change)}`);
                 window.location.href = '/Cashier/POS';
             }).catch(error => alert(error.message));

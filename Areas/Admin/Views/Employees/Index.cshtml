@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 @using Quản_lý_quán_cafe.Models.ViewModels.Employees
 @using Quản_lý_quán_cafe.Models.Entities
 @model EmployeeListViewModel
@@ -367,3 +368,25 @@
         }
     </script>
 }
+=======
+@model List<Quản_lý_quán_cafe.Models.Entities.Employee>
+@{ ViewData["Title"] = "Nhân viên"; }
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div><h2>Nhân viên</h2><p class="text-muted mb-0">Quản lý thông tin nhân sự cửa hàng.</p></div>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-person-plus"></i> Thêm nhân viên</a>
+</div>
+<form method="get" class="input-group mb-3" style="max-width:520px">
+    <input name="search" value="@ViewBag.Search" class="form-control" placeholder="Tìm theo tên, email, số điện thoại" />
+    <button class="btn btn-outline-secondary">Tìm</button>
+</form>
+<div class="card shadow-sm"><div class="table-responsive"><table class="table align-middle mb-0">
+    <thead><tr><th>Nhân viên</th><th>Liên hệ</th><th>Ngày vào làm</th><th>Tài khoản</th><th></th></tr></thead>
+    <tbody>@foreach (var e in Model) { <tr>
+        <td><strong>@e.FullName</strong><div class="small text-muted">@e.Gender</div></td>
+        <td>@(e.Phone ?? "-")<div class="small text-muted">@(e.Email ?? "-")</div></td>
+        <td>@(e.HireDate?.ToString("dd/MM/yyyy") ?? "-")</td>
+        <td><span class="badge @(e.Users.Any(u => !u.IsDeleted && u.IsActive) ? "bg-success" : "bg-secondary")">@(e.Users.Any(u => !u.IsDeleted && u.IsActive) ? "Hoạt động" : "Chưa có")</span></td>
+        <td class="text-end"><a asp-action="Details" asp-route-id="@e.EmployeeID" class="btn btn-sm btn-outline-primary">Chi tiết</a> <a asp-action="Edit" asp-route-id="@e.EmployeeID" class="btn btn-sm btn-outline-warning">Sửa</a></td>
+    </tr> }</tbody>
+</table></div></div>
+>>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073

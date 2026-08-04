@@ -1,4 +1,4 @@
-/* Restaurant Tables Page Styles */
+
 
 .search-filter-bar {
     display: flex;
@@ -202,7 +202,7 @@
     background: #fafbfc;
 }
 
-/* Responsive Design */
+
 @media (max-width: 768px) {
     .tables-grid {
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

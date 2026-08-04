@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Quản_lý_quán_cafe.Data;
 using Quản_lý_quán_cafe.Models.Entities;
 using Quản_lý_quán_cafe.Models.Enums;
@@ -113,11 +113,7 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
 
         #endregion
 
-        
 
-        /// <summary>
-        /// Lấy danh sách đơn hàng theo trạng thái
-        /// </summary>
         #region Query Methods
 
         public async Task<List<Order>> GetByCustomerAsync(int customerId)
@@ -224,9 +220,7 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
 
         #endregion
 
-        /// <summary>
-        /// Lấy danh sách đơn hàng trong khoảng thời gian
-        /// </summary>
+
         #region Filter & Paging
 
         public async Task<List<Order>> GetByDateRangeAsync(

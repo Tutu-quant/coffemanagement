@@ -1,4 +1,4 @@
-﻿namespace Quản_lý_quán_cafe.Models.Entities
+namespace Quản_lý_quán_cafe.Models.Entities
 {
     public class RestaurantTable
     {
@@ -18,7 +18,7 @@
 
         public bool IsDeleted { get; set; }
 
-        // Navigation Properties
+
         public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
         public virtual ICollection<Reservation> Reservations { get; set; } = new List<Reservation>();
     }

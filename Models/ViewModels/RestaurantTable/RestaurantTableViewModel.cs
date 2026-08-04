@@ -25,7 +25,7 @@ namespace Quản_lý_quán_cafe.Models.ViewModels.RestaurantTable
         public int TotalItems { get; set; }
         public int TotalPages => (TotalItems + PageSize - 1) / PageSize;
 
-        // Dashboard statistics
+
         public int TotalTables { get; set; }
         public int AvailableTables { get; set; }
         public int OccupiedTables { get; set; }

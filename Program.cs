@@ -11,6 +11,7 @@ using Quản_lý_quán_cafe.Services.Interfaces;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
+<<<<<<< HEAD
 
 builder.Services.AddAntiforgery(options =>
 {
@@ -18,6 +19,9 @@ builder.Services.AddAntiforgery(options =>
     options.FormFieldName = "__RequestVerificationToken";
 });
 
+=======
+builder.Services.AddSignalR();
+>>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073
 builder.Services.AddDataProtection();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -58,6 +62,8 @@ builder.Services.AddScoped<CustomerSessionService>();
 
 // Payment
 builder.Services.AddSingleton<PaymentGatewaySecretProtector>();
+builder.Services.AddSingleton<Quản_lý_quán_cafe.Realtime.IRealtimeUpdateNotifier,
+    Quản_lý_quán_cafe.Realtime.RealtimeUpdateNotifier>();
 
 // Logging
 builder.Services.AddLogging();
@@ -107,4 +113,10 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
+<<<<<<< HEAD
 await app.RunAsync();
+=======
+app.MapHub<Quản_lý_quán_cafe.Realtime.AppStateHub>("/hubs/app-state");
+
+await app.RunAsync();
+>>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073

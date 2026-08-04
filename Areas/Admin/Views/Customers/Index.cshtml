@@ -24,7 +24,7 @@
     </div>
 </div>
 
-<!-- Dashboard Statistics -->
+
 <div class="row mb-4">
     <div class="col-lg-3 col-md-6 mb-3">
         <div class="stat-card">
@@ -72,7 +72,7 @@
     </div>
 </div>
 
-<!-- Search & Filter Bar -->
+
 <div class="card mb-4">
     <div class="card-body">
         <form method="get" class="search-filter-bar">
@@ -94,7 +94,7 @@
 
             <select class="form-select" name="sort">
                 @{
-                    var sorts = new[] { 
+                    var sorts = new[] {
                         new { value = "newest", label = "Mới nhất" },
                         new { value = "name_asc", label = "Tên A-Z" },
                         new { value = "name_desc", label = "Tên Z-A" },
@@ -114,7 +114,7 @@
     </div>
 </div>
 
-<!-- Customers Table -->
+
 <div class="card">
     <div class="card-body">
         @if (Model?.Customers?.Count > 0)
@@ -199,7 +199,7 @@
                 </table>
             </div>
 
-            <!-- Pagination -->
+
             @if (Model.TotalPages > 1)
             {
                 <nav aria-label="Page navigation" class="mt-4">

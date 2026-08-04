@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Quản_lý_quán_cafe.Data;
 using Quản_lý_quán_cafe.Models.Entities;
 using Quản_lý_quán_cafe.Repository.Interfaces;
@@ -60,8 +60,8 @@ namespace Quản_lý_quán_cafe.Repository
             return await _context.Reservations
                 .Include(r => r.Customer)
                 .Include(r => r.Table)
-                .Where(r => !r.IsDeleted && 
-                           r.ReservationDate >= fromDate && 
+                .Where(r => !r.IsDeleted &&
+                           r.ReservationDate >= fromDate &&
                            r.ReservationDate <= toDate)
                 .OrderBy(r => r.ReservationDate)
                 .ToListAsync();

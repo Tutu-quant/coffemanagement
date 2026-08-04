@@ -1,14 +1,9 @@
-/**
- * Order Management UI Interactions
- * BrewPoint Design System
- */
+
+
 
 (function() {
     'use strict';
 
-    // ====================================
-    // SEARCH FUNCTIONALITY
-    // ====================================
 
     function initSearch() {
         const searchInput = document.querySelector('.order-filter-input[type="text"]');
@@ -18,7 +13,7 @@
         searchInput.addEventListener('input', function() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
-                // Trigger search if needed
+
                 const searchEvent = new CustomEvent('orderSearch', {
                     detail: { query: this.value }
                 });
@@ -27,9 +22,6 @@
         });
     }
 
-    // ====================================
-    // FILTER FUNCTIONALITY
-    // ====================================
 
     function initFilters() {
         const filterButtons = document.querySelectorAll('.order-btn-filter');
@@ -48,7 +40,7 @@
         resetButtons.forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
-                // Reset all filters
+
                 const filterInputs = document.querySelectorAll('.order-filter-input, .order-filter-select');
                 filterInputs.forEach(input => {
                     if (input.type === 'text') {
@@ -60,7 +52,7 @@
                     }
                 });
 
-                // Navigate to index without filters
+
                 const indexLink = document.querySelector('a[href*="Index"]');
                 if (indexLink) {
                     window.location.href = indexLink.href.split('?')[0];
@@ -69,16 +61,13 @@
         });
     }
 
-    // ====================================
-    // PAGINATION
-    // ====================================
 
     function initPagination() {
         const paginationButtons = document.querySelectorAll('.order-pagination-btn');
 
         paginationButtons.forEach(btn => {
             btn.addEventListener('click', function(e) {
-                // Allow default link behavior
+
                 if (this.tagName === 'A' && this.href) {
                     return;
                 }
@@ -86,38 +75,32 @@
         });
     }
 
-    // ====================================
-    // TABLE INTERACTIONS
-    // ====================================
 
     function initTableInteractions() {
         const tableRows = document.querySelectorAll('.order-table tbody tr');
 
         tableRows.forEach(row => {
-            // Make entire row clickable to detail page
+
             row.addEventListener('click', function(e) {
-                // Don't trigger if clicking on a button or link
+
                 if (e.target.tagName === 'A' || e.target.closest('button')) {
                     return;
                 }
 
-                // Find the detail link in the row
+
                 const detailLink = this.querySelector('a.order-action-btn');
                 if (detailLink) {
                     detailLink.click();
                 }
             });
 
-            // Add hover effect
+
             row.addEventListener('mouseenter', function() {
                 this.style.cursor = 'pointer';
             });
         });
     }
 
-    // ====================================
-    // DETAIL PAGE TIMELINE
-    // ====================================
 
     function initTimeline() {
         const timelineItems = document.querySelectorAll('.order-timeline-item');
@@ -125,7 +108,7 @@
         timelineItems.forEach((item, index) => {
             item.style.animationDelay = `${index * 0.1}s`;
 
-            // Add expand functionality if needed
+
             const content = item.querySelector('.order-timeline-content');
             if (content && content.textContent.length > 100) {
                 item.classList.add('expandable');
@@ -136,9 +119,6 @@
         });
     }
 
-    // ====================================
-    // DETAIL PAGE INTERACTIONS
-    // ====================================
 
     function initDetailPage() {
         const backBtn = document.querySelector('.order-back-btn');
@@ -151,7 +131,7 @@
             });
         }
 
-        // Print functionality
+
         const printBtn = document.querySelector('.order-btn-print');
         if (printBtn) {
             printBtn.addEventListener('click', function(e) {
@@ -161,9 +141,6 @@
         }
     }
 
-    // ====================================
-    // TOOLTIP & POPOVER
-    // ====================================
 
     function initTooltips() {
         const tooltips = document.querySelectorAll('[data-tooltip]');
@@ -201,9 +178,6 @@
         });
     }
 
-    // ====================================
-    // EXPORT & PRINT
-    // ====================================
 
     function initExportFunctionality() {
         const exportButtons = document.querySelectorAll('[data-export]');
@@ -250,9 +224,6 @@
         exportToExcel();
     }
 
-    // ====================================
-    // NOTIFICATION & ALERT
-    // ====================================
 
     function showNotification(message, type = 'success', duration = 3000) {
         const notification = document.createElement('div');
@@ -291,9 +262,6 @@
         }, duration);
     }
 
-    // ====================================
-    // STATUS FILTER HELPER
-    // ====================================
 
     function filterByStatus(status) {
         const rows = document.querySelectorAll('.order-table tbody tr');
@@ -311,7 +279,7 @@
             }
         });
 
-        // Show empty state if no matches
+
         if (visibleCount === 0) {
             const tbody = document.querySelector('.order-table tbody');
             if (tbody) {
@@ -326,9 +294,6 @@
         }
     }
 
-    // ====================================
-    // ANIMATION UTILITIES
-    // ====================================
 
     function addAnimationStyles() {
         const style = document.createElement('style');
@@ -376,15 +341,12 @@
         document.head.appendChild(style);
     }
 
-    // ====================================
-    // INITIALIZATION
-    // ====================================
 
     function init() {
-        // Add animation styles
+
         addAnimationStyles();
 
-        // Initialize all components
+
         initSearch();
         initFilters();
         initPagination();
@@ -395,14 +357,14 @@
         initExportFunctionality();
     }
 
-    // Run on DOM ready
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
         init();
     }
 
-    // Export functions for use in other scripts
+
     window.OrderUI = {
         showNotification,
         filterByStatus,

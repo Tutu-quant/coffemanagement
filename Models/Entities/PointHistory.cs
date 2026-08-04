@@ -1,4 +1,4 @@
-﻿namespace Quản_lý_quán_cafe.Models.Entities
+namespace Quản_lý_quán_cafe.Models.Entities
 {
     public class PointHistory
     {
@@ -22,7 +22,7 @@
 
         public bool IsDeleted { get; set; }
 
-        // Navigation Properties
+
         public virtual Customer? Customer { get; set; }
         public virtual Order? Order { get; set; }
     }

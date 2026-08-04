@@ -607,6 +607,7 @@
                 <label>Mã đơn</label>
                 <input type="text" name="searchOrderId" placeholder="Tìm mã đơn..." value="@Context.Request.Query["searchOrderId"]" />
             </div>
+<<<<<<< HEAD
             <div class="filter-group">
                 <label>Tên bàn</label>
                 <input type="text" name="searchTable" placeholder="Tìm tên bàn..." value="@Context.Request.Query["searchTable"]" />
@@ -726,3 +727,16 @@ else
     </div>
 }
 
+=======
+            @if (!string.IsNullOrWhiteSpace(order.Notes)) { <p class="order-note"><i class="bi bi-chat-left-text"></i> @order.Notes</p> }
+            <footer>
+                <span>@order.OrderDetails.Sum(x => x.Quantity) món</span>
+                <div class="d-flex align-items-center gap-3">
+                    <strong>@order.TotalAmount.ToString("N0")đ</strong>
+                    <a asp-action="Details" asp-route-id="@order.OrderID" class="btn btn-sm btn-outline-primary">Chi tiết</a>
+                </div>
+            </footer>
+        </article>
+    }
+</div>
+>>>>>>> b4f1700646f7c1f88575a79e86ff337a8d546073

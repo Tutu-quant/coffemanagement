@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Quản_lý_quán_cafe.Models.ViewModels.Category;
 using Quản_lý_quán_cafe.Services.Interfaces;
 
@@ -44,7 +44,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 return View(model);
             }
 
-            // Validate duplicate name
+
             var isNameValid = await _categoryService.ValidateNameAsync(model.Name);
             if (!isNameValid)
             {
@@ -98,7 +98,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 return View(model);
             }
 
-            // Validate duplicate name
+
             var isNameValid = await _categoryService.ValidateNameAsync(model.Name, id);
             if (!isNameValid)
             {

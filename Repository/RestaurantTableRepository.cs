@@ -33,26 +33,26 @@ namespace Quản_lý_quán_cafe.Repository
             var query = _context.RestaurantTables
                 .Where(t => !t.IsDeleted);
 
-            // Search filter
+
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                query = query.Where(t => t.TableNumber.Contains(searchTerm) || 
+                query = query.Where(t => t.TableNumber.Contains(searchTerm) ||
                                         (t.Location != null && t.Location.Contains(searchTerm)));
             }
 
-            // Location filter
+
             if (!string.IsNullOrWhiteSpace(location))
             {
                 query = query.Where(t => t.Location == location);
             }
 
-            // Status filter
+
             if (!string.IsNullOrWhiteSpace(status))
             {
                 query = query.Where(t => t.TableStatus == status);
             }
 
-            // Sorting
+
             query = sortBy switch
             {
                 "name_asc" => query.OrderBy(t => t.TableNumber),
@@ -83,7 +83,7 @@ namespace Quản_lý_quán_cafe.Repository
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                query = query.Where(t => t.TableNumber.Contains(searchTerm) || 
+                query = query.Where(t => t.TableNumber.Contains(searchTerm) ||
                                         (t.Location != null && t.Location.Contains(searchTerm)));
             }
 

@@ -1,4 +1,4 @@
-﻿using Quản_lý_quán_cafe.Models.Enums;
+using Quản_lý_quán_cafe.Models.Enums;
 
 namespace Quản_lý_quán_cafe.Models.Entities
 {
@@ -30,7 +30,6 @@ namespace Quản_lý_quán_cafe.Models.Entities
 
         public bool IsDeleted { get; set; }
 
-        // Navigation Properties
 
         public virtual Employee? Employee { get; set; }
         public virtual Customer? Customer { get; set; }

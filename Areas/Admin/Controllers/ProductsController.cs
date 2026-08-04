@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Quản_lý_quán_cafe.Models.ViewModels.Product;
 using Quản_lý_quán_cafe.Services.Interfaces;
@@ -7,7 +7,7 @@ using System.Security.Claims;
 namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    // [Authorize] // TODO: Implement custom authorization using Session
+
     public class ProductsController : Controller
     {
         private readonly IProductService _productService;
@@ -61,7 +61,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 return View(model);
             }
 
-            // Validate duplicate name
+
             var isNameValid = await _productService.ValidateNameAsync(model.Name);
             if (!isNameValid)
             {
@@ -71,7 +71,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 return View(model);
             }
 
-            // Validate price
+
             if (model.Price <= 0)
             {
                 ModelState.AddModelError("Price", "Giá sản phẩm phải lớn hơn 0");
@@ -82,10 +82,10 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
 
             try
             {
-                // Handle file upload
+
                 if (model.ImageFile != null)
                 {
-                    // Validate file
+
                     var (isValid, errorMessage) = ValidateImageFile(model.ImageFile);
                     if (!isValid)
                     {
@@ -95,7 +95,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                         return View(model);
                     }
 
-                    // Save file
+
                     var fileName = await SaveImageFile(model.ImageFile);
                     model.ImageFile = new FormFile(
                         new MemoryStream(await System.IO.File.ReadAllBytesAsync(
@@ -160,7 +160,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 return View(model);
             }
 
-            // Validate duplicate name
+
             var isNameValid = await _productService.ValidateNameAsync(model.Name, id);
             if (!isNameValid)
             {
@@ -170,7 +170,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 return View(model);
             }
 
-            // Validate price
+
             if (model.Price <= 0)
             {
                 ModelState.AddModelError("Price", "Giá sản phẩm phải lớn hơn 0");
@@ -181,10 +181,10 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
 
             try
             {
-                // Handle file upload
+
                 if (model.ImageFile != null)
                 {
-                    // Validate file
+
                     var (isValid, errorMessage) = ValidateImageFile(model.ImageFile);
                     if (!isValid)
                     {
@@ -194,13 +194,13 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                         return View(model);
                     }
 
-                    // Delete old image if exists
+
                     if (!string.IsNullOrEmpty(model.ImageUrl))
                     {
                         DeleteImageFile(model.ImageUrl);
                     }
 
-                    // Save new file
+
                     var fileName = await SaveImageFile(model.ImageFile);
                     model.ImageFile = new FormFile(
                         new MemoryStream(await System.IO.File.ReadAllBytesAsync(
@@ -277,7 +277,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 return (false, "Định dạng ảnh không hợp lệ. Chỉ chấp nhận: JPG, JPEG, PNG, WebP");
             }
 
-            const long maxFileSize = 5 * 1024 * 1024; // 5MB
+            const long maxFileSize = 5 * 1024 * 1024;
             if (file.Length > maxFileSize)
             {
                 return (false, "Kích thước ảnh không được vượt quá 5MB");

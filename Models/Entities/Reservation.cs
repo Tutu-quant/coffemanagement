@@ -1,4 +1,4 @@
-﻿namespace Quản_lý_quán_cafe.Models.Entities
+namespace Quản_lý_quán_cafe.Models.Entities
 {
     public class Reservation
     {
@@ -28,7 +28,7 @@
 
         public bool IsDeleted { get; set; }
 
-        // Navigation Properties
+
         public virtual Customer? Customer { get; set; }
         public virtual RestaurantTable? Table { get; set; }
     }

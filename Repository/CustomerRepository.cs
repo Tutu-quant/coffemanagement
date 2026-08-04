@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Quản_lý_quán_cafe.Data;
 using Quản_lý_quán_cafe.Models.Entities;
 using Quản_lý_quán_cafe.Repository.Interfaces;
@@ -36,21 +36,21 @@ namespace Quản_lý_quán_cafe.Repository
                 .Where(c => !c.IsDeleted)
                 .AsNoTracking();
 
-            // Search filter
+
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                query = query.Where(c => c.CustomerName.Contains(searchTerm) || 
+                query = query.Where(c => c.CustomerName.Contains(searchTerm) ||
                                         (c.Phone != null && c.Phone.Contains(searchTerm)) ||
                                         (c.Email != null && c.Email.Contains(searchTerm)));
             }
 
-            // Membership tier filter
+
             if (!string.IsNullOrEmpty(membershipTier))
             {
                 query = query.Where(c => c.MembershipTier == membershipTier);
             }
 
-            // Sort
+
             query = sortBy switch
             {
                 "name_asc" => query.OrderBy(c => c.CustomerName),
@@ -81,7 +81,7 @@ namespace Quản_lý_quán_cafe.Repository
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                query = query.Where(c => c.CustomerName.Contains(searchTerm) || 
+                query = query.Where(c => c.CustomerName.Contains(searchTerm) ||
                                         (c.Phone != null && c.Phone.Contains(searchTerm)) ||
                                         (c.Email != null && c.Email.Contains(searchTerm)));
             }

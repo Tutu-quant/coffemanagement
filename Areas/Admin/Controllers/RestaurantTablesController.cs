@@ -58,7 +58,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 return View(model);
             }
 
-            // Validate duplicate table number
+
             var isValid = await _service.ValidateTableNumberAsync(model.TableNumber);
             if (!isValid)
             {
@@ -68,7 +68,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 return View(model);
             }
 
-            // Validate capacity
+
             if (model.Capacity <= 0)
             {
                 ModelState.AddModelError("Capacity", "Sức chứa phải lớn hơn 0");
@@ -135,7 +135,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 return View(model);
             }
 
-            // Validate duplicate table number
+
             var isValid = await _service.ValidateTableNumberAsync(model.TableNumber, id);
             if (!isValid)
             {
@@ -145,7 +145,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 return View(model);
             }
 
-            // Validate capacity
+
             if (model.Capacity <= 0)
             {
                 ModelState.AddModelError("Capacity", "Sức chứa phải lớn hơn 0");

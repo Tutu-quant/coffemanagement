@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Quản_lý_quán_cafe.Data;
 using Quản_lý_quán_cafe.Models.Entities;
 using Quản_lý_quán_cafe.Repository.Interfaces;
@@ -30,8 +30,8 @@ namespace Quản_lý_quán_cafe.Repository
 
         public async Task<User?> GetByEmailAsync(string email)
         {
-            // Note: User entity không có Email column trong Database
-            // Method này không sử dụng được, giữ lại để không break interface
+
+
             return await Task.FromResult<User?>(null);
         }
 
@@ -57,7 +57,7 @@ namespace Quản_lý_quán_cafe.Repository
                 return null;
             }
 
-            // Verify password hash
+
             if (!VerifyPasswordHash(password, user.PasswordHash))
             {
                 return null;
@@ -85,7 +85,7 @@ namespace Quản_lý_quán_cafe.Repository
             await _context.SaveChangesAsync();
         }
 
-        // Helper methods
+
         public static string HashPassword(string password)
         {
             using (var sha256 = SHA256.Create())

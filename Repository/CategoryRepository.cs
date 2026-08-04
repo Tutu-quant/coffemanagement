@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Quản_lý_quán_cafe.Data;
 using Quản_lý_quán_cafe.Models.Entities;
 using Quản_lý_quán_cafe.Repository.Interfaces;
@@ -35,7 +35,7 @@ namespace Quản_lý_quán_cafe.Repository
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                query = query.Where(c => c.CategoryName.Contains(searchTerm) || 
+                query = query.Where(c => c.CategoryName.Contains(searchTerm) ||
                                         (c.Description != null && c.Description.Contains(searchTerm)));
             }
 
@@ -60,7 +60,7 @@ namespace Quản_lý_quán_cafe.Repository
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                query = query.Where(c => c.CategoryName.Contains(searchTerm) || 
+                query = query.Where(c => c.CategoryName.Contains(searchTerm) ||
                                         (c.Description != null && c.Description.Contains(searchTerm)));
             }
 

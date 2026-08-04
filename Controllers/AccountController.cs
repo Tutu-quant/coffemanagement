@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
@@ -22,7 +22,7 @@ namespace Quản_lý_quán_cafe.Controllers
             _userRepository = userRepository;
         }
 
-        // GET
+
         public IActionResult Login()
         {
             return View();
@@ -42,12 +42,12 @@ namespace Quản_lý_quán_cafe.Controllers
                 var result = await _accountService.LoginAsync(model);
                 if (!result.Success)
                 {
-                    // Giữ hành vi thông báo lỗi như trước
+
                     ModelState.AddModelError(string.Empty, result.Message);
                     return View(model);
                 }
 
-                // Set session
+
                 if (result.UserId.HasValue)
                     HttpContext.Session.SetInt32("UserId", result.UserId.Value);
                 if (result.RoleId.HasValue)
@@ -57,10 +57,10 @@ namespace Quản_lý_quán_cafe.Controllers
                 HttpContext.Session.SetString("Username", model.Username);
                 HttpContext.Session.SetString("FullName", model.Username);
 
-                // Thông báo thành công giống code cũ (nếu cần hiển thị)
+
                 TempData["SuccessMessage"] = result.Message ?? "Đăng nhập thành công";
 
-                // Redirect based on role from database
+
                 return result.RoleName?.ToLowerInvariant() switch
                 {
                     "admin" => RedirectToAction("Index", "RestaurantTables", new { area = "Admin" }),
@@ -70,7 +70,7 @@ namespace Quản_lý_quán_cafe.Controllers
             }
             catch (Exception ex)
             {
-                // Giữ hành vi log và thông báo lỗi
+
                 System.Diagnostics.Debug.WriteLine($"Unexpected error during login: {ex.Message}");
                 if (ex.InnerException != null)
                 {
@@ -96,7 +96,7 @@ namespace Quản_lý_quán_cafe.Controllers
                 return View(model);
             }
 
-            // Check if username already exists
+
             var existingUser = await _userRepository.GetByUsernameAsync(model.Username);
             if (existingUser != null)
             {
@@ -106,13 +106,13 @@ namespace Quản_lý_quán_cafe.Controllers
 
             try
             {
-                // Get Customer role
+
                 var allRoles = await _userRepository.GetAllRolesAsync();
                 var customerRole = allRoles?.FirstOrDefault(r => r.RoleName.ToLower() == "customer");
 
                 if (customerRole == null)
                 {
-                    // Log detailed error
+
                     System.Diagnostics.Debug.WriteLine("ERROR: Customer role not found in database. Available roles: " +
                         string.Join(", ", allRoles?.Select(r => r.RoleName) ?? new List<string>()));
 
@@ -120,7 +120,7 @@ namespace Quản_lý_quán_cafe.Controllers
                     return View(model);
                 }
 
-                // Create new user with Customer role
+
                 var newUser = new User
                 {
                     Username = model.Username,
@@ -134,7 +134,7 @@ namespace Quản_lý_quán_cafe.Controllers
 
                 await _userRepository.AddAsync(newUser);
 
-                // Giữ thông báo giống code cũ
+
                 TempData["SuccessMessage"] = "Đăng ký thành công. Vui lòng đăng nhập.";
                 return RedirectToAction("Login");
             }
