@@ -230,6 +230,7 @@
         async function createQrPayment() {
             if (currentTableId === 0) return alert('Vui lòng chọn bàn');
             try {
+                window.BrewPointRealtime?.suppressReloadFor(5000);
                 const response = await fetch('/api/payments/qr/intents', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -265,6 +266,7 @@
             if (!currentQrIntent) return;
             const button = document.getElementById('confirmQrPaymentButton');
             button.disabled = true;
+            window.BrewPointRealtime?.suppressReloadFor(5000);
             completeCheckout(currentQrIntent.amount);
         }
 

@@ -10,6 +10,14 @@
     let reloadTimer = null;
     let pendingWhileHidden = false;
     let formIsDirty = false;
+    let suppressReloadUntil = 0;
+
+    window.BrewPointRealtime = {
+        suppressReloadFor(milliseconds = 5000) {
+            const duration = Number.isFinite(milliseconds) ? Math.max(0, milliseconds) : 5000;
+            suppressReloadUntil = Math.max(suppressReloadUntil, Date.now() + duration);
+        }
+    };
 
     const relevantTypes = () => {
         if (path.startsWith("/cashier")) return ["Order", "OrderDetail", "Payment", "RestaurantTable", "Reservation", "Product", "Customer", "Promotion"];
@@ -79,6 +87,11 @@
 
     function refreshPage(payload) {
         window.dispatchEvent(new CustomEvent("brewpoint:statechanged", { detail: payload }));
+
+        // Mutations initiated by this tab can be echoed back through SignalR before
+        // their modal/confirmation flow finishes. Other tabs still receive and act
+        // on the event; only this tab skips its short-lived self-triggered reload.
+        if (Date.now() < suppressReloadUntil) return;
 
         if (isEditing()) {
             showUpdateNotice();
