@@ -81,7 +81,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 if (order == null) return RedirectToAction(nameof(Index));
                 var viewModel = MapToOrderDetailViewModel(order);
                 // reuse Admin details view for now
-                return View("~/Areas/Admin/Views/Orders/Details.cshtml", viewModel);
+                return View("~/Areas/Cashier/Views/Orders/Index.cshtml", viewModel);
             }
             catch
             {
@@ -108,7 +108,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 {
                     ViewData["ReturnUrl"] = null;
                 }
-                return View("~/Areas/Admin/Views/Orders/Print.cshtml", viewModel);
+                return View("~/Areas/Cashier/Views/Orders/Print.cshtml", viewModel);
             }
             catch
             {
@@ -162,13 +162,24 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
 
         private List<Models.ViewModels.Order.OrderTimelineEventViewModel> GenerateOrderTimeline(Models.Entities.Order order)
         {
-            return View();
             var list = new List<Models.ViewModels.Order.OrderTimelineEventViewModel>();
-            list.Add(new Models.ViewModels.Order.OrderTimelineEventViewModel { EventDate = order.OrderDate.ToLocalTime(), EventType = "Created", EventDescription = "Order created" });
+            list.Add(new Models.ViewModels.Order.OrderTimelineEventViewModel
+            {
+                EventDate = order.OrderDate.ToLocalTime(),
+                EventType = "Created",
+                EventDescription = "Order created"
+            });
+
             if (order.CompletedDate.HasValue)
             {
-                list.Add(new Models.ViewModels.Order.OrderTimelineEventViewModel { EventDate = order.CompletedDate.Value.ToLocalTime(), EventType = "Completed", EventDescription = "Order completed" });
+                list.Add(new Models.ViewModels.Order.OrderTimelineEventViewModel
+                {
+                    EventDate = order.CompletedDate.Value.ToLocalTime(),
+                    EventType = "Completed",
+                    EventDescription = "Order completed"
+                });
             }
+
             return list;
         }
     }

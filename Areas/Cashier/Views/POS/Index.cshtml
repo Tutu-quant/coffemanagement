@@ -220,7 +220,7 @@
             }).then(data => {
                 // Open printable bill in new tab, then reload POS
                 try {
-                    const printUrl = `/Admin/Orders/Print/${data.orderId}?returnUrl=${encodeURIComponent('/Cashier/POS')}`;
+                    const printUrl = `/Cashier/Orders/Print/${data.orderId}?returnUrl=${encodeURIComponent('/Cashier/POS')}`;
                     window.open(printUrl, '_blank');
                 } catch (e) { /* ignore */ }
                 alert(`Thanh toán thành công. Tiền thừa: ${formatMoney(data.change)}`);

@@ -20,11 +20,17 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
         /// Print-friendly bill view
         /// GET: /Admin/Orders/Print/5
         /// </summary>
-        public async Task<IActionResult> Print(int id)
+        public async Task<IActionResult> Print(int id, string? returnUrl = null)
         {
             if (id <= 0) return RedirectToAction(nameof(Index));
             try
             {
+                // If caller provided a returnUrl pointing to the Cashier area, prefer redirecting
+                // to the Cashier print so the cashier UI is used for printing.
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && returnUrl.StartsWith("/Cashier", StringComparison.OrdinalIgnoreCase))
+                {
+                    return RedirectToAction("Print", "Orders", new { area = "Cashier", id, returnUrl });
+                }
                 var order = await _orderService.GetOrderByIdAsync(id);
                 if (order == null) return RedirectToAction(nameof(Index));
                 var viewModel = MapToOrderDetailViewModel(order);
