@@ -128,10 +128,25 @@ html, body {
     border-left-color: var(--coffee-light);
 }
 
-.nav-link.active {
-    background-color: rgba(139, 111, 71, 0.3);
+.nav-link.active,
+.nav-item.active > .nav-link {
+    background-color: #5a3f2b;
     color: var(--white);
-    border-left-color: var(--coffee-light);
+    border-left-color: #d4a574;
+    box-shadow: inset 4px 0 0 #d4a574;
+    font-weight: 600;
+}
+
+.nav-link.active:hover,
+.nav-item.active > .nav-link:hover {
+    background-color: #4a3324;
+    border-left-color: #e2bc8d;
+}
+
+.user-profile.active {
+    background-color: #5a3f2b;
+    border-radius: 8px;
+    box-shadow: inset 4px 0 0 #d4a574;
 }
 
 .sidebar-footer {

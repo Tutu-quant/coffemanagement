@@ -1,3 +1,12 @@
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
+    var isOrdering = currentController == "Orders" && currentAction is "Menu" or "Index" or "Place";
+    var isMyOrders = currentController == "Orders" && currentAction is "MyOrders" or "History" or "Details";
+    var isReservations = currentController == "Reservations";
+    var isProfile = currentController == "Profile";
+}
+
 <aside class="admin-sidebar">
     <div class="sidebar-header">
         <div class="sidebar-logo"><i class="bi bi-cup-hot"></i><span>BrewPoint</span></div>
@@ -7,25 +16,28 @@
         <ul class="nav-menu">
             <li class="nav-item">
                 <a asp-area="Customer" asp-controller="Orders" asp-action="Menu"
-                   class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Menu" || ViewContext.RouteData.Values["action"]?.ToString() == "Index" || ViewContext.RouteData.Values["action"]?.ToString() == "Place" ? "active" : "")">
+                   class="nav-link @(isOrdering ? "active" : "")" aria-current="@(isOrdering ? "page" : null)">
                     <i class="bi bi-cup-straw"></i><span>Đặt món</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a asp-area="Customer" asp-controller="Orders" asp-action="MyOrders"
-                   class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "MyOrders" || ViewContext.RouteData.Values["action"]?.ToString() == "History" ? "active" : "")">
+                   class="nav-link @(isMyOrders ? "active" : "")" aria-current="@(isMyOrders ? "page" : null)">
                     <i class="bi bi-receipt"></i><span>Đơn của tôi</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a asp-area="Customer" asp-controller="Reservations" asp-action="Create" class="nav-link">
+                <a asp-area="Customer" asp-controller="Reservations" asp-action="Create"
+                   class="nav-link @(isReservations ? "active" : "")" aria-current="@(isReservations ? "page" : null)">
                     <i class="bi bi-calendar-plus"></i><span>Đặt bàn</span>
                 </a>
             </li>
         </ul>
     </nav>
     <div class="sidebar-footer">
-        <a asp-area="Customer" asp-controller="Profile" asp-action="Edit" class="user-profile" style="text-decoration: none; cursor: pointer;">
+        <a asp-area="Customer" asp-controller="Profile" asp-action="Edit"
+           class="user-profile @(isProfile ? "active" : "")" aria-current="@(isProfile ? "page" : null)"
+           style="text-decoration: none; cursor: pointer;">
             <div class="user-avatar">@(Context.Session.GetString("Username")?.Substring(0, 1).ToUpper() ?? "K")</div>
             <div class="user-info"><p class="user-name">@Context.Session.GetString("Username")</p><p class="user-role">Khách hàng</p></div>
         </a>
