@@ -60,7 +60,7 @@ public class ReservationsController(
         }
 
         TempData["SuccessMessage"] = result.Message;
-        return RedirectToAction(nameof(Index));
+        return RedirectToAction(nameof(History));
     }
 
     [HttpGet]

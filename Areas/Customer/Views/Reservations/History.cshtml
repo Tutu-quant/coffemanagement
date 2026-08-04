@@ -1,0 +1,72 @@
+@model IEnumerable<Quản_lý_quán_cafe.Models.Entities.Reservation>
+
+@section Head {
+    <link rel="stylesheet" href="~/css/customers.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/reservation.css" asp-append-version="true" />
+}
+
+@{
+    ViewData["Title"] = "Lịch sử đặt bàn";
+    ViewData["PageTitle"] = "Lịch sử đặt bàn";
+    Layout = "_UnifiedLayout";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div>
+        <h1 class="h3 mb-1">Lịch sử đặt bàn</h1>
+        <p class="text-muted mb-0">Theo dõi và quản lý các lượt đặt bàn của bạn.</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-calendar-plus"></i> Đặt bàn mới</a>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr><th>#</th><th>Bàn</th><th>Thời gian</th><th>Số khách</th><th>Trạng thái</th><th class="text-end">Thao tác</th></tr>
+            </thead>
+            <tbody>
+            @if (Model.Any())
+            {
+                @foreach (var reservation in Model)
+                {
+                    <tr>
+                        <td>@reservation.ReservationID</td>
+                        <td>@(reservation.Table?.TableNumber ?? reservation.TableID.ToString())</td>
+                        <td>@reservation.ReservationDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@reservation.NumberOfGuests</td>
+                        <td><span class="badge @StatusClass(reservation.ReservationStatus)">@StatusText(reservation.ReservationStatus)</span></td>
+                        <td class="text-end"><a asp-action="Details" asp-route-id="@reservation.ReservationID" class="btn btn-sm btn-outline-primary">Chi tiết</a></td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr><td colspan="6" class="text-center text-muted py-5">Bạn chưa có lượt đặt bàn nào.</td></tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@functions {
+    private static string StatusClass(string? status) => status switch
+    {
+        "Pending" => "bg-warning text-dark",
+        "Confirmed" => "bg-success",
+        "CheckedIn" => "bg-primary",
+        "Completed" => "bg-info text-dark",
+        "Cancelled" => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    private static string StatusText(string? status) => status switch
+    {
+        "Pending" => "Chờ xác nhận",
+        "Confirmed" => "Đã xác nhận",
+        "CheckedIn" => "Đã nhận bàn",
+        "Completed" => "Hoàn tất",
+        "Cancelled" => "Đã hủy",
+        _ => status ?? "Không xác định"
+    };
+}

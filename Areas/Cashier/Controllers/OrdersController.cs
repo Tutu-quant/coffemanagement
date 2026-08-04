@@ -80,7 +80,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 var order = await _orderService.GetOrderByIdAsync(id);
                 if (order == null) return RedirectToAction(nameof(Index));
                 var viewModel = MapToOrderDetailViewModel(order);
-                return View("~/Areas/Cashier/Views/Orders/Index.cshtml", viewModel);
+                return View(viewModel);
             }
             catch
             {
