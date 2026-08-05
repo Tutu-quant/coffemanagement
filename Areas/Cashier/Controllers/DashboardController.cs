@@ -25,37 +25,33 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            var today = DateTime.Today;
+            var todayUtcStart = DateTime.UtcNow.Date;
+            var todayUtcEnd = todayUtcStart.AddDays(1);
             var model = new CashierDashboardViewModel();
 
             try
             {
-                // Lấy tất cả bàn
                 var tables = await _context.RestaurantTables
                     .Where(t => !t.IsDeleted)
                     .ToListAsync();
 
-                // Lấy tất cả order hôm nay
                 var todayOrders = await _context.Orders
-                    .Where(o => o.OrderDate.Date == today && o.OrderStatus != "Cancelled")
+                    .Where(o => o.OrderDate >= todayUtcStart && o.OrderDate < todayUtcEnd && o.OrderStatus != "Cancelled")
                     .Include(o => o.Table)
                     .ToListAsync();
 
-                // Lấy tất cả reservations hôm nay và sắp tới
                 var todayReservations = await _context.Reservations
-                    .Where(r => r.ReservationTime.Date >= today && r.ReservationStatus != "Cancelled")
+                    .Where(r => r.ReservationTime.Date >= DateTime.Today && r.ReservationStatus != "Cancelled")
                     .Include(r => r.Table)
                     .Include(r => r.Customer)
                     .OrderBy(r => r.ReservationTime)
                     .ToListAsync();
 
-                // Tính doanh thu hôm nay
                 var todayPayments = await _context.Payments
-                    .Where(p => p.CreatedAt.Date == today && p.PaymentStatus == "Completed")
+                    .Where(p => p.CreatedAt >= todayUtcStart && p.CreatedAt < todayUtcEnd && p.PaymentStatus == "Completed")
                     .ToListAsync();
                 model.TodayRevenue = todayPayments.Sum(p => p.Amount);
 
-                // Build dashboard tables
                 foreach (var table in tables)
                 {
                     var tableItem = new TableDashboardItemViewModel
@@ -66,15 +62,12 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                         Location = table.Location
                     };
 
-                    // Kiểm tra reservation cho bàn này
                     var reservation = todayReservations
                         .FirstOrDefault(r => r.TableID == table.TableID);
 
-                    // Kiểm tra order cho bàn này
                     var order = todayOrders
                         .FirstOrDefault(o => o.TableID == table.TableID);
 
-                    // Xác định trạng thái bàn
                     if (order != null)
                     {
                         if (order.OrderStatus == "Paid" || order.OrderStatus == "Completed")
@@ -96,7 +89,6 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                             tableItem.OrderStatus = order.OrderStatus;
                             tableItem.OrderTotalAmount = order.TotalAmount;
                             tableItem.OrderCreatedAt = order.OrderDate;
-                            // Lấy số lượng items trong order
                             var orderDetails = await _context.OrderDetails
                                 .Where(od => od.OrderID == order.OrderID && !od.IsDeleted)
                                 .ToListAsync();
@@ -118,14 +110,12 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                     model.Tables.Add(tableItem);
                 }
 
-                // Tính thống kê
                 model.TotalTables = tables.Count;
                 model.EmptyTables = model.Tables.Count(t => t.TableStatus == "Empty");
                 model.ReservedTables = model.Tables.Count(t => t.TableStatus == "Reserved");
                 model.ServingTables = model.Tables.Count(t => t.TableStatus == "Serving");
                 model.PendingPaymentTables = model.Tables.Count(t => t.TableStatus == "PendingPayment");
 
-                // Build upcoming reservations (next 5)
                 model.UpcomingReservations = todayReservations
                     .Where(r => r.ReservationTime > DateTime.Now)
                     .Take(5)
@@ -142,12 +132,10 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
 
                 model.TodayReservations = todayReservations.Count;
 
-                // Build notifications
                 model.Notifications = BuildNotifications(model, todayOrders, todayReservations);
             }
             catch (Exception ex)
             {
-                // Log error if needed
                 ModelState.AddModelError("", $"Lỗi tải dữ liệu: {ex.Message}");
             }
 
@@ -162,7 +150,6 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             var notifications = new List<DashboardNotificationViewModel>();
             var now = DateTime.Now;
 
-            // Notification: Các bàn chờ thanh toán
             if (model.PendingPaymentTables > 0)
             {
                 var pendingTables = model.Tables
@@ -184,7 +171,6 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 }
             }
 
-            // Notification: Khách sắp tới (trong 15 phút)
             var soonReservations = todayReservations
                 .Where(r => r.ReservationTime > now && r.ReservationTime <= now.AddMinutes(15))
                 .ToList();
@@ -203,7 +189,6 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 });
             }
 
-            // Notification: Bàn quá giờ
             var overdueTablesList = model.Tables
                 .Where(t => t.IsOverdue)
                 .Take(3)
@@ -222,7 +207,6 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 });
             }
 
-            // Notification: Bàn trống (optional - only if none are empty)
             if (model.EmptyTables == 0)
             {
                 notifications.Add(new DashboardNotificationViewModel
