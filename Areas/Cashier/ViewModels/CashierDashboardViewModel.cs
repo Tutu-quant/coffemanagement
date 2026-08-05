@@ -5,18 +5,18 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.ViewModels
 {
     public class CashierDashboardViewModel
     {
-        // Thống kê bàn
         public int TotalTables { get; set; }
         public int EmptyTables { get; set; }
         public int ReservedTables { get; set; }
         public int ServingTables { get; set; }
         public int PendingPaymentTables { get; set; }
+        public int ActiveTablesCount { get; set; }
+        public int TodayOrdersCount { get; set; }
+        public int WaitingPaymentCount { get; set; }
 
-        // Doanh thu
         public decimal TodayRevenue { get; set; }
         public int TodayReservations { get; set; }
 
-        // Danh sách chi tiết
         public List<TableDashboardItemViewModel> Tables { get; set; } = new();
         public List<UpcomingReservationViewModel> UpcomingReservations { get; set; } = new();
         public List<DashboardNotificationViewModel> Notifications { get; set; } = new();
@@ -27,7 +27,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.ViewModels
         public int TableID { get; set; }
         public string TableNumber { get; set; } = string.Empty;
         public int Capacity { get; set; }
-        public string TableStatus { get; set; } = "Empty"; // Empty, Reserved, Serving, PendingPayment
+        public string TableStatus { get; set; } = "Empty";
         public string? ReservationCustomerName { get; set; }
         public DateTime? ReservationTime { get; set; }
         public int? ReservationGuestCount { get; set; }
@@ -38,12 +38,11 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.ViewModels
         public DateTime? OrderCreatedAt { get; set; }
         public string? Location { get; set; }
 
-        // Computed properties
         public TimeSpan TimeUsed => OrderCreatedAt.HasValue ? DateTime.Now - OrderCreatedAt.Value : TimeSpan.Zero;
         public int MinutesUsed => (int)TimeUsed.TotalMinutes;
         public TimeSpan TimeUntilReservation => ReservationTime.HasValue ? ReservationTime.Value - DateTime.Now : TimeSpan.Zero;
         public int MinutesUntilReservation => Math.Max(0, (int)TimeUntilReservation.TotalMinutes);
-        public bool IsOverdue => MinutesUsed > 90 && TableStatus == "Serving"; // Over 90 minutes
+        public bool IsOverdue => MinutesUsed > 90 && TableStatus == "Serving"; 
     }
 
     public class UpcomingReservationViewModel
@@ -55,7 +54,6 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.ViewModels
         public int GuestCount { get; set; }
         public string? Notes { get; set; }
 
-        // Computed properties
         public TimeSpan TimeUntilArrival => ReservationTime - DateTime.Now;
         public int MinutesUntilArrival => Math.Max(0, (int)TimeUntilArrival.TotalMinutes);
         public string TimeDisplay => FormatTimeDisplay();
@@ -76,12 +74,11 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.ViewModels
         public int NotificationID { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
-        public string Type { get; set; } = "info"; // "info", "warning", "danger", "success"
+        public string Type { get; set; } = "info"; 
         public string Icon { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
         public bool IsRead { get; set; }
 
-        // Computed properties
         public string TimeAgo => FormatTimeAgo();
 
         private string FormatTimeAgo()

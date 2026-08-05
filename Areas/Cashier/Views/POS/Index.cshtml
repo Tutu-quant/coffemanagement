@@ -217,10 +217,11 @@
                 discountType: currentDiscountType,
                 discountValue: document.getElementById('discountValue')?.value || 0,
                 notes: document.getElementById('orderNotes')?.value || ''
-            }).then(data => {
+        }).then(data => {
                 try {
                     const printUrl = `/Cashier/Orders/Print/${data.orderId}?returnUrl=${encodeURIComponent('/Cashier/POS')}`;
-                    window.open(printUrl, '_blank');
+                    window.location.href = printUrl;
+                    return;
                 } catch (e) {  }
                 alert(`Thanh toán thành công. Tiền thừa: ${formatMoney(data.change)}`);
                 window.location.href = '/Cashier/POS';

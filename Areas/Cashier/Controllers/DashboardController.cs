@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
 {
     [Area("Cashier")]
-    [SessionAuthorize("Cashier,Admin")]  // Allow Cashier or Admin role
+    [SessionAuthorize("Cashier,Admin")]
     public class DashboardController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -62,49 +62,47 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                         Location = table.Location
                     };
 
-                    var reservation = todayReservations
-                        .FirstOrDefault(r => r.TableID == table.TableID);
-
-                    var order = todayOrders
-                        .FirstOrDefault(o => o.TableID == table.TableID);
-
-                    if (order != null)
+                    var status = (table.TableStatus ?? "Available").Trim();
+                    tableItem.TableStatus = status switch
                     {
-                        if (order.OrderStatus == "Paid" || order.OrderStatus == "Completed")
-                        {
-                            tableItem.TableStatus = "Empty";
-                        }
-                        else if (order.OrderStatus == "PendingPayment")
-                        {
-                            tableItem.TableStatus = "PendingPayment";
-                            tableItem.OrderID = order.OrderID;
-                            tableItem.OrderStatus = order.OrderStatus;
-                            tableItem.OrderTotalAmount = order.TotalAmount;
-                            tableItem.OrderCreatedAt = order.CreatedAt;
-                        }
-                        else
-                        {
-                            tableItem.TableStatus = "Serving";
-                            tableItem.OrderID = order.OrderID;
-                            tableItem.OrderStatus = order.OrderStatus;
-                            tableItem.OrderTotalAmount = order.TotalAmount;
-                            tableItem.OrderCreatedAt = order.OrderDate;
-                            var orderDetails = await _context.OrderDetails
-                                .Where(od => od.OrderID == order.OrderID && !od.IsDeleted)
-                                .ToListAsync();
-                            tableItem.OrderItemCount = orderDetails.Count;
-                        }
-                    }
-                    else if (reservation != null && reservation.ReservationTime > DateTime.Now)
+                        "Available" => "Empty",
+                        "Reserved" => "Reserved",
+                        "Occupied" => "Serving",
+                        "WaitingPayment" => "PendingPayment",
+                        "Maintenance" => "Maintenance",
+                        _ => "Empty"
+                    };
+
+                    var reservation = todayReservations.FirstOrDefault(r => r.TableID == table.TableID);
+                    if (reservation != null && reservation.ReservationTime > DateTime.Now)
                     {
-                        tableItem.TableStatus = "Reserved";
                         tableItem.ReservationCustomerName = reservation.Customer?.CustomerName ?? "N/A";
                         tableItem.ReservationTime = reservation.ReservationTime;
                         tableItem.ReservationGuestCount = reservation.NumberOfGuests;
                     }
-                    else
+
+                    var order = await _context.Orders
+                        .Where(o => o.TableID == table.TableID && !o.IsDeleted && o.OrderStatus != "Completed" && o.OrderStatus != "Cancelled")
+                        .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
+                        .OrderByDescending(o => o.OrderDate)
+                        .FirstOrDefaultAsync();
+
+                    if (order != null)
                     {
-                        tableItem.TableStatus = "Empty";
+                        tableItem.OrderID = order.OrderID;
+                        tableItem.OrderStatus = order.OrderStatus;
+                        tableItem.OrderTotalAmount = order.TotalAmount;
+                        tableItem.OrderCreatedAt = order.CreatedAt != default(DateTime) ? order.CreatedAt : order.OrderDate;
+                        tableItem.OrderItemCount = order.OrderDetails?.Count ?? 0;
+
+                        if (order.OrderStatus == "PendingPayment")
+                        {
+                            tableItem.TableStatus = "PendingPayment";
+                        }
+                        else if (order.OrderStatus != "Completed" && order.OrderStatus != "Cancelled")
+                        {
+                            tableItem.TableStatus = "Serving";
+                        }
                     }
 
                     model.Tables.Add(tableItem);
@@ -115,6 +113,9 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 model.ReservedTables = model.Tables.Count(t => t.TableStatus == "Reserved");
                 model.ServingTables = model.Tables.Count(t => t.TableStatus == "Serving");
                 model.PendingPaymentTables = model.Tables.Count(t => t.TableStatus == "PendingPayment");
+                model.TodayOrdersCount = todayOrders.Count;
+                model.ActiveTablesCount = model.ServingTables + model.PendingPaymentTables + model.ReservedTables;
+                model.WaitingPaymentCount = model.PendingPaymentTables;
 
                 model.UpcomingReservations = todayReservations
                     .Where(r => r.ReservationTime > DateTime.Now)
