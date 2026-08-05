@@ -21,25 +21,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             if (!IsStaff()) return RedirectToAction("Login", "Account", new { area = "" });
             var viewModel = new POSViewModel();
 
-            var openTables = await _context.RestaurantTables
-                .Where(t => !t.IsDeleted && t.TableStatus != "Maintenance")
-                .Include(t => t.Orders.Where(o => !o.IsDeleted &&
-                    (o.OrderStatus == "Pending" || o.OrderStatus == "WaitingPayment")))
-                    .ThenInclude(o => o.OrderDetails.Where(d => !d.IsDeleted))
-                .ToListAsync();
-
-            viewModel.OpenTables = openTables.Select(t => new POSTableViewModel
-            {
-                OrderID = t.Orders.FirstOrDefault()?.OrderID,
-                TableID = t.TableID,
-                TableNumber = t.TableNumber,
-                TableName = t.TableNumber,
-                OrderCode = t.Orders.Any() ? $"#{t.Orders.First().OrderID}" : string.Empty,
-                ItemCount = t.Orders.FirstOrDefault()?.OrderDetails.Sum(d => d.Quantity) ?? 0,
-                TotalAmount = t.Orders.FirstOrDefault()?.OrderDetails.Sum(d => d.Subtotal) ?? 0,
-                Status = t.TableStatus.ToLower(),
-                StatusBadge = t.TableStatus == "WaitingPayment" ? "THANH TOÁN" : ""
-            }).ToList();
+            viewModel.OpenTables = await BuildOpenTablesAsync(tableId);
 
             viewModel.Products = await _context.Products.AsNoTracking()
                 .Where(p => !p.IsDeleted && p.IsActive && p.Quantity > 0)
@@ -60,6 +42,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 var selectedTable = viewModel.OpenTables.FirstOrDefault(t => t.TableID == tableId);
                 if (selectedTable != null)
                 {
+                    selectedTable.IsSelected = true;
                     viewModel.CurrentTable = selectedTable;
                     await PopulateOrderAsync(viewModel, selectedTable.TableID);
                 }
@@ -68,7 +51,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             return View(viewModel);
         }
 
-        private async Task<List<POSTableViewModel>> BuildOpenTablesAsync()
+        private async Task<List<POSTableViewModel>> BuildOpenTablesAsync(int? selectedTableId = null)
         {
             var openTables = await _context.RestaurantTables
                 .Where(t => !t.IsDeleted && t.TableStatus != "Maintenance")
@@ -87,15 +70,16 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 ItemCount = t.Orders.FirstOrDefault()?.OrderDetails.Sum(d => d.Quantity) ?? 0,
                 TotalAmount = t.Orders.FirstOrDefault()?.OrderDetails.Sum(d => d.Subtotal) ?? 0,
                 Status = t.TableStatus.ToLower(),
-                StatusBadge = t.TableStatus == "WaitingPayment" ? "THANH TOÁN" : ""
+                StatusBadge = t.TableStatus == "WaitingPayment" ? "THANH TOÁN" : "",
+                IsSelected = t.TableID == selectedTableId
             }).ToList();
         }
 
         [HttpGet]
-        public async Task<IActionResult> OpenTables()
+        public async Task<IActionResult> OpenTables(int? selectedTableId = null)
         {
             if (!IsStaff()) return StatusCode(403);
-            var model = await BuildOpenTablesAsync();
+            var model = await BuildOpenTablesAsync(selectedTableId);
             return PartialView("~/Areas/Cashier/Views/Shared/_TableList.cshtml", model);
         }
 
@@ -132,6 +116,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddItem(int tableId, int productId, int quantity, string size = "M", string notes = "")
         {
             if (!IsStaff()) return StatusCode(403);
@@ -174,6 +159,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateItem(int orderDetailId, int quantity)
         {
             if (!IsStaff()) return StatusCode(403);
@@ -214,6 +200,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> RemoveItem(int orderDetailId)
         {
             if (!IsStaff()) return StatusCode(403);
@@ -278,6 +265,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Checkout(
             int tableId,
             string paymentMethod,

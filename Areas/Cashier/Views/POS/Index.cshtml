@@ -34,10 +34,14 @@
         }
 
         function postForm(url, values) {
+            const body = new URLSearchParams(values);
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            if (token) body.set('__RequestVerificationToken', token);
+            window.BrewPointRealtime?.suppressReloadFor(5000);
             return fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-                body: new URLSearchParams(values)
+                body
             }).then(async response => {
                 const data = await response.json();
                 if (!response.ok || data.success === false) {
@@ -158,8 +162,15 @@
             if (paidInput) paidInput.disabled = (currentPaymentMethod === 'qr');
             calculateTotal();
         });
+        document.addEventListener('input', function(event) {
+            if (event.target?.id !== 'searchTable') return;
+            const query = event.target.value.trim().toLocaleLowerCase('vi');
+            document.querySelectorAll('.tables-list .table-item').forEach(table => {
+                table.hidden = query.length > 0 && !table.textContent.toLocaleLowerCase('vi').includes(query);
+            });
+        });
       function refreshSidebar() {
-            fetch('/Cashier/POS/OpenTables')
+            fetch(`/Cashier/POS/OpenTables?selectedTableId=${currentTableId}`)
                 .then(async r => {
                     if (!r.ok) throw new Error('Không thể tải sơ đồ bàn');
                     const html = await r.text();
@@ -170,6 +181,7 @@
         }
 
         function changeTableStatus(tableId, status) {
+            window.BrewPointRealtime?.suppressReloadFor(5000);
             const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
             const token = tokenInput ? tokenInput.value : null;
             const formData = new URLSearchParams();

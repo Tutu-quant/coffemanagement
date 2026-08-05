@@ -5,10 +5,10 @@
         public List<POSTableViewModel> OpenTables { get; set; } = new();
         public string SearchTableQuery { get; set; } = string.Empty;
 
-        public POSTableViewModel CurrentTable { get; set; } = new();
+        public POSTableViewModel? CurrentTable { get; set; }
         public List<POSOrderItemViewModel> OrderItems { get; set; } = new();
         public List<POSProductViewModel> Products { get; set; } = new();
-        public POSCustomerViewModel Customer { get; set; } = new();
+        public POSCustomerViewModel? Customer { get; set; }
         public string Notes { get; set; } = string.Empty;
 
         public decimal Subtotal { get; set; }
@@ -44,6 +44,7 @@
         public decimal TotalAmount { get; set; }
         public string Status { get; set; } = "empty";
         public string StatusBadge { get; set; } = string.Empty;
+        public bool IsSelected { get; set; }
     }
         public class POSOrderItemViewModel
     {

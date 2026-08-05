@@ -190,10 +190,18 @@ html, body {
     transform: translateX(2px);
 }
 
-.table-item.active,
-.table-item[data-table-id] {
-    border-color: var(--accent);
-    background-color: rgba(197, 122, 36, 0.1);
+.table-item.occupied {
+    border-color: #28a745;
+}
+
+.table-item.waitingpayment {
+    border-color: #ffc107;
+}
+
+.table-item.active {
+    border-color: #8b4f1f;
+    background-color: rgba(93, 51, 23, 0.58);
+    box-shadow: inset 4px 0 0 #c57a24, 0 3px 12px rgba(0, 0, 0, 0.22);
 }
 
 .table-header {

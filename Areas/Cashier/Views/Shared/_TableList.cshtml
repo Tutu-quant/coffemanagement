@@ -26,13 +26,6 @@
             @foreach (var table in Model)
             {
                 var key = (table.Status ?? "").ToLowerInvariant();
-                var frameStyle = key switch
-                {
-                    "occupied" => "border:2px solid #28a745;",
-                    "waitingpayment" => "border:2px solid #ffc107;",
-                    "maintenance" => "border:2px solid #dc3545;",
-                    _ => string.Empty
-                };
                 var statusText = key switch
                 {
                     "occupied" => "Có khách",
@@ -40,7 +33,10 @@
                     "maintenance" => "Bảo trì",
                     _ => "Trống"
                 };
-                <div class="table-item @key" data-table-id="@table.TableID" style="@frameStyle" onclick="selectTable(@table.TableID)">
+                <div class="table-item @key @(table.IsSelected ? "active" : "")" data-table-id="@table.TableID"
+                     role="button" tabindex="0" aria-current="@(table.IsSelected ? "true" : "false")"
+                     onclick="selectTable(@table.TableID)"
+                     onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectTable(@table.TableID); }">
                     <div class="table-header">
                         <div class="table-info">
                             <div class="table-name">@table.TableName</div>
@@ -56,16 +52,16 @@
                             }
                         </div>
                         <div class="btn-group btn-group-sm" role="group" style="gap:6px;">
-                            <button type="button" class="btn btn-outline-light btn-sm p-1 rounded-circle" title="Available" onclick="event.stopPropagation(); changeTableStatus(@table.TableID, 'Available')">
+                            <button type="button" class="btn btn-outline-light btn-sm p-1 rounded-circle" title="Đặt bàn trống" onclick="event.stopPropagation(); changeTableStatus(@table.TableID, 'Available')">
                                 <i class="bi bi-check-lg"></i>
                             </button>
-                            <button type="button" class="btn btn-outline-light btn-sm p-1 rounded-circle" title="Occupy" onclick="event.stopPropagation(); changeTableStatus(@table.TableID, 'Occupied')">
+                            <button type="button" class="btn btn-outline-light btn-sm p-1 rounded-circle" title="Đặt bàn có khách" onclick="event.stopPropagation(); changeTableStatus(@table.TableID, 'Occupied')">
                                 <i class="bi bi-person-fill"></i>
                             </button>
-                            <button type="button" class="btn btn-outline-light btn-sm p-1 rounded-circle" title="Waiting" onclick="event.stopPropagation(); changeTableStatus(@table.TableID, 'WaitingPayment')">
+                            <button type="button" class="btn btn-outline-light btn-sm p-1 rounded-circle" title="Chờ thanh toán" onclick="event.stopPropagation(); changeTableStatus(@table.TableID, 'WaitingPayment')">
                                 <i class="bi bi-hourglass-split"></i>
                             </button>
-                            <button type="button" class="btn btn-outline-light btn-sm p-1 rounded-circle" title="Maintenance" onclick="event.stopPropagation(); changeTableStatus(@table.TableID, 'Maintenance')">
+                            <button type="button" class="btn btn-outline-light btn-sm p-1 rounded-circle" title="Bảo trì" onclick="event.stopPropagation(); changeTableStatus(@table.TableID, 'Maintenance')">
                                 <i class="bi bi-tools"></i>
                             </button>
                         </div>
