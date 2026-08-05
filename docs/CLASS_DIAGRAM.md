@@ -203,7 +203,7 @@ Payment "0..1" --> "0..*" Promotion : sử dụng
 
 ## 2. Kiến trúc lớp ứng dụng
 
-Các controller cũ sử dụng mô hình Service/Repository; một số controller mới và các API thao tác trực tiếp qua `ApplicationDbContext`.
+Các controller cũ sử dụng mô hình Service/Repository; một số controller mới và các API thao tác trực tiếp qua `ApplicationDbContext`. Chữ ký method trong sơ đồ được rút gọn kiểu tham số để dễ đọc; tên method và luồng phụ thuộc bám theo mã nguồn hiện tại.
 
 ```mermaid
 classDiagram
@@ -230,6 +230,11 @@ class AdminControllers {
   +RestaurantTablesController
   +EmployeesController
   +ReservationsController
+  +Index() IActionResult
+  +Details(id) IActionResult
+  +Create(model) IActionResult
+  +Edit(id, model) IActionResult
+  +Delete(id) IActionResult
 }
 class CashierControllers {
   +DashboardController
@@ -237,18 +242,44 @@ class CashierControllers {
   +OrdersController
   +PaymentsController
   +TablesController
+  +Index() IActionResult
+  +Details(id) IActionResult
+  +Print(id, returnUrl) IActionResult
+  +SelectTable(tableId) IActionResult
+  +AddItem(tableId, productId, quantity) IActionResult
+  +UpdateItem(orderDetailId, quantity) IActionResult
+  +RemoveItem(orderDetailId) IActionResult
+  +Checkout(tableId, paymentMethod, paidAmount) IActionResult
+  +UpdateStatus(tableId, status) IActionResult
 }
 class CustomerControllers {
   +OrdersController
   +ReservationsController
+  +Menu() IActionResult
+  +SubmitOrder(model) IActionResult
+  +History() IActionResult
+  +Create(model) IActionResult
+  +Cancel(id) IActionResult
+  +SearchAvailableTables(request) IActionResult
 }
 class ApiControllers {
   +ProductsApiController
   +TablesApiController
   +ReportsApiController
   +QrPaymentsApiController
+  +GetAll(categoryId, search) IActionResult
+  +Available(at, guests) IActionResult
+  +Revenue(from, to) IActionResult
+  +CreateIntent(request) IActionResult
+  +Status(orderId) IActionResult
 }
-class AccountController
+class AccountController {
+  +Login() IActionResult
+  +Login(model) IActionResult
+  +Register() IActionResult
+  +Register(model) IActionResult
+  +Logout() IActionResult
+}
 
 Controller <|-- AdminControllers
 Controller <|-- CashierControllers
@@ -256,13 +287,65 @@ Controller <|-- CustomerControllers
 Controller <|-- AccountController
 ControllerBase <|-- ApiControllers
 
-class IProductService { <<interface>> }
-class ICategoryService { <<interface>> }
-class ICustomerService { <<interface>> }
-class IOrderService { <<interface>> }
-class IRestaurantTableService { <<interface>> }
-class IUserService { <<interface>> }
-class IAccountService { <<interface>> }
+class IProductService {
+  <<interface>>
+  +GetByIdAsync(id) Task
+  +GetAllAsync(pageNumber, pageSize) Task
+  +SearchWithFilterAsync(searchTerm, categoryId, isAvailable, sortBy) Task
+  +CreateAsync(model) Task
+  +UpdateAsync(model) Task
+  +DeleteAsync(id) Task
+  +ValidateNameAsync(name, excludeId) Task
+}
+class ICategoryService {
+  <<interface>>
+  +GetByIdAsync(id) Task
+  +GetAllAsync(pageNumber, pageSize) Task
+  +SearchAsync(searchTerm, pageNumber, pageSize) Task
+  +CreateAsync(model) Task
+  +UpdateAsync(model) Task
+  +DeleteAsync(id) Task
+}
+class ICustomerService {
+  <<interface>>
+  +GetByIdAsync(id) Task
+  +GetAllAsync(pageNumber, pageSize) Task
+  +SearchWithFilterAsync(searchTerm, membershipTier, sortBy) Task
+  +CreateAsync(model) Task
+  +UpdateAsync(model) Task
+  +DeleteAsync(id) Task
+  +GetStatisticsAsync() Task
+}
+class IOrderService {
+  <<interface>>
+  +GetOrderByIdAsync(id) Task
+  +GetOrdersByCustomerAsync(customerId) Task
+  +GetOrdersByTableAsync(tableId) Task
+  +CreateOrderAsync(order) Task
+  +UpdateOrderAsync(order) Task
+  +DeleteOrderAsync(id) Task
+  +UpdateOrderStatusAsync(orderId, status) Task
+}
+class IRestaurantTableService {
+  <<interface>>
+  +GetByIdAsync(id) Task
+  +GetAllAsync(pageNumber, pageSize) Task
+  +SearchWithFilterAsync(searchTerm, location, status, sortBy) Task
+  +CreateAsync(model) Task
+  +UpdateAsync(model) Task
+  +DeleteAsync(id) Task
+  +GetTableStatisticsAsync() Task
+}
+class IUserService {
+  <<interface>>
+  +CreateUserAsync(userData) Task
+  +UpdateUserAsync(id, data) Task
+}
+class IAccountService {
+  <<interface>>
+  +LoginAsync(model) Task
+  +LogoutAsync() Task
+}
 
 class ProductService
 class CategoryService
@@ -288,13 +371,72 @@ AdminControllers ..> IRestaurantTableService
 CashierControllers ..> IOrderService
 AccountController ..> IAccountService
 
-class IProductRepository { <<interface>> }
-class ICategoryRepository { <<interface>> }
-class ICustomerRepository { <<interface>> }
-class IOrderRepository { <<interface>> }
-class IRestaurantTableRepository { <<interface>> }
-class IUserRepository { <<interface>> }
-class IReservationRepository { <<interface>> }
+class IProductRepository {
+  <<interface>>
+  +GetByIdAsync(id) Task
+  +GetAllAsync() Task
+  +SearchWithFilterAsync(searchTerm, categoryId, isAvailable, sortBy) Task
+  +AddAsync(product) Task
+  +UpdateAsync(product) Task
+  +DeleteAsync(id) Task
+}
+class ICategoryRepository {
+  <<interface>>
+  +GetByIdAsync(id) Task
+  +GetAllAsync() Task
+  +SearchAsync(searchTerm, skip, take) Task
+  +AddAsync(category) Task
+  +UpdateAsync(category) Task
+  +DeleteAsync(id) Task
+}
+class ICustomerRepository {
+  <<interface>>
+  +GetByIdAsync(id) Task
+  +GetByEmailAsync(email) Task
+  +SearchWithFilterAsync(searchTerm, membershipTier, sortBy) Task
+  +AddAsync(customer) Task
+  +UpdateAsync(customer) Task
+  +DeleteAsync(id) Task
+}
+class IOrderRepository {
+  <<interface>>
+  +GetByIdAsync(id) Task
+  +GetByCustomerAsync(customerId) Task
+  +GetByTableAsync(tableId) Task
+  +GetUnpaidOrdersAsync(pageNumber, pageSize) Task
+  +AddAsync(order) Task
+  +UpdateAsync(order) Task
+  +DeleteAsync(id) Task
+}
+class IRestaurantTableRepository {
+  <<interface>>
+  +GetByIdAsync(id) Task
+  +GetAllAsync() Task
+  +GetAvailableTablesAsync(minCapacity) Task
+  +AddAsync(table) Task
+  +UpdateAsync(table) Task
+  +DeleteAsync(id) Task
+}
+class IUserRepository {
+  <<interface>>
+  +GetByIdAsync(id) Task
+  +GetByUsernameAsync(username) Task
+  +AuthenticateAsync(username, password) Task
+  +GetAllRolesAsync() Task
+  +AddAsync(user) Task
+  +UpdateAsync(user) Task
+}
+class IReservationRepository {
+  <<interface>>
+  +GetByIdAsync(id) Task
+  +GetByCustomerAsync(customerId) Task
+  +GetUpcomingAsync(days) Task
+  +HasConflictAsync(tableId, start, end) Task
+  +UpdateStatusAsync(reservationId, newStatus) Task
+  +AddAsync(reservation) Task
+  +UpdateAsync(reservation) Task
+  +DeleteAsync(id) Task
+}
 
 class ProductRepository
 class CategoryRepository
