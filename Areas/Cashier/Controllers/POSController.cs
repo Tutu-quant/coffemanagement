@@ -55,12 +55,14 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 })
                 .ToListAsync();
 
-            if (viewModel.OpenTables.Any())
+            if (viewModel.OpenTables.Any() && tableId.HasValue)
             {
-                var selectedTable = viewModel.OpenTables.FirstOrDefault(t => t.TableID == tableId)
-                    ?? viewModel.OpenTables.First();
-                viewModel.CurrentTable = selectedTable;
-                await PopulateOrderAsync(viewModel, selectedTable.TableID);
+                var selectedTable = viewModel.OpenTables.FirstOrDefault(t => t.TableID == tableId);
+                if (selectedTable != null)
+                {
+                    viewModel.CurrentTable = selectedTable;
+                    await PopulateOrderAsync(viewModel, selectedTable.TableID);
+                }
             }
 
             return View(viewModel);
