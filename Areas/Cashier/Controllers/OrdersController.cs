@@ -31,6 +31,19 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                     PageSize = pageSize
                 };
 
+                // debug: also fetch a larger set to inspect DB contents when UI appears empty
+                try
+                {
+                    var (allOrders, allTotal) = await _orderService.GetOrdersAsync(1, 1000);
+                    ViewData["Debug_TotalOrders"] = allTotal;
+                    ViewData["Debug_RecentOrders"] = MapToOrderListViewModels(allOrders).Take(10).ToList();
+                }
+                catch
+                {
+                    ViewData["Debug_TotalOrders"] = 0;
+                    ViewData["Debug_RecentOrders"] = new List<OrderListViewModel>();
+                }
+
                 return View(viewModel);
             }
             catch (Exception ex)

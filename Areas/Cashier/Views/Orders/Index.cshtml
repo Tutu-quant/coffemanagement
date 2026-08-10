@@ -11,6 +11,45 @@
     <h1 class="page-title">📋 Quản lý đơn hàng</h1>
 </div>
 
+@* Debug / summary panel: show total orders available in DB and recent orders *@
+<div class="mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5>Thông tin Orders</h5>
+        <div class="text-muted">Total in DB: @((ViewData["Debug_TotalOrders"] as int?) ?? 0)</div>
+    </div>
+    @{
+        var recent = ViewData["Debug_RecentOrders"] as List<Quản_lý_quán_cafe.Models.ViewModels.Order.OrderListViewModel> ?? new List<Quản_lý_quán_cafe.Models.ViewModels.Order.OrderListViewModel>();
+    }
+    @if (recent.Any())
+    {
+        <div class="table-responsive mb-2">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Mã đơn</th>
+                        <th>Bàn</th>
+                        <th>Khách</th>
+                        <th>Trạng thái</th>
+                        <th>Tổng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in recent)
+                    {
+                        <tr>
+                            <td>@r.OrderCode</td>
+                            <td>@r.TableNumber</td>
+                            <td>@r.CustomerName</td>
+                            <td>@r.OrderStatus</td>
+                            <td>@r.TotalAmount.ToString("N0")đ</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
 <div class="page-header mb-3">
     <div>
         <p style="color: var(--text-light); margin: 0; font-size: 14px;">BrewPoint Cafe · Quản lý bán hàng</p>

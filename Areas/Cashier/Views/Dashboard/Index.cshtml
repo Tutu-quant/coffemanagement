@@ -144,7 +144,7 @@
 
             <!-- Quick Actions -->
             <div class="quick-actions">
-                <button class="btn-quick-action btn-success" onclick="window.location.href='@Url.Action("Index", "Orders")'">
+                <button class="btn-quick-action btn-success" onclick="window.location.href='@Url.Action("Index", "POS")'">
                     <i class="fas fa-plus"></i> Tạo Order
                 </button>
                 <button class="btn-quick-action" style="background-color: var(--status-reserved); color: white;">
@@ -204,10 +204,16 @@
                                         <span class="status-indicator status-reserved">
                                             <i class="fas fa-clock"></i> Đã đặt
                                         </span>
-                                        <p class="table-time">@table.ReservationTime?.ToString("HH:mm")</p>
+                                        @if (table.ReservationTime.HasValue)
+                                        {
+                                            <p class="table-time" data-datetime="@table.ReservationTime.Value.ToString("o")">@table.ReservationTime.Value.ToString("HH:mm")</p>
+                                        }
                                         <p class="table-customer">@table.ReservationCustomerName</p>
                                         <p class="table-guest">@table.ReservationGuestCount người</p>
-                                        <p class="table-countdown">Còn @table.MinutesUntilReservation phút</p>
+                                        @if (table.ReservationTime.HasValue)
+                                        {
+                                            <p class="table-countdown" data-reservation="@table.ReservationTime.Value.ToString("o")">Còn @table.MinutesUntilReservation phút</p>
+                                        }
                                         break;
 
                                     case "Serving":
@@ -215,7 +221,14 @@
                                             <i class="fas fa-utensils"></i> Đang phục vụ
                                         </span>
                                         <p class="table-order-info">@(table.OrderItemCount ?? 0) món</p>
-                                        <p class="table-order-info">@table.MinutesUsed phút</p>
+                                        @if (table.OrderCreatedAt.HasValue)
+                                        {
+                                            <p class="table-order-info" data-order-start="@table.OrderCreatedAt.Value.ToString("o")">@table.MinutesUsed phút</p>
+                                        }
+                                        else
+                                        {
+                                            <p class="table-order-info">0 phút</p>
+                                        }
                                         @if (table.OrderTotalAmount.HasValue)
                                         {
                                             <p class="table-amount">@table.OrderTotalAmount.Value.ToString("N0")đ</p>
@@ -230,7 +243,14 @@
                                         {
                                             <p class="table-amount">@table.OrderTotalAmount.Value.ToString("N0")đ</p>
                                         }
-                                        <p class="table-order-info">@table.MinutesUsed phút</p>
+                                        @if (table.OrderCreatedAt.HasValue)
+                                        {
+                                            <p class="table-order-info" data-order-start="@table.OrderCreatedAt.Value.ToString("o")">@table.MinutesUsed phút</p>
+                                        }
+                                        else
+                                        {
+                                            <p class="table-order-info">0 phút</p>
+                                        }
                                         break;
                                 }
                             </div>
@@ -378,12 +398,56 @@
         updateTimeAndDate();
         initializeEmployee();
         setInterval(updateTimeAndDate, 60000);
+        // Real-time time renderers
+        function formatTimeLocal(isoString) {
+            try {
+                const dt = new Date(isoString);
+                if (isNaN(dt)) return '';
+                return dt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            } catch {
+                return '';
+            }
+        }
+
+        function updateDateTimeDisplays() {
+            // update any static datetime displays
+            document.querySelectorAll('[data-datetime]').forEach(el => {
+                const iso = el.getAttribute('data-datetime');
+                if (!iso) return;
+                const formatted = formatTimeLocal(iso);
+                if (formatted) el.textContent = formatted;
+            });
+
+            // update reservation countdowns
+            document.querySelectorAll('[data-reservation]').forEach(el => {
+                const iso = el.getAttribute('data-reservation');
+                if (!iso) return;
+                const dt = new Date(iso);
+                const diff = Math.round((dt - new Date()) / 60000);
+                const text = diff > 0 ? `Còn ${diff} phút` : (diff === 0 ? 'Vừa đến' : 'Đã quá giờ');
+                el.textContent = text;
+            });
+
+            // update order durations
+            document.querySelectorAll('[data-order-start]').forEach(el => {
+                const iso = el.getAttribute('data-order-start');
+                if (!iso) return;
+                const dt = new Date(iso);
+                const mins = Math.max(0, Math.round((new Date() - dt) / 60000));
+                el.textContent = `${mins} phút`;
+            });
+        }
+
+        // initial update and periodic refresh
+        updateDateTimeDisplays();
+        setInterval(updateDateTimeDisplays, 30000); // refresh every 30s
 
         // Handle table click
         function handleTableClick(tableId, status) {
             switch (status) {
                 case 'Empty':
-                    window.location.href = `@Url.Action("Create", "Orders", new { area = "Cashier" })?tableId=${tableId}`;
+                    // Open POS and select the table to create an order there
+                    window.location.href = `@Url.Action("Index", "POS", new { area = "Cashier" })?tableId=${tableId}`;
                     break;
                 case 'Reserved':
                     window.location.href = `@Url.Action("Details", "Orders", new { area = "Cashier" })?tableId=${tableId}`;

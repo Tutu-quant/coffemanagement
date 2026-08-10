@@ -40,12 +40,29 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                     .Include(o => o.Table)
                     .ToListAsync();
 
-                var todayReservations = await _context.Reservations
-                    .Where(r => r.ReservationTime.Date >= DateTime.Today && r.ReservationStatus != "Cancelled")
-                    .Include(r => r.Table)
-                    .Include(r => r.Customer)
-                    .OrderBy(r => r.ReservationTime)
-                    .ToListAsync();
+                List<Reservation> todayReservations;
+                try
+                {
+                    // Try to query by ReservationTime (preferred)
+                    todayReservations = await _context.Reservations
+                        .Where(r => r.ReservationTime >= DateTime.Today && r.ReservationStatus != "Cancelled")
+                        .Include(r => r.Table)
+                        .Include(r => r.Customer)
+                        .OrderBy(r => r.ReservationTime)
+                        .ToListAsync();
+                }
+                catch (Exception ex)
+                {
+                    // Fallback: some DBs may not have ReservationTime column (older schema). Use ReservationDate instead.
+                    // Log exception to ModelState for visibility in dev
+                    ModelState.AddModelError("", "Reservation time column unavailable in DB, falling back to ReservationDate. " + ex.Message);
+                    todayReservations = await _context.Reservations
+                        .Where(r => r.ReservationDate >= DateTime.Today && r.ReservationStatus != "Cancelled")
+                        .Include(r => r.Table)
+                        .Include(r => r.Customer)
+                        .OrderBy(r => r.ReservationDate)
+                        .ToListAsync();
+                }
 
                 var todayPayments = await _context.Payments
                     .Where(p => p.CreatedAt >= todayUtcStart && p.CreatedAt < todayUtcEnd && p.PaymentStatus == "Completed")
