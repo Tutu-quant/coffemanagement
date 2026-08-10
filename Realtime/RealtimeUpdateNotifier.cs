@@ -17,12 +17,12 @@ public class RealtimeUpdateNotifier(
     {
         if (changes.Count == 0) return;
 
-        var payload = new
-        {
-            entityTypes = changes.Select(x => x.EntityType).Distinct().ToArray(),
-            changes,
-            occurredAt = DateTimeOffset.UtcNow
-        };
+            var payload = new
+            {
+                entityTypes = changes.Select(x => x.EntityType).Distinct().ToArray(),
+                changes,
+                occurredAt = DateTimeOffset.Now
+            };
 
         try
         {

@@ -65,7 +65,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 OrderStatus = o.OrderStatus ?? "Unknown",
                 PaymentStatus = o.Payment?.PaymentStatus ?? "Pending",
                 TotalAmount = o.TotalAmount,
-                OrderDate = o.OrderDate,
+                OrderDate = DateTime.SpecifyKind(o.OrderDate, DateTimeKind.Utc).ToLocalTime(),
                 ItemCount = o.OrderDetails?.Count ?? 0,
                 StatusBadgeClass = GetStatusBadgeClass(o.OrderStatus)
             }).ToList();
@@ -132,9 +132,9 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             {
                 OrderId = order.OrderID,
                 OrderCode = $"#{order.OrderID:D6}",
-                OrderDate = order.OrderDate.ToLocalTime(),
+                OrderDate = DateTime.SpecifyKind(order.OrderDate, DateTimeKind.Utc).ToLocalTime(),
                 OrderStatus = order.OrderStatus ?? "Unknown",
-                CompletedDate = order.CompletedDate?.ToLocalTime(),
+                CompletedDate = order.CompletedDate.HasValue ? DateTime.SpecifyKind(order.CompletedDate.Value, DateTimeKind.Utc).ToLocalTime() : (DateTime?)null,
                 Notes = order.Notes,
 
                 CustomerId = order.CustomerID,
@@ -150,7 +150,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 PaymentStatus = order.Payment?.PaymentStatus ?? "Pending",
                 TotalAmount = order.TotalAmount,
                 PaidAmount = order.Payment?.Amount ?? 0,
-                PaidDate = order.Payment != null ? order.Payment.CreatedAt.ToLocalTime() : (DateTime?)null,
+                PaidDate = order.Payment != null ? DateTime.SpecifyKind(order.Payment.CreatedAt, DateTimeKind.Utc).ToLocalTime() : (DateTime?)null,
 
                 Items = order.OrderDetails?.Select(od => new Models.ViewModels.Order.OrderItemViewModel
                 {

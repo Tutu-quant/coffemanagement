@@ -206,13 +206,13 @@
                                         </span>
                                         @if (table.ReservationTime.HasValue)
                                         {
-                                            <p class="table-time" data-datetime="@table.ReservationTime.Value.ToString("o")">@table.ReservationTime.Value.ToString("HH:mm")</p>
+                                            <p class="table-time" data-datetime="@table.ReservationTime.Value.ToUniversalTime().ToString("o")">@table.ReservationTime.Value.ToString("HH:mm")</p>
                                         }
                                         <p class="table-customer">@table.ReservationCustomerName</p>
                                         <p class="table-guest">@table.ReservationGuestCount người</p>
                                         @if (table.ReservationTime.HasValue)
                                         {
-                                            <p class="table-countdown" data-reservation="@table.ReservationTime.Value.ToString("o")">Còn @table.MinutesUntilReservation phút</p>
+                                            <p class="table-countdown" data-reservation="@table.ReservationTime.Value.ToUniversalTime().ToString("o")">Còn @table.MinutesUntilReservation phút</p>
                                         }
                                         break;
 
@@ -223,7 +223,7 @@
                                         <p class="table-order-info">@(table.OrderItemCount ?? 0) món</p>
                                         @if (table.OrderCreatedAt.HasValue)
                                         {
-                                            <p class="table-order-info" data-order-start="@table.OrderCreatedAt.Value.ToString("o")">@table.MinutesUsed phút</p>
+                                            <p class="table-order-info" data-order-start="@table.OrderCreatedAt.Value.ToUniversalTime().ToString("o")">@table.MinutesUsed phút</p>
                                         }
                                         else
                                         {

@@ -91,11 +91,17 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                     };
 
                     var reservation = todayReservations.FirstOrDefault(r => r.TableID == table.TableID);
-                    if (reservation != null && reservation.ReservationTime > DateTime.Now)
+                    if (reservation != null)
                     {
-                        tableItem.ReservationCustomerName = reservation.Customer?.CustomerName ?? "N/A";
-                        tableItem.ReservationTime = reservation.ReservationTime;
-                        tableItem.ReservationGuestCount = reservation.NumberOfGuests;
+                        // Normalize reservation time as UTC then convert to server local time
+                        var resUtc = DateTime.SpecifyKind(reservation.ReservationTime, DateTimeKind.Utc);
+                        var resLocal = resUtc.ToLocalTime();
+                        if (resLocal > DateTime.Now)
+                        {
+                            tableItem.ReservationCustomerName = reservation.Customer?.CustomerName ?? "N/A";
+                            tableItem.ReservationTime = resLocal;
+                            tableItem.ReservationGuestCount = reservation.NumberOfGuests;
+                        }
                     }
 
                     var order = await _context.Orders
@@ -189,20 +195,24 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 }
             }
 
+            // Normalize reservation times to UTC/local consistently when building notifications
+            var nowUtc = DateTime.UtcNow;
             var soonReservations = todayReservations
-                .Where(r => r.ReservationTime > now && r.ReservationTime <= now.AddMinutes(15))
+                .Select(r => new { Res = r, Utc = DateTime.SpecifyKind(r.ReservationTime, DateTimeKind.Utc) })
+                .Where(x => x.Utc > nowUtc && x.Utc <= nowUtc.AddMinutes(15))
                 .ToList();
 
-            foreach (var res in soonReservations)
+            foreach (var x in soonReservations)
             {
-                var minutesLeft = (int)(res.ReservationTime - now).TotalMinutes;
+                var minutesLeft = (int)(x.Utc - nowUtc).TotalMinutes;
+                // Display minutes relative to server local time but computed from UTC consistency
                 notifications.Add(new DashboardNotificationViewModel
                 {
                     Title = "⏰ Khách Sắp Đến",
-                    Message = $"Bàn {res.Table?.TableNumber} - {res.Customer?.CustomerName} ({res.NumberOfGuests} người) - Còn {minutesLeft} phút",
+                    Message = $"Bàn {x.Res.Table?.TableNumber} - {x.Res.Customer?.CustomerName} ({x.Res.NumberOfGuests} người) - Còn {minutesLeft} phút",
                     Type = "warning",
                     Icon = "fa-clock",
-                    CreatedAt = now,
+                    CreatedAt = DateTime.Now,
                     IsRead = false
                 });
             }
