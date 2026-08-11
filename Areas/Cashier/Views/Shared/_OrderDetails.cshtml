@@ -15,8 +15,22 @@
             </button>
         </div>
 
+        <!-- Show list of orders for this table if user clicks "Xem các đơn khác" -->
+        <div id="ordersList" style="display:none; margin-bottom: 15px;">
+            <div class="card border-0 bg-light">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <strong><i class="bi bi-list"></i> Các đơn của bàn</strong>
+                        <button type="button" class="btn-sm btn-link" onclick="hideOrdersList()">Ẩn</button>
+                    </div>
+                    <div id="ordersListContainer" style="max-height: 200px; overflow-y: auto;">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        @if (Model.CurrentTable.OrderStatus is null or "Pending")
+        @if (Model.CurrentTable.OrderStatus is null or "Pending" or "Preparing")
         {
         <div class="card border-0 bg-light mb-3">
             <div class="card-body p-3">
@@ -44,10 +58,30 @@
             </div>
         </div>
         }
+        else if (Model.CurrentTable.OrderStatus == "Ready")
+        {
+            <div class="alert alert-danger mb-3">
+                <strong><i class="bi bi-exclamation-circle"></i> Đơn này đã sẵn sàng</strong>
+                <p class="mb-2">Không thể chỉnh sửa hoặc thêm món vào đơn này.</p>
+                <button type="button" class="btn btn-sm btn-primary" onclick="createNewOrder()">
+                    <i class="bi bi-plus-circle"></i> Tạo đơn mới
+                </button>
+            </div>
+        }
+        else if (Model.CurrentTable.OrderStatus == "Completed" || Model.CurrentTable.OrderStatus == "WaitingPayment" || Model.CurrentTable.OrderStatus == "Cancelled")
+        {
+            <div class="alert alert-info mb-3">
+                <strong><i class="bi bi-info-circle"></i> Đơn đã kết thúc</strong>
+                <p class="mb-2">Đơn ở trạng thái <strong>@Model.CurrentTable.OrderStatus</strong> không thể sửa đổi.</p>
+                <button type="button" class="btn btn-sm btn-primary" onclick="createNewOrder()">
+                    <i class="bi bi-plus-circle"></i> Tạo đơn mới cho bàn
+                </button>
+            </div>
+        }
         else
         {
             <div class="alert alert-warning mb-3">
-                Đơn đang ở trạng thái <strong>@Model.CurrentTable.OrderStatus</strong>; không thể thêm hoặc sửa món.
+                Đơn ở trạng thái <strong>@Model.CurrentTable.OrderStatus</strong>; không thể thêm hoặc sửa món.
             </div>
         }
 
@@ -103,6 +137,13 @@
                     }
                 }
             </div>
+        </div>
+
+        <!-- Button to show other orders for this table -->
+        <div style="margin-bottom: 15px;">
+            <button type="button" class="btn btn-sm btn-outline-secondary w-100" onclick="showOrdersList()">
+                <i class="bi bi-list-ul"></i> Xem các đơn khác của bàn này
+            </button>
         </div>
 
 

@@ -153,9 +153,25 @@
                 window.location.href = `/Cashier/POS?tableId=${currentTableId}`;
             }).catch(error => {
                 if (button) button.disabled = false;
-                alert(error.message);
+                if (error.message && error.message.includes('isReadyOrder')) {
+                    // User tried to add item to Ready order, offer to create new order
+                    if (confirm('Đơn hiện tại đã sẵn sàng. Tạo đơn mới cho bàn này?')) {
+                        createNewOrder();
+                    }
+                } else {
+                    alert(error.message);
+                }
             });
         }
+
+        function createNewOrder() {
+            if (currentTableId === 0) return alert('Vui lòng chọn bàn');
+            if (confirm('Tạo đơn mới cho bàn này?')) {
+                // Just reload to refresh, which will load the POS page with a fresh/new order
+                window.location.href = `/Cashier/POS?tableId=${currentTableId}`;
+            }
+        }
+
         function increaseQty(orderDetailId) {
             const item = document.querySelector(`[data-item-id="${orderDetailId}"]`);
             if (item?.dataset.pending === 'true') return;
@@ -809,6 +825,51 @@
         function printCurrentOrder() {
             if (!currentOrderId) return alert('Bàn chưa có đơn để in.');
             window.open(`/Cashier/Orders/Print/${currentOrderId}?returnUrl=${encodeURIComponent(`/Cashier/POS?tableId=${currentTableId}`)}`, '_blank');
+        }
+
+        async function showOrdersList() {
+            if (!currentTableId) return;
+            const response = await fetch(`/Cashier/POS/GetTableOrders?tableId=${currentTableId}`);
+            const data = await response.json();
+
+            if (!data.success || !data.orders || data.orders.length === 0) {
+                alert('Bàn này không có đơn nào');
+                return;
+            }
+
+            const container = document.getElementById('ordersListContainer');
+            container.innerHTML = '';
+
+            data.orders.forEach(order => {
+                const statusBadge = order.status === 'Completed' ? '<span class="badge bg-success">Hoàn thành</span>' :
+                                    order.status === 'Ready' ? '<span class="badge bg-warning">Sẵn sàng</span>' :
+                                    order.status === 'WaitingPayment' ? '<span class="badge bg-info">Chờ thanh toán</span>' :
+                                    order.status === 'Preparing' ? '<span class="badge bg-primary">Đang pha</span>' :
+                                    '<span class="badge bg-secondary">Chờ xử lý</span>';
+
+                const orderHtml = `
+                    <div class="d-flex justify-content-between align-items-center p-2 border-bottom" style="cursor: pointer; hover: background-color: #f5f5f5;" onclick="selectOrder(${order.orderId})">
+                        <div>
+                            <strong>${order.orderCode}</strong> - ${order.itemCount} món
+                            <br/>
+                            <small class="text-muted">${formatMoney(order.totalAmount)}</small>
+                        </div>
+                        <div>${statusBadge}</div>
+                    </div>
+                `;
+                container.innerHTML += orderHtml;
+            });
+
+            document.getElementById('ordersList').style.display = 'block';
+        }
+
+        function hideOrdersList() {
+            document.getElementById('ordersList').style.display = 'none';
+        }
+
+        function selectOrder(orderId) {
+            if (!confirm('Chuyển sang đơn #' + orderId + '?')) return;
+            window.location.href = `/Cashier/POS?tableId=${currentTableId}&orderId=${orderId}`;
         }
 
         calculateTotal();

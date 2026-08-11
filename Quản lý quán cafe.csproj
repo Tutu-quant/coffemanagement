@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <Folder Include="Quản lý quán cafe\Models\" />
+    <Folder Include="Scripts\" />
   </ItemGroup>
 
 </Project>

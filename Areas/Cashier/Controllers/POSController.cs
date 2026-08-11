@@ -3,6 +3,8 @@ using Quản_lý_quán_cafe.Areas.Cashier.ViewModels;
 using Quản_lý_quán_cafe.Data;
 using Microsoft.EntityFrameworkCore;
 using Quản_lý_quán_cafe.Models;
+using Quản_lý_quán_cafe.Models.Entities;
+using Quản_lý_quán_cafe.Models.Enums;
 using Quản_lý_quán_cafe.Filters;
 using Quản_lý_quán_cafe.Services;
 using Quản_lý_quán_cafe.Services.Interfaces;
@@ -31,7 +33,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index(int? tableId = null)
+        public async Task<IActionResult> Index(int? tableId = null, int? orderId = null)
         {
             if (!IsStaff()) return RedirectToAction("Login", "Account", new { area = "" });
             var viewModel = new POSViewModel();
@@ -60,7 +62,16 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 {
                     selectedTable.IsSelected = true;
                     viewModel.CurrentTable = selectedTable;
-                    await PopulateOrderAsync(viewModel, selectedTable.TableID);
+
+                    // If orderId provided, load that specific order
+                    if (orderId.HasValue)
+                    {
+                        await PopulateOrderByIdAsync(viewModel, orderId.Value, tableId.Value);
+                    }
+                    else
+                    {
+                        await PopulateOrderAsync(viewModel, selectedTable.TableID);
+                    }
                 }
             }
 
@@ -72,11 +83,10 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             var now = BusinessClock.Now;
             var holdCutoff = now.AddMinutes(ReservationPolicy.HoldBeforeMinutes);
             var oldestActiveStart = now.AddMinutes(-ReservationPolicy.DurationMinutes);
+
             var openTables = await _context.RestaurantTables
                 .Where(t => !t.IsDeleted && t.TableStatus != "Maintenance")
-                .Include(t => t.Orders.Where(o => !o.IsDeleted &&
-                    o.OrderStatus != "Completed" && o.OrderStatus != "Cancelled" &&
-                    o.OrderDetails.Any(d => !d.IsDeleted)))
+                .Include(t => t.Orders.Where(o => !o.IsDeleted))
                     .ThenInclude(o => o.OrderDetails.Where(d => !d.IsDeleted))
                 .Include(t => t.Reservations.Where(r => !r.IsDeleted &&
                     r.ReservationStatus != "Cancelled" && r.ReservationStatus != "Completed" && r.ReservationStatus != "CheckedIn" &&
@@ -86,20 +96,38 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
 
             return openTables.Select(t =>
             {
-                var activeOrder = t.Orders.FirstOrDefault();
-                var displayedStatus = activeOrder?.OrderStatus == "WaitingPayment"
-                    ? "WaitingPayment"
-                    : t.Reservations.Any() && t.TableStatus == "Available" ? "Reserved" : t.TableStatus;
+                // Priority 1: Editable order (Pending/Preparing) to show in sidebar
+                var editableOrder = t.Orders
+                    .Where(o => (o.OrderStatus == OrderStatusConstants.Pending || o.OrderStatus == OrderStatusConstants.Preparing) &&
+                                o.OrderDetails.Any(d => !d.IsDeleted))
+                    .OrderByDescending(o => o.OrderID)
+                    .FirstOrDefault();
+
+                // Priority 2: For display status, check for WaitingPayment/Ready (but DON'T load into CurrentTable)
+                var displayOrder = editableOrder ?? t.Orders
+                    .Where(o => (o.OrderStatus == OrderStatusConstants.Ready || o.OrderStatus == OrderStatusConstants.WaitingPayment) &&
+                                o.OrderDetails.Any(d => !d.IsDeleted))
+                    .OrderByDescending(o => o.OrderID)
+                    .FirstOrDefault();
+
+                var displayedStatus = displayOrder?.OrderStatus switch
+                {
+                    OrderStatusConstants.WaitingPayment => "WaitingPayment",
+                    _ => t.Reservations.Any() && t.TableStatus == "Available" ? "Reserved" : t.TableStatus
+                };
+
                 return new POSTableViewModel
                 {
-                    OrderID = activeOrder?.OrderID,
-                    OrderStatus = activeOrder?.OrderStatus,
+                    // Only show OrderID/Status if it's editable (Pending/Preparing)
+                    // This ensures CurrentTable in Index only shows editable orders
+                    OrderID = editableOrder?.OrderID,
+                    OrderStatus = editableOrder?.OrderStatus,
                     TableID = t.TableID,
                     TableNumber = t.TableNumber,
                     TableName = t.TableNumber,
-                    OrderCode = activeOrder is not null ? $"#{activeOrder.OrderID}" : string.Empty,
-                    ItemCount = activeOrder?.OrderDetails.Sum(d => d.Quantity) ?? 0,
-                    TotalAmount = activeOrder?.TotalAmount ?? 0,
+                    OrderCode = editableOrder is not null ? $"#{editableOrder.OrderID}" : string.Empty,
+                    ItemCount = editableOrder?.OrderDetails.Sum(d => d.Quantity) ?? 0,
+                    TotalAmount = editableOrder?.TotalAmount ?? 0,
                     Status = displayedStatus.ToLowerInvariant(),
                     StatusBadge = displayedStatus switch
                     {
@@ -130,14 +158,9 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             if (table == null)
                 return NotFound();
 
-            var order = await _context.Orders
-                .AsNoTracking()
-                .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
-                    .ThenInclude(d => d.Product)
-                .FirstOrDefaultAsync(o => o.TableID == tableId && !o.IsDeleted &&
-                                          o.OrderStatus != "Completed" && o.OrderStatus != "Cancelled" &&
-                                          o.OrderDetails.Any(d => !d.IsDeleted));
-            var orderItems = order?.OrderDetails.Select(ToOrderItem).ToList() ?? new();
+            // Get EDITABLE order (Pending/Preparing only)
+            var order = await GetEditableOrderAsync(tableId);
+            var orderItems = order?.OrderDetails.Where(d => !d.IsDeleted).Select(ToOrderItem).ToList() ?? new();
 
             return Json(new
             {
@@ -146,11 +169,36 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                     tableID = table.TableID,
                     tableName = table.TableNumber,
                     orderCode = order == null ? string.Empty : $"#{order.OrderID}",
+                    orderStatus = order?.OrderStatus ?? string.Empty,
                     status = table.TableStatus.ToLower()
                 },
                 items = orderItems,
                 subtotal = orderItems.Sum(i => i.Total)
             });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetTableOrders(int tableId)
+        {
+            if (!IsStaff()) return StatusCode(403);
+
+            var orders = await _context.Orders
+                .AsNoTracking()
+                .Where(o => o.TableID == tableId && !o.IsDeleted)
+                .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
+                .OrderByDescending(o => o.OrderID)
+                .Select(o => new
+                {
+                    orderId = o.OrderID,
+                    orderCode = $"#{o.OrderID}",
+                    status = o.OrderStatus,
+                    itemCount = o.OrderDetails.Count(d => !d.IsDeleted),
+                    totalAmount = o.TotalAmount,
+                    createdAt = o.OrderDate
+                })
+                .ToListAsync();
+
+            return Json(new { success = true, orders });
         }
 
         [HttpPost]
@@ -172,70 +220,55 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 if (table.TableStatus == "Maintenance") return Conflict(new { success = false, message = "Bàn đang bảo trì." });
                 if (product.Quantity < quantity) return Conflict(new { success = false, message = "Sản phẩm không đủ số lượng" });
 
-                var order = await _context.Orders.Include(o => o.OrderDetails).Include(o => o.Payment)
-                    .FirstOrDefaultAsync(o => o.TableID == tableId && !o.IsDeleted &&
-                                              o.OrderStatus != "Completed" && o.OrderStatus != "Cancelled");
-                if (order is not null && order.OrderStatus != "Pending")
-                    return Conflict(new { success = false, message = "Đơn đã chuyển sang xử lý hoặc chờ thanh toán, không thể thêm món." });
-                if (order == null || !order.OrderDetails.Any(d => !d.IsDeleted))
-                {
-                    var now = BusinessClock.Now;
-                    var holdCutoff = now.AddMinutes(ReservationPolicy.HoldBeforeMinutes);
-                    var oldestActiveStart = now.AddMinutes(-ReservationPolicy.DurationMinutes);
-                    var activeReservations = await _context.Reservations
-                        .Where(r =>
-                        r.TableID == tableId && !r.IsDeleted &&
-                        (r.ReservationStatus == "Pending" || r.ReservationStatus == "Confirmed" || r.ReservationStatus == "CheckedIn") &&
-                        r.ReservationDate <= holdCutoff && r.ReservationDate > oldestActiveStart)
-                        .OrderBy(r => r.ReservationDate)
-                        .ToListAsync();
-                    if (activeReservations.Count > 1)
-                        return Conflict(new { success = false, message = "Bàn có nhiều lịch đặt đang hiệu lực. Vui lòng xử lý lịch đặt trước." });
-                    var activeReservation = activeReservations.SingleOrDefault();
+                // Get or create EDITABLE order (Pending/Preparing only)
+                var order = await GetOrCreateEditableOrderAsync(tableId);
 
-                    if (order == null)
-                    {
-                        order = new Models.Entities.Order
-                        {
-                            TableID = tableId,
-                            CustomerID = activeReservation?.CustomerID,
-                            EmployeeID = await GetCurrentEmployeeIdAsync(),
-                            OrderStatus = "Pending",
-                            OrderDate = DateTime.UtcNow,
-                            CreatedAt = DateTime.UtcNow
-                        };
-                        _context.Orders.Add(order);
-                    }
-                    else if (activeReservation is not null)
-                    {
-                        if (order.CustomerID.HasValue && order.CustomerID != activeReservation.CustomerID)
-                            return Conflict(new { success = false, message = "Đơn hiện tại không thuộc khách đã đặt bàn." });
-                        order.CustomerID = activeReservation.CustomerID;
-                    }
-
-                    if (activeReservation is not null && activeReservation.ReservationStatus != "CheckedIn")
-                    {
-                        activeReservation.ReservationStatus = "CheckedIn";
-                        activeReservation.CheckinTime = DateTime.UtcNow;
-                        activeReservation.UpdatedAt = DateTime.UtcNow;
-                    }
-                }
-                else if (!order.CustomerID.HasValue)
+                // If no editable order exists, check if need to create new one
+                if (order == null)
                 {
-                    var now = BusinessClock.Now;
-                    var checkedInReservation = await _context.Reservations
-                        .Where(r => r.TableID == tableId && !r.IsDeleted && r.ReservationStatus == "CheckedIn" &&
-                                    r.ReservationDate <= now.AddMinutes(ReservationPolicy.HoldBeforeMinutes) &&
-                                    r.ReservationDate > now.AddMinutes(-ReservationPolicy.DurationMinutes))
-                        .OrderByDescending(r => r.ReservationDate)
+                    var lastOrder = await _context.Orders
+                        .Where(o => o.TableID == tableId && !o.IsDeleted)
+                        .OrderByDescending(o => o.OrderID)
                         .FirstOrDefaultAsync();
-                    if (checkedInReservation is not null) order.CustomerID = checkedInReservation.CustomerID;
+
+                    // Always create new order for any closed/payable orders
+                    if (lastOrder != null && (OrderStatusConstants.PayableStatuses.Contains(lastOrder.OrderStatus) || 
+                        OrderStatusConstants.ClosedStatuses.Contains(lastOrder.OrderStatus)))
+                    {
+                        // Create new Pending order
+                        order = await CreateNewOrderAsync(tableId);
+                    }
+                    else if (lastOrder == null)
+                    {
+                        // No orders yet, create new one
+                        order = await CreateNewOrderAsync(tableId);
+                    }
                 }
 
-                var detail = order.OrderDetails.FirstOrDefault(d => d.ProductID == productId && !d.IsDeleted && d.Notes == notes);
+                // CHECK: order must be Addable (Pending or Preparing)
+                if (!OrderStatusConstants.CanAddItems(order.OrderStatus))
+                {
+                    return Conflict(new { success = false, message = $"Không thể thêm món vào đơn ở trạng thái {order.OrderStatus}." });
+                }
+
+                // For Pending: merge same product+notes; For Preparing: always create new detail
+                OrderDetail? detail = null;
+                if (order.OrderStatus == OrderStatusConstants.Pending)
+                {
+                    detail = order.OrderDetails.FirstOrDefault(d => d.ProductID == productId && !d.IsDeleted && d.Notes == notes);
+                }
+
                 if (detail == null)
                 {
-                    detail = new Models.Entities.OrderDetail { ProductID = productId, Quantity = quantity, UnitPrice = product.Price, Subtotal = product.Price * quantity, Notes = notes, CreatedAt = DateTime.UtcNow };
+                    detail = new OrderDetail 
+                    { 
+                        ProductID = productId, 
+                        Quantity = quantity, 
+                        UnitPrice = product.Price, 
+                        Subtotal = product.Price * quantity, 
+                        Notes = notes, 
+                        CreatedAt = DateTime.UtcNow 
+                    };
                     order.OrderDetails.Add(detail);
                 }
                 else
@@ -244,6 +277,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                     detail.Subtotal = detail.Quantity * detail.UnitPrice;
                     detail.UpdatedAt = DateTime.UtcNow;
                 }
+
                 product.Quantity -= quantity;
                 table.TableStatus = "Occupied";
                 order.SubtotalAmount = order.OrderDetails.Where(d => !d.IsDeleted).Sum(d => d.Subtotal);
@@ -251,6 +285,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 order.VoucherDiscountAmount = 0;
                 order.PointDiscountAmount = 0;
                 order.UpdatedAt = DateTime.UtcNow;
+
                 if (order.OrderID > 0)
                 {
                     await _loyaltyService.ResetDiscountForChangedOrderAsync(
@@ -261,6 +296,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                     order.Payment.Amount = order.TotalAmount;
                     order.Payment.UpdatedAt = DateTime.UtcNow;
                 }
+
                 await _context.SaveChangesAsync();
                 return Json(new { success = true, message = "Đã thêm món", orderId = order.OrderID, totalAmount = order.TotalAmount });
             }
@@ -287,24 +323,42 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                     .Include(d => d.Order)!.ThenInclude(o => o!.Payment)
                     .Include(d => d.Product)
                     .FirstOrDefaultAsync(d => d.OrderDetailID == orderDetailId && !d.IsDeleted);
-                if (detail == null || detail.Order?.OrderStatus != "Pending") return NotFound(new { success = false });
-                var difference = quantity - detail.Quantity;
-                if (quantity <= 0) detail.IsDeleted = true;
+
+                if (detail == null) return NotFound(new { success = false });
+
+                // Only Pending orders can be updated
+                if (detail.Order?.OrderStatus != OrderStatusConstants.Pending)
+                    return Conflict(new { success = false, message = $"Không thể sửa món trong đơn ở trạng thái {detail.Order?.OrderStatus}." });
+
+                if (quantity == 0)
+                {
+                    // If quantity is 0, remove the item
+                    detail.IsDeleted = true;
+                    if (detail.Product != null) detail.Product.Quantity += detail.Quantity;
+                }
                 else
                 {
-                    if (difference > 0 && (detail.Product?.Quantity ?? 0) < difference) return Conflict(new { success = false, message = "Không đủ tồn kho" });
+                    var quantityDifference = quantity - detail.Quantity;
+                    if (detail.Product != null)
+                    {
+                        if (detail.Product.Quantity < quantityDifference)
+                            return Conflict(new { success = false, message = "Sản phẩm không đủ số lượng." });
+                        detail.Product.Quantity -= quantityDifference;
+                    }
                     detail.Quantity = quantity;
-                    detail.Subtotal = detail.UnitPrice * quantity;
+                    detail.Subtotal = detail.Quantity * detail.UnitPrice;
+                    detail.UpdatedAt = DateTime.UtcNow;
                 }
-                if (detail.Product != null) detail.Product.Quantity -= difference;
+
                 detail.Order.SubtotalAmount = detail.Order.OrderDetails.Where(d => !d.IsDeleted).Sum(d => d.Subtotal);
                 detail.Order.TotalAmount = detail.Order.SubtotalAmount;
                 await _loyaltyService.ResetDiscountForChangedOrderAsync(
                     detail.Order.OrderID, HttpContext.RequestAborted);
+
                 var remaining = detail.Order.OrderDetails.Count(d => !d.IsDeleted);
                 if (remaining == 0 && detail.Order.Table != null)
                 {
-                    detail.Order.OrderStatus = "Cancelled";
+                    detail.Order.OrderStatus = OrderStatusConstants.Cancelled;
                     if (detail.Order.Payment?.PaymentStatus == "Pending")
                         detail.Order.Payment.PaymentStatus = "Failed";
                     var hasCheckedInReservation = await HasCurrentCheckedInReservationAsync(
@@ -426,8 +480,18 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                                 o.OrderStatus != "Completed" && o.OrderStatus != "Cancelled" &&
                                 o.OrderDetails.Any(d => !d.IsDeleted))
                     .ToListAsync();
+
+                // If multiple orders exist, find the one matching expectedOrderId or current order
                 if (activeOrders.Count > 1)
-                    return Conflict(new { success = false, message = "Bàn có nhiều đơn đang mở. Vui lòng xử lý từng đơn trong danh sách đơn hàng." });
+                {
+                    // User must specify which order to pay
+                    if (!expectedOrderId.HasValue)
+                        return Conflict(new { success = false, message = "Bàn có nhiều đơn. Vui lòng chọn đơn cần thanh toán." });
+
+                    // Filter to get only the specified order
+                    activeOrders = activeOrders.Where(o => o.OrderID == expectedOrderId.Value).ToList();
+                }
+
                 var order = activeOrders.SingleOrDefault();
                 if (order == null || !order.OrderDetails.Any(d => !d.IsDeleted)) return Conflict(new { success = false, message = "Không có đơn hàng để thanh toán" });
                 if (expectedOrderId.HasValue && order.OrderID != expectedOrderId.Value)
@@ -585,15 +649,68 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 r.ReservationDate > now.AddMinutes(-ReservationPolicy.DurationMinutes));
         }
 
+        private async Task PopulateOrderByIdAsync(POSViewModel viewModel, int orderId, int tableId)
+        {
+            // Load specific order by ID (any status, for viewing/payment)
+            var order = await _context.Orders
+                .AsNoTracking()
+                .Include(o => o.Customer)
+                .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
+                    .ThenInclude(d => d.Product)
+                .FirstOrDefaultAsync(o => o.OrderID == orderId && o.TableID == tableId && !o.IsDeleted &&
+                                          o.OrderDetails.Any(d => !d.IsDeleted));
+
+            if (order == null)
+            {
+                // Fall back to editable order if orderId not found
+                await PopulateOrderAsync(viewModel, tableId);
+                return;
+            }
+
+            viewModel.CurrentTable.OrderID = order.OrderID;
+            viewModel.CurrentTable.OrderStatus = order.OrderStatus;
+            viewModel.OrderItems = order.OrderDetails.Select(ToOrderItem).ToList();
+            var quote = await _loyaltyService.GetOrderQuoteAsync(order.OrderID, HttpContext.RequestAborted);
+            viewModel.Subtotal = quote.SubtotalAmount;
+            viewModel.DiscountAmount = quote.DiscountAmount;
+            viewModel.Total = quote.TotalAmount;
+            viewModel.EarnedPoints = quote.EarnedPoints;
+            viewModel.DiscountMode = quote.Mode;
+            viewModel.VoucherCode = quote.VoucherCode;
+            viewModel.DiscountAccounts = quote.Accounts.Select(account => new POSDiscountAccountViewModel
+            {
+                CustomerID = account.CustomerId,
+                Account = account.Username,
+                Name = account.Name,
+                Phone = account.Phone,
+                AvailablePoints = account.AvailablePoints,
+                PointsUsed = account.PointsUsed,
+                DiscountAmount = account.DiscountAmount
+            }).ToList();
+            viewModel.Notes = order.Notes ?? string.Empty;
+            if (order.Customer != null)
+            {
+                viewModel.Customer = new POSCustomerViewModel
+                {
+                    CustomerID = order.Customer.CustomerID,
+                    Name = order.Customer.CustomerName,
+                    Phone = order.Customer.Phone ?? string.Empty,
+                    Email = order.Customer.Email ?? string.Empty,
+                    RewardPoints = order.Customer.RewardPoints
+                };
+            }
+        }
+
         private async Task PopulateOrderAsync(POSViewModel viewModel, int tableId)
         {
+            // Get EDITABLE order only (Pending/Preparing)
             var order = await _context.Orders
                 .AsNoTracking()
                 .Include(o => o.Customer)
                 .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
                     .ThenInclude(d => d.Product)
                 .FirstOrDefaultAsync(o => o.TableID == tableId && !o.IsDeleted &&
-                                          o.OrderStatus != "Completed" && o.OrderStatus != "Cancelled" &&
+                                          (o.OrderStatus == OrderStatusConstants.Pending || o.OrderStatus == OrderStatusConstants.Preparing) &&
                                           o.OrderDetails.Any(d => !d.IsDeleted));
             if (order == null) return;
 
@@ -638,5 +755,78 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             Quantity = detail.Quantity,
             Notes = detail.Notes ?? string.Empty
         };
+
+        /// <summary>
+        /// Get editable order for table (Pending or Preparing only)
+        /// </summary>
+        private async Task<Models.Entities.Order?> GetEditableOrderAsync(int tableId)
+        {
+            return await _context.Orders
+                .AsNoTracking()
+                .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
+                    .ThenInclude(d => d.Product)
+                .FirstOrDefaultAsync(o => o.TableID == tableId && 
+                    !o.IsDeleted &&
+                    (o.OrderStatus == OrderStatusConstants.Pending || o.OrderStatus == OrderStatusConstants.Preparing) &&
+                    o.OrderDetails.Any(d => !d.IsDeleted));
+        }
+
+        /// <summary>
+        /// Get or create editable order for table
+        /// </summary>
+        private async Task<Models.Entities.Order?> GetOrCreateEditableOrderAsync(int tableId)
+        {
+            var order = await _context.Orders
+                .Include(o => o.OrderDetails)
+                .Include(o => o.Payment)
+                .FirstOrDefaultAsync(o => o.TableID == tableId && 
+                    !o.IsDeleted &&
+                    (o.OrderStatus == OrderStatusConstants.Pending || o.OrderStatus == OrderStatusConstants.Preparing));
+
+            return order;
+        }
+
+        /// <summary>
+        /// Create new Pending order for table
+        /// </summary>
+        private async Task<Models.Entities.Order> CreateNewOrderAsync(int tableId)
+        {
+            var now = BusinessClock.Now;
+            var holdCutoff = now.AddMinutes(ReservationPolicy.HoldBeforeMinutes);
+            var oldestActiveStart = now.AddMinutes(-ReservationPolicy.DurationMinutes);
+
+            var activeReservations = await _context.Reservations
+                .Where(r =>
+                    r.TableID == tableId && !r.IsDeleted &&
+                    (r.ReservationStatus == "Pending" || r.ReservationStatus == "Confirmed" || r.ReservationStatus == "CheckedIn") &&
+                    r.ReservationDate <= holdCutoff && r.ReservationDate > oldestActiveStart)
+                .OrderBy(r => r.ReservationDate)
+                .ToListAsync();
+
+            if (activeReservations.Count > 1)
+                throw new InvalidOperationException("Bàn có nhiều lịch đặt đang hiệu lực. Vui lòng xử lý lịch đặt trước.");
+
+            var activeReservation = activeReservations.SingleOrDefault();
+
+            var order = new Models.Entities.Order
+            {
+                TableID = tableId,
+                CustomerID = activeReservation?.CustomerID,
+                EmployeeID = await GetCurrentEmployeeIdAsync(),
+                OrderStatus = OrderStatusConstants.Pending,
+                OrderDate = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            if (activeReservation is not null && activeReservation.ReservationStatus != "CheckedIn")
+            {
+                activeReservation.ReservationStatus = "CheckedIn";
+                activeReservation.CheckinTime = DateTime.UtcNow;
+                activeReservation.UpdatedAt = DateTime.UtcNow;
+            }
+
+            _context.Orders.Add(order);
+            return order;
+        }
     }
 }

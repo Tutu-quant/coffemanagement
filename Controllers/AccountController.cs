@@ -82,7 +82,7 @@ namespace Quản_lý_quán_cafe.Controllers
 
                 return result.RoleName?.ToLowerInvariant() switch
                 {
-                    "admin" => RedirectToAction("Index", "RestaurantTables", new { area = "Admin" }),
+                    "admin" => RedirectToAction("Index", "Dashboard", new { area = "Admin" }),
                     "customer" => RedirectToAction("Menu", "Orders", new { area = "Customer" }),
                     _ => RedirectToAction("Index", "POS", new { area = "Cashier" })
                 };

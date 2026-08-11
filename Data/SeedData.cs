@@ -104,6 +104,12 @@ namespace Quản_lý_quán_cafe.Data
 
                 await LinkCustomerUsersAsync(context);
 
+                // Seed demo orders for revenue chart
+                if (seedDemoData)
+                {
+                    await SeedDemoOrdersAsync(context);
+                }
+
                 await context.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -1025,6 +1031,105 @@ namespace Quản_lý_quán_cafe.Data
             string Name,
             string Email,
             int InitialPoints);
+
+        private static async Task SeedDemoOrdersAsync(ApplicationDbContext context)
+        {
+            // Kiểm tra nếu đã có Orders trong tháng này
+            var currentMonth = DateTime.UtcNow.Month;
+            var currentYear = DateTime.UtcNow.Year;
+            var existingOrders = await context.Orders
+                .Where(o => o.OrderDate.Month == currentMonth && o.OrderDate.Year == currentYear)
+                .CountAsync();
+
+            // Nếu đã có >= 20 Orders thì không tạo thêm
+            if (existingOrders >= 20)
+                return;
+
+            var products = await context.Products.ToListAsync();
+            if (!products.Any())
+                return;
+
+            var tables = await context.RestaurantTables.ToListAsync();
+            if (!tables.Any())
+                return;
+
+            var today = DateTime.UtcNow;
+            var ordersToAdd = new List<Order>();
+            var random = new Random(42); // Fixed seed for consistency
+
+            // Tạo Orders cho mỗi ngày trong tháng
+            var daysInMonth = DateTime.DaysInMonth(today.Year, today.Month);
+            for (int day = 1; day <= Math.Min(daysInMonth, today.Day); day++)
+            {
+                // Tạo 2-4 Orders cho mỗi ngày
+                int ordersPerDay = random.Next(2, 5);
+
+                for (int i = 0; i < ordersPerDay; i++)
+                {
+                    var hour = random.Next(8, 20); // Orders từ 8AM đến 8PM
+                    var minute = random.Next(0, 60);
+                    var orderDate = new DateTime(today.Year, today.Month, day, hour, minute, 0, DateTimeKind.Utc);
+
+                    // Skip nếu ngày đó lớn hơn hôm nay
+                    if (orderDate > today)
+                        continue;
+
+                    decimal totalAmount = 0;
+                    var orderDetails = new List<OrderDetail>();
+
+                    // Mỗi order có 1-4 items
+                    int itemCount = random.Next(1, 5);
+                    for (int j = 0; j < itemCount; j++)
+                    {
+                        var product = products[random.Next(products.Count)];
+                        int quantity = random.Next(1, 4);
+                        decimal unitPrice = product.Price;
+                        decimal subtotal = unitPrice * quantity;
+
+                        orderDetails.Add(new OrderDetail
+                        {
+                            ProductID = product.ProductID,
+                            Quantity = quantity,
+                            UnitPrice = unitPrice,
+                            Subtotal = subtotal,
+                            Notes = string.Empty,
+                            IsDeleted = false,
+                            CreatedAt = orderDate,
+                            UpdatedAt = orderDate
+                        });
+
+                        totalAmount += subtotal;
+                    }
+
+                    var table = tables[random.Next(tables.Count)];
+                    var order = new Order
+                    {
+                        TableID = table.TableID,
+                        OrderDate = orderDate,
+                        OrderStatus = "Completed",
+                        TotalAmount = totalAmount,
+                        SubtotalAmount = totalAmount,
+                        VoucherDiscountAmount = 0,
+                        PointDiscountAmount = 0,
+                        Notes = string.Empty,
+                        IsDeleted = false,
+                        CreatedAt = orderDate,
+                        UpdatedAt = orderDate,
+                        CompletedDate = orderDate.AddMinutes(random.Next(15, 45)),
+                        OrderDetails = orderDetails
+                    };
+
+                    ordersToAdd.Add(order);
+                }
+            }
+
+            // Chỉ thêm nếu không quá 100 Orders mới
+            if (ordersToAdd.Count <= 100 && ordersToAdd.Count > 0)
+            {
+                await context.Orders.AddRangeAsync(ordersToAdd);
+                await context.SaveChangesAsync();
+            }
+        }
 
     }
 }
