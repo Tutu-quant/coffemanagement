@@ -18,6 +18,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+
     <!-- Site CSS -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 
@@ -27,242 +30,447 @@
     <link rel="stylesheet" href="~/css/staff-notifications.css" asp-append-version="true" />
 
     <style>
+
         :root {
-            --primary-color: #8B6F47;
-            --secondary-color: #D4AF37;
-            --accent-color: #E8DCC8;
-            --light-bg: #f5f3f0;
+            --coffee-950: #2D1B14;
+            --coffee-900: #351F12;
+            --coffee-800: #4A2B16;
+            --coffee-700: #5A351D;
+
+            --caramel-500: #C57A24;
+            --caramel-400: #D88A34;
+            --caramel-100: #F5E3CA;
+
+            --cream-50: #FBF8EF;
+            --cream-100: #F7F1E2;
+            --cream-200: #EFE3C6;
+
+            --surface: #FFFFFF;
+            --text-primary: #2D1B14;
+            --text-secondary: #7E6047;
+            --text-muted: #A58D75;
+            --border-color: #EADFCB;
+            --border-soft: #F0E8DA;
+
+            --radius-lg: 16px;
+            --radius-md: 14px;
+            --radius-btn: 11px;
         }
 
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-        }
+        html, body { height: 100%; margin: 0; padding: 0; }
 
         body {
-            background-color: var(--light-bg);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+            background: var(--cream-50);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
         }
 
         .cashier-wrapper {
             display: grid;
-            grid-template-columns: 250px 1fr;
+            grid-template-columns: 260px 1fr;
             height: 100vh;
             overflow: hidden;
         }
 
+        /* ===== SIDEBAR ===== */
         .cashier-sidebar {
-            background: #2c2c2c;
-            color: white;
+            background: var(--coffee-950);
+            color: #fff;
             overflow-y: auto;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 0;
+            border-right: 1px solid rgba(255,255,255,0.02);
+            box-shadow: 2px 0 8px rgba(0,0,0,0.12);
         }
 
+        /* Logo/header area */
         .sidebar-header {
-            padding: 20px 15px;
-            border-bottom: 2px solid var(--primary-color);
             display: flex;
             align-items: center;
             gap: 12px;
-            font-weight: 600;
+            padding: 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            flex-shrink: 0;
         }
 
         .sidebar-header i {
-            font-size: 24px;
-            color: var(--secondary-color);
+            font-size: 32px;
+            color: var(--caramel-500);
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(197,122,36,0.1);
+            border-radius: 10px;
         }
 
+        .sidebar-header span {
+            font-weight: 800;
+            font-size: 18px;
+            color: #fff;
+            line-height: 1.2;
+        }
+
+        .sidebar-header-subtitle {
+            font-size: 11px;
+            color: rgba(255,255,255,0.6);
+            font-weight: 400;
+            margin-top: 2px;
+        }
+
+        /* Menu */
         .sidebar-menu {
             list-style: none;
-            padding: 10px 0;
+            padding: 12px 0;
             margin: 0;
+            flex: 1;
+            overflow-y: auto;
         }
 
         .sidebar-menu li {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin: 4px 0;
+            padding: 0;
         }
 
         .sidebar-menu a {
             display: flex;
-            align-items: center;
             gap: 12px;
-            padding: 12px 15px;
-            color: #ccc;
+            align-items: center;
+            padding: 10px 14px;
+            color: rgba(255,255,255,0.75);
             text-decoration: none;
-            transition: all 0.3s ease;
+            border-radius: var(--radius-btn);
             font-size: 14px;
+            font-weight: 600;
+            transition: all 0.12s ease;
+            margin: 0 8px;
+        }
+
+        .sidebar-menu a i {
+            width: 20px;
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            font-size: 16px;
         }
 
         .sidebar-menu a:hover {
-            color: white;
-            background-color: rgba(139, 111, 71, 0.3);
-            border-left: 3px solid var(--secondary-color);
-            padding-left: 12px;
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            transform: translateY(-1px);
         }
 
+        /* Active menu item - caramel translucent rounded */
         .sidebar-menu a.active {
-            color: white;
-            background-color: #5a3f2b;
-            border-left: 3px solid #d4a574;
-            box-shadow: inset 4px 0 0 #d4a574;
-            font-weight: 600;
-            padding-left: 12px;
+            background: rgba(197,122,36,0.15);
+            color: #fff;
+            font-weight: 700;
+            border: 1px solid rgba(197,122,36,0.2);
         }
 
-        .sidebar-menu a.active:hover {
-            background-color: #4a3324;
-            border-left-color: #e2bc8d;
+        .sidebar-menu a.active i {
+            color: var(--caramel-500);
         }
 
-        .sidebar-menu i {
-            width: 20px;
-            text-align: center;
+        /* Notification badge on menu */
+        .staff-sidebar-notification-badge {
+            margin-left: auto;
+            background: var(--caramel-500);
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            flex-shrink: 0;
         }
 
+        /* Sidebar footer - user area */
+        .sidebar-footer {
+            padding: 12px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sidebar-user-info {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.04);
+            border-radius: var(--radius-btn);
+        }
+
+        .sidebar-user-info i {
+            font-size: 18px;
+            color: var(--caramel-100);
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-user-name {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .sidebar-user-name strong {
+            font-size: 13px;
+            color: #fff;
+            font-weight: 700;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .sidebar-user-name small {
+            font-size: 11px;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .sidebar-logout {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-logout .logout-btn {
+            width: 100%;
+            padding: 8px 12px;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.8);
+            border-radius: var(--radius-btn);
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.12s ease;
+        }
+
+        .sidebar-logout .logout-btn:hover {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255,255,255,0.15);
+            color: #fff;
+        }
+
+        /* ===== HEADER ===== */
         .cashier-header {
-            background: white;
-            border-bottom: 1px solid #e0e0e0;
-            padding: 15px 20px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border-soft);
+            padding: 14px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 6px rgba(45,27,20,0.03);
+            height: 88px;
+            flex-wrap: nowrap;
+            gap: 24px;
         }
 
         .header-title {
-            color: var(--primary-color);
-            font-weight: 600;
-            font-size: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .header-title > span:first-child {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .header-title > span:last-child {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
         }
 
         .cashier-sidebar-toggle {
             display: none;
             border: 0;
             background: transparent;
-            color: var(--primary-color);
-            font-size: 24px;
+            color: var(--text-primary);
+            font-size: 22px;
+            cursor: pointer;
         }
 
         .header-actions {
             display: flex;
-            gap: 15px;
+            gap: 14px;
             align-items: center;
+            flex-wrap: nowrap;
+            flex-shrink: 0;
         }
 
-        .header-actions .user-info {
+        .staff-notification-shortcut {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--cream-100);
+            border: 1px solid var(--border-soft);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--coffee-950);
+            text-decoration: none;
+            transition: all 0.12s ease;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .staff-notification-shortcut:hover { background: var(--cream-200); }
+
+        .staff-reservation-count {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #D65345;
+            color: #fff;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .user-info {
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 14px;
-        }
-
-        .header-actions .logout-btn {
-            padding: 6px 12px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            gap: 8px;
+            color: var(--text-secondary);
             font-size: 13px;
+            font-weight: 600;
         }
 
-        .header-actions .logout-btn:hover {
-            background-color: #704d30;
+        .user-info i { font-size: 20px; }
+
+        .logout-form { margin: 0; }
+
+        .logout-btn {
+            padding: 8px 14px;
+            background: var(--coffee-950);
+            color: #fff;
+            border: 1px solid transparent;
+            border-radius: var(--radius-btn);
+            cursor: pointer;
+            transition: all 0.12s ease;
+            font-weight: 700;
+            font-size: 12px;
         }
+
+        .logout-btn:hover { background: var(--coffee-900); }
 
         .cashier-content {
             overflow-y: auto;
             overflow-x: hidden;
         }
 
-        @@media (max-width: 1024px) {
-            .cashier-wrapper {
-                grid-template-columns: 1fr;
-            }
-
-            .cashier-sidebar {
-                display: none;
-                position: fixed;
-                left: 0;
-                top: 0;
-                width: 250px;
-                height: 100%;
-                z-index: 1000;
-            }
-
-            .cashier-sidebar.show {
-                display: flex;
-                flex-direction: column;
-            }
-
-            .cashier-sidebar-toggle {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-            }
-        }
+        /* Scrollbar */
+        .cashier-content::-webkit-scrollbar { width: 8px; }
+        .cashier-content::-webkit-scrollbar-track { background: transparent; }
+        .cashier-content::-webkit-scrollbar-thumb { background: var(--cream-200); border-radius: 4px; }
+        .cashier-content::-webkit-scrollbar-thumb:hover { background: var(--caramel-100); }
     </style>
 </head>
 <body>
     <div class="cashier-wrapper">
         <!-- Sidebar -->
         <nav class="cashier-sidebar">
-            <div class="sidebar-header">
-                <i class="fas fa-mug-hot"></i>
-                <span>BrewPoint</span>
+            <div>
+                <!-- Logo -->
+                <div class="sidebar-header">
+                    <div>
+                        <i class="fas fa-mug-hot"></i>
+                    </div>
+                    <div>
+                        <span>BrewPoint</span>
+                        <div class="sidebar-header-subtitle">Công nhân viên</div>
+                    </div>
+                </div>
+
+                <!-- Menu -->
+                <ul class="sidebar-menu">
+                    <li>
+                        <a asp-area="Cashier" asp-controller="Dashboard" asp-action="Index" 
+                           class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Dashboard" ? "active" : "")">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Tổng Quan</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-area="Cashier" asp-controller="Orders" asp-action="Index"
+                           class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Orders" ? "active" : "")">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span>Đơn Hàng</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-area="Cashier" asp-controller="Tables" asp-action="Index"
+                           class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Tables" ? "active" : "")">
+                            <i class="fas fa-door-open"></i>
+                            <span>Bàn</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-area="Cashier" asp-controller="Reservations" asp-action="Index"
+                           asp-route-status="Pending"
+                           class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Reservations" ? "active" : "")">
+                            <i class="fas fa-calendar-check"></i>
+                            <span>Khách hàng</span>
+                            <span class="staff-sidebar-notification-badge"
+                                  data-reservation-notification-count
+                                  aria-label="0 lịch đặt bàn đang chờ"
+                                  hidden>0</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-area="Cashier" asp-controller="Payments" asp-action="Index"
+                           class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Payments" ? "active" : "")">
+                            <i class="fas fa-cash-register"></i>
+                            <span>Thanh toán</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-area="Cashier" asp-controller="POS" asp-action="Index"
+                           class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "POS" ? "active" : "")">
+                            <i class="fas fa-receipt"></i>
+                            <span>Báo cáo</span>
+                        </a>
+                    </li>
+                </ul>
             </div>
 
-            <ul class="sidebar-menu">
-                <li>
-                    <a asp-area="Cashier" asp-controller="Dashboard" asp-action="Index" 
-                       class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Dashboard" ? "active" : "")">
-                        <i class="fas fa-chart-line"></i>
-                        <span>Tổng Quan</span>
-                    </a>
-                </li>
-                <li>
-                    <a asp-area="Cashier" asp-controller="Orders" asp-action="Index"
-                       class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Orders" ? "active" : "")">
-                        <i class="fas fa-shopping-cart"></i>
-                        <span>Đơn Hàng</span>
-                    </a>
-                </li>
-                <li>
-                    <a asp-area="Cashier" asp-controller="Tables" asp-action="Index"
-                       class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Tables" ? "active" : "")">
-                        <i class="fas fa-door-open"></i>
-                        <span>Quản Lý Bàn</span>
-                    </a>
-                </li>
-                <li>
-                    <a asp-area="Cashier" asp-controller="Reservations" asp-action="Index"
-                       asp-route-status="Pending"
-                       class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Reservations" ? "active" : "")">
-                        <i class="fas fa-calendar-check"></i>
-                        <span>Lịch Đặt Bàn</span>
-                        <span class="staff-sidebar-notification-badge"
-                              data-reservation-notification-count
-                              aria-label="0 lịch đặt bàn đang chờ"
-                              hidden>0</span>
-                    </a>
-                </li>
-                <li>
-                    <a asp-area="Cashier" asp-controller="Payments" asp-action="Index"
-                       class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Payments" ? "active" : "")">
-                        <i class="fas fa-cash-register"></i>
-                        <span>Thanh Toán</span>
-                    </a>
-                </li>
-                <li>
-                    <a asp-area="Cashier" asp-controller="POS" asp-action="Index"
-                       class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "POS" ? "active" : "")">
-                        <i class="fas fa-receipt"></i>
-                        <span>POS</span>
-                    </a>
-                </li>
-            </ul>
+            <!-- User area footer -->
+            <div class="sidebar-footer">
+                <div class="sidebar-user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <div class="sidebar-user-name">
+                        <strong id="employeeName">@(Context.Session.GetString("FullName") ?? Context.Session.GetString("Username") ?? "Nhân Viên")</strong>
+                        <small>Nhân viên</small>
+                    </div>
+                </div>
+                <div class="sidebar-logout">
+                    <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+                        <button type="submit" class="logout-btn">Đăng xuất</button>
+                    </form>
+                </div>
+            </div>
         </nav>
 
         <!-- Main Content Area -->
@@ -273,7 +481,9 @@
                     <button type="button" class="cashier-sidebar-toggle" id="cashierSidebarToggle" aria-label="Mở menu điều hướng">
                         <i class="fas fa-bars"></i>
                     </button>
-                    @ViewData["Title"] - BrewPoint
+                    <span>@ViewData["Title"]</span>
+                    <span id="dateDisplay" style="display: none;"></span><span id="timeDisplay" style="display: none;"></span>
+                    <span id="headerDateTime">Chủ nhật, 1 tháng 6 năm 2025 • 14:32</span>
                 </div>
                 <div class="header-actions">
                     <a asp-area="Cashier"
@@ -283,21 +493,23 @@
                        class="staff-notification-shortcut"
                        title="Lịch đặt bàn đang chờ"
                        aria-label="Mở danh sách lịch đặt bàn đang chờ">
-                        <i class="fas fa-calendar-check" aria-hidden="true"></i>
+                        <i class="fas fa-bell" aria-hidden="true"></i>
                         <span class="staff-reservation-count"
                               data-reservation-notification-count
                               aria-label="0 lịch đặt bàn đang chờ"
                               hidden>0</span>
                     </a>
-                    <div class="user-info">
-                        <i class="fas fa-user-circle" style="font-size: 24px; color: var(--primary-color);"></i>
-                        <span id="employeeName">@(Context.Session.GetString("FullName") ?? Context.Session.GetString("Username") ?? "Nhân Viên")</span>
-                    </div>
-                    <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
-                    <button type="submit" class="logout-btn">
-                        <i class="fas fa-sign-out-alt"></i> Đăng Xuất
-                    </button>
-                    </form>
+                    <a href="@Url.Action("Index", "Orders", new { area = "Cashier" })" 
+                       class="btn-quick-action" 
+                       style="background: var(--cream-100); border: 1px solid var(--border-soft); color: var(--coffee-950); text-decoration: none;"
+                       title="Màn hình bếp">
+                        <i class="fas fa-tv"></i> Màn hình bếp
+                    </a>
+                    <a href="@Url.Action("Index", "POS", new { area = "Cashier" })" 
+                       class="btn-quick-action btn-primary" 
+                       style="text-decoration: none;">
+                        <i class="fas fa-cash-register"></i> Thu ngân POS
+                    </a>
                 </div>
             </header>
 
@@ -308,11 +520,11 @@
                 }
                 @if (!string.IsNullOrWhiteSpace(layoutErrorMessage))
                 {
-                    <div class="alert alert-danger m-3" role="alert">@layoutErrorMessage</div>
+                    <div class="alert alert-danger" role="alert">@layoutErrorMessage</div>
                 }
                 @if (TempData["SuccessMessage"] is string successMessage)
                 {
-                    <div class="alert alert-success m-3" role="status">@successMessage</div>
+                    <div class="alert alert-success" role="status">@successMessage</div>
                 }
                 @RenderBody()
             </main>
@@ -326,6 +538,25 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/js/cashier.js" asp-append-version="true"></script>
     <script>
+        // Update header date/time
+        function updateHeaderDateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleString('vi-VN', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            const dateStr = now.toLocaleString('vi-VN', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+            document.getElementById('headerDateTime').textContent = `${dateStr} • ${timeStr}`;
+        }
+        updateHeaderDateTime();
+        setInterval(updateHeaderDateTime, 60000);
+
+        // Sidebar toggle
         (() => {
             const toggle = document.getElementById('cashierSidebarToggle');
             const sidebar = document.querySelector('.cashier-sidebar');
@@ -357,3 +588,4 @@
 
 </body>
 </html>
+
