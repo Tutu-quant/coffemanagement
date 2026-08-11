@@ -81,15 +81,12 @@ builder.Services.AddScoped<ReservationStatusService>();
 builder.Services.AddSingleton<IApplicationMutationCoordinator, ApplicationMutationCoordinator>();
 builder.Services.AddSingleton<IStaffNotificationConnectionRegistry, StaffNotificationConnectionRegistry>();
 
-// Background services for reservation management
 builder.Services.AddHostedService<ReservationAutoCleanupService>();
 
-// Payment
 builder.Services.AddSingleton<PaymentGatewaySecretProtector>();
 builder.Services.AddSingleton<Quản_lý_quán_cafe.Realtime.IRealtimeUpdateNotifier,
     Quản_lý_quán_cafe.Realtime.RealtimeUpdateNotifier>();
 
-// Logging
 builder.Services.AddLogging();
 
 var app = builder.Build();

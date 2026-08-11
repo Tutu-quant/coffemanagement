@@ -79,11 +79,6 @@ function getCsrfToken() {
 
     console.log('✅ Dashboard initialized');
 }
-
-// ================================================
-// TABLE CARD INTERACTIONS
-// ================================================
-
 function setupTableCardListeners() {
     const tableCards = document.querySelectorAll('.table-card');
 
