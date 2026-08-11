@@ -153,6 +153,9 @@
     <script src="~/js/reservation.js" asp-append-version="true"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize datetime input with current Vietnam time (default: 30 minutes from now)
+            VietnamTimeUtil.initDatetimeInput('ReservationDate', 30);
+
             const decreaseBtn = document.getElementById('decreaseGuests');
             const increaseBtn = document.getElementById('increaseGuests');
             const guestInput = document.getElementById('NumberOfGuests');

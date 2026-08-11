@@ -1,96 +1,200 @@
+@using System.Globalization
 @model Quản_lý_quán_cafe.Models.ViewModels.Order.OrderDetailViewModel
 
 @{
     var loyaltySubtotal = Model.LoyaltySubtotalAmount > 0 ? Model.LoyaltySubtotalAmount : Model.Subtotal;
+    var staffName = ViewContext.HttpContext.Session.GetString("FullName") ?? ViewContext.HttpContext.User.Identity?.Name ?? "Nhân viên";
+
+    // Map payment status to Vietnamese display
+    string GetPaymentStatusDisplay(string status)
+    {
+        return status?.ToLower() switch
+        {
+            "completed" => "Đã thanh toán",
+            "pending" => "Chờ thanh toán",
+            "processing" => "Đang xử lý",
+            "failed" => "Thất bại",
+            "refunded" => "Đã hoàn tiền",
+            _ => status ?? "Chưa rõ"
+        };
+    }
+
+    // Determine payment status badge class
+    string GetPaymentStatusClass(string status)
+    {
+        return status?.ToLower() switch
+        {
+            "completed" => "completed",
+            "pending" => "pending",
+            "processing" => "pending",
+            "failed" => "failed",
+            "refunded" => "failed",
+            _ => "pending"
+        };
+    }
 }
 
-<div class="bill-paper" id="billPaper" style="font-family: 'Inter', sans-serif; max-width:420px; margin:0 auto; padding:16px; background:#fff; color:#000;">
-    <div style="text-align:center; margin-bottom:8px;">
-        <h3 style="margin:0;">BrewPoint Cafe</h3>
-        <div style="font-size:12px; color:#666;">Hóa đơn bán hàng</div>
+<div class="receipt" id="billPaper">
+    <!-- HEADER -->
+    <div class="receipt-header">
+        <h2 class="cafe-name">BREWPOINT</h2>
+        <p class="cafe-tagline">CAFE</p>
+        <p class="receipt-title">HÓA ĐƠN THANH TOÁN</p>
     </div>
 
-    <div style="display:flex; justify-content:space-between; font-size:13px; margin:8px 0;">
-        <div>
-            <div><strong>Mã đơn:</strong> @Model.OrderCode</div>
-            <div><strong>Bàn:</strong> @(string.IsNullOrEmpty(Model.TableNumber) ? "Mang đi" : Model.TableNumber)</div>
-            @if (!string.IsNullOrEmpty(Model.CustomerName) || !string.IsNullOrEmpty(Model.CustomerEmail))
-            {
-                <div style="margin-top:6px; font-size:13px; color:#333;">
-                    @if (!string.IsNullOrEmpty(Model.CustomerName)) { <div>Tên KH: @Model.CustomerName</div> }
-                    @if (!string.IsNullOrEmpty(Model.CustomerEmail)) { <div>Email: @Model.CustomerEmail</div> }
-                </div>
-            }
+    <!-- META INFORMATION -->
+    <div class="receipt-meta">
+        <div class="receipt-meta-row">
+            <div class="receipt-meta-item">
+                <span class="receipt-meta-label">Mã hóa đơn</span>
+                <span class="receipt-meta-value">#@Model.OrderCode</span>
+            </div>
+            <div class="receipt-meta-item">
+                <span class="receipt-meta-label">Bàn</span>
+                <span class="receipt-meta-value">@(string.IsNullOrEmpty(Model.TableNumber) ? "Mang đi" : Model.TableNumber)</span>
+            </div>
         </div>
-        <div style="text-align:right">
-            <div>@Model.OrderDate.ToString("dd/MM/yyyy")</div>
-            <div>@Model.OrderDate.ToString("HH:mm:ss")</div>
+
+        <div class="receipt-meta-row">
+            <div class="receipt-meta-item">
+                <span class="receipt-meta-label">Ngày</span>
+                <span class="receipt-meta-value">@Model.OrderDate.ToString("dd/MM/yyyy")</span>
+            </div>
+            <div class="receipt-meta-item">
+                <span class="receipt-meta-label">Giờ</span>
+                <span class="receipt-meta-value">@Model.OrderDate.ToString("HH:mm:ss")</span>
+            </div>
         </div>
-    </div>
 
-    <hr />
+        <div class="receipt-meta-row full">
+            <div class="receipt-meta-item">
+                <span class="receipt-meta-label">Thu ngân</span>
+                <span class="receipt-meta-value">@staffName</span>
+            </div>
+        </div>
 
-    <div>
-        @foreach (var it in Model.Items)
+        @if (!string.IsNullOrEmpty(Model.CustomerName) || !string.IsNullOrEmpty(Model.CustomerPhone))
         {
-            <div style="display:flex; justify-content:space-between; font-size:13px; margin:6px 0;">
-                <div style="flex:1">
-                    <div style="font-weight:600">@it.ProductName</div>
-                    <div style="font-size:12px; color:#666">x@it.Quantity</div>
-                </div>
-                <div style="min-width:80px; text-align:right">@it.TotalPrice.ToString("N0")đ</div>
+            <div class="receipt-meta-row full">
+                @if (!string.IsNullOrEmpty(Model.CustomerName))
+                {
+                    <div class="receipt-meta-item">
+                        <span class="receipt-meta-label">Khách hàng</span>
+                        <span class="receipt-meta-value">@Model.CustomerName</span>
+                    </div>
+                }
             </div>
         }
     </div>
 
-    <hr />
+    <!-- DIVIDER -->
+    <div class="receipt-divider dotted"></div>
 
-    @if (Model.PointDiscountAmount > 0 || Model.VoucherDiscountAmount > 0)
-    {
-        <div style="display:flex; justify-content:space-between; font-size:13px; margin-top:8px;">
-            <div>Tạm tính</div>
-            <div>@loyaltySubtotal.ToString("N0")đ</div>
-        </div>
-    }
-    @if (Model.PointDiscountAmount > 0)
-    {
-        <div style="display:flex; justify-content:space-between; font-size:13px; color:#a33; margin-top:4px;">
-            <div>Đổi @Model.AppliedRewardPoints điểm</div>
-            <div>-@Model.PointDiscountAmount.ToString("N0")đ</div>
-        </div>
-    }
-    @if (Model.VoucherDiscountAmount > 0)
-    {
-        <div style="display:flex; justify-content:space-between; font-size:13px; color:#a33; margin-top:4px;">
-            <div>Voucher @(Model.AppliedVoucherCode ?? string.Empty)</div>
-            <div>-@Model.VoucherDiscountAmount.ToString("N0")đ</div>
-        </div>
-    }
-    <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:700; margin-top:8px;">
-        <div>TỔNG</div>
-        <div>@Model.TotalAmount.ToString("N0")đ</div>
-    </div>
-
-    <div style="font-size:13px; color:#666; margin-top:8px;">
-        <div>Thanh toán: @(Model.PaymentStatus ?? "-")</div>
-        <div>Ngày thanh toán: @(Model.PaidDate.HasValue ? Model.PaidDate.Value.ToString("dd/MM/yyyy HH:mm:ss") : "-")</div>
-        <div>Nhân viên: @(ViewContext.HttpContext.Session.GetString("FullName") ?? ViewContext.HttpContext.User.Identity?.Name ?? "-")</div>
-        @if (Model.ProjectedEarnedPoints > 0)
+    <!-- ITEMS LIST -->
+    <div class="receipt-items">
+        @foreach (var item in Model.Items)
         {
-            <div>Điểm tích lũy từ hóa đơn: +@Model.ProjectedEarnedPoints</div>
+            <div class="receipt-item">
+                <div class="receipt-item-details">
+                    <p class="receipt-item-name">@item.ProductName</p>
+                    <div class="receipt-item-info">
+                        <div class="receipt-item-quantity">@item.Quantity × @item.UnitPrice.ToString("N0", new CultureInfo("vi-VN"))đ</div>
+                        @if (!string.IsNullOrEmpty(item.Size))
+                        {
+                            <div class="receipt-item-quantity">@item.Size</div>
+                        }
+                        @if (!string.IsNullOrEmpty(item.Notes))
+                        {
+                            <div class="receipt-item-quantity" style="font-style: italic; color: #999;">@item.Notes</div>
+                        }
+                    </div>
+                </div>
+                <div class="receipt-item-price">
+                    <div class="receipt-item-total">@item.TotalPrice.ToString("N0", new CultureInfo("vi-VN"))đ</div>
+                </div>
+            </div>
         }
     </div>
 
-    <div style="text-align:center; margin-top:12px; font-size:12px; color:#666;">Cảm ơn quý khách! Hẹn gặp lại.</div>
-</div>
+    <!-- DIVIDER -->
+    <div class="receipt-divider dotted"></div>
 
-    <style>
-    @@media print {
-        body * { visibility: hidden; }
-        #billPaper, #billPaper * { visibility: visible; }
-        #billPaper { position: absolute; left: 0; top: 0; }
+    <!-- SUMMARY -->
+    <div class="receipt-summary">
+        @if (Model.PointDiscountAmount > 0 || Model.VoucherDiscountAmount > 0 || Model.Subtotal != Model.TotalAmount)
+        {
+            <div class="receipt-summary-row subtotal">
+                <span class="receipt-summary-label">Tạm tính</span>
+                <span class="receipt-summary-value">@loyaltySubtotal.ToString("N0", new CultureInfo("vi-VN"))đ</span>
+            </div>
+        }
+
+        @if (Model.PointDiscountAmount > 0)
+        {
+            <div class="receipt-summary-row discount">
+                <span class="receipt-summary-label discount-label">Đổi @Model.AppliedRewardPoints điểm</span>
+                <span class="receipt-summary-value discount-value">-@Model.PointDiscountAmount.ToString("N0", new CultureInfo("vi-VN"))đ</span>
+            </div>
+        }
+
+        @if (Model.VoucherDiscountAmount > 0)
+        {
+            <div class="receipt-summary-row discount">
+                <span class="receipt-summary-label discount-label">Voucher @Model.AppliedVoucherCode</span>
+                <span class="receipt-summary-value discount-value">-@Model.VoucherDiscountAmount.ToString("N0", new CultureInfo("vi-VN"))đ</span>
+            </div>
+        }
+
+        <div class="receipt-summary-row total">
+            <span class="receipt-summary-label">TỔNG CỘNG</span>
+            <span class="receipt-summary-value">
+                <span class="amount">@Model.TotalAmount.ToString("N0", new CultureInfo("vi-VN"))đ</span>
+            </span>
+        </div>
+    </div>
+
+    <!-- PAYMENT INFORMATION -->
+    <div class="receipt-payment">
+        <div class="receipt-payment-row">
+            <span class="receipt-payment-label">Phương thức</span>
+            <span class="receipt-payment-value">Tiền mặt</span>
+        </div>
+        <div class="receipt-payment-row">
+            <span class="receipt-payment-label">Trạng thái</span>
+            <span class="receipt-payment-value">
+                <span class="receipt-payment-status @GetPaymentStatusClass(Model.PaymentStatus)">
+                    @GetPaymentStatusDisplay(Model.PaymentStatus)
+                </span>
+            </span>
+        </div>
+        @if (Model.PaidDate.HasValue)
+        {
+            <div class="receipt-payment-row">
+                <span class="receipt-payment-label">Thanh toán lúc</span>
+                <span class="receipt-payment-value">@Model.PaidDate.Value.ToString("dd/MM/yyyy HH:mm")</span>
+            </div>
+        }
+    </div>
+
+    <!-- LOYALTY POINTS (if applicable) -->
+    @if (Model.ProjectedEarnedPoints > 0)
+    {
+        <div class="receipt-loyalty">
+            <div class="receipt-loyalty-row">
+                <span class="receipt-loyalty-label">Điểm tích lũy</span>
+                <span class="receipt-loyalty-value points">+@Model.ProjectedEarnedPoints</span>
+            </div>
+        </div>
     }
-    </style>
+
+    <!-- FOOTER -->
+    <div class="receipt-footer">
+        <div class="receipt-footer-main">CẢM ƠN QUÝ KHÁCH!</div>
+        <div class="receipt-footer-tagline">Hẹn gặp lại <span class="heart">❤️</span></div>
+        <div class="receipt-footer-divider">─────────────────────</div>
+        <div class="receipt-footer-branding">BREWPOINT CAFE • brewed with love</div>
+    </div>
+</div>
 
 <script>
     function printBill() {

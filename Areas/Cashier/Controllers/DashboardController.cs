@@ -9,6 +9,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Quản_lý_quán_cafe.Models;
+using Quản_lý_quán_cafe.Services;
 
 namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
 {
@@ -18,11 +19,16 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<DashboardController> _logger;
+        private readonly ReservationStatusService _reservationStatusService;
 
-        public DashboardController(ApplicationDbContext context, ILogger<DashboardController> logger)
+        public DashboardController(
+            ApplicationDbContext context,
+            ILogger<DashboardController> logger,
+            ReservationStatusService reservationStatusService)
         {
             _context = context;
             _logger = logger;
+            _reservationStatusService = reservationStatusService;
         }
 
         [HttpGet]
@@ -57,6 +63,8 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                     .ToListAsync();
                 var todayReservationCount = await _context.Reservations.CountAsync(r => !r.IsDeleted &&
                     r.ReservationDate >= localToday && r.ReservationDate < localTomorrow && r.ReservationStatus != "Cancelled");
+
+                // Get upcoming reservations (next 5)
                 var upcomingReservations = await _context.Reservations.AsNoTracking()
                     .Where(r => !r.IsDeleted && r.ReservationDate > now && r.ReservationStatus != "Cancelled" &&
                                 r.ReservationStatus != "Completed" && r.ReservationStatus != "CheckedIn")
@@ -65,6 +73,9 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                     .OrderBy(r => r.ReservationDate)
                     .Take(5)
                     .ToListAsync();
+
+                // Get overdue reservations (past time but not yet auto-cancelled)
+                var overdueReservations = await _reservationStatusService.GetOverdueReservationsAsync();
 
                 var todayPayments = await _context.Payments
                     .Where(p => !p.IsDeleted && p.PaymentDate >= todayUtcStart && p.PaymentDate < todayUtcEnd && p.PaymentStatus == "Completed")
@@ -180,6 +191,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             var notifications = new List<DashboardNotificationViewModel>();
             var now = BusinessClock.Now;
 
+            // 1. Pending payment notifications
             if (model.PendingPaymentTables > 0)
             {
                 var pendingTables = model.Tables
@@ -201,6 +213,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 }
             }
 
+            // 2. Upcoming reservations (next 15 minutes)
             var soonReservations = todayReservations
                 .Where(r => r.ReservationDate > now && r.ReservationDate <= now.AddMinutes(15))
                 .ToList();
@@ -219,6 +232,28 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 });
             }
 
+            // 3. Overdue reservations - showing reservation customers who are more than 0 minutes late
+            var overdueReservations = todayReservations
+                .Where(r => r.ReservationDate <= now && 
+                           r.ReservationDate > now.AddMinutes(-ReservationPolicy.HoldBeforeMinutes) &&
+                           (r.ReservationStatus == "Pending" || r.ReservationStatus == "Confirmed"))
+                .ToList();
+
+            foreach (var reservation in overdueReservations)
+            {
+                var minutesOverdue = (int)(now - reservation.ReservationDate).TotalMinutes;
+                notifications.Add(new DashboardNotificationViewModel
+                {
+                    Title = "🔴 Bàn Quá Giờ",
+                    Message = $"Bàn {reservation.Table?.TableNumber} - {reservation.Customer?.CustomerName} - Quá giờ {minutesOverdue} phút",
+                    Type = "danger",
+                    Icon = "fa-exclamation-circle",
+                    CreatedAt = now.AddMinutes(-minutesOverdue),
+                    IsRead = false
+                });
+            }
+
+            // 4. Table overdue notifications (tables that have been serving for too long)
             var overdueTablesList = model.Tables
                 .Where(t => t.IsOverdue)
                 .Take(3)
@@ -228,15 +263,16 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             {
                 notifications.Add(new DashboardNotificationViewModel
                 {
-                    Title = "🔴 Bàn Quá Giờ",
+                    Title = "⏱️ Bàn Sử Dụng Quá Lâu",
                     Message = $"Bàn {table.TableNumber} - Đã sử dụng {table.MinutesUsed} phút",
                     Type = "danger",
-                    Icon = "fa-exclamation-circle",
+                    Icon = "fa-stopwatch",
                     CreatedAt = now.AddMinutes(-table.MinutesUsed),
                     IsRead = false
                 });
             }
 
+            // 5. No empty tables warning
             if (model.EmptyTables == 0)
             {
                 notifications.Add(new DashboardNotificationViewModel

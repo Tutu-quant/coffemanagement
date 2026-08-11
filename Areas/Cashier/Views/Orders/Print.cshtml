@@ -5,32 +5,49 @@
 }
 
 @section Head {
+    <link rel="stylesheet" href="~/css/receipt.css" asp-append-version="true" />
     <style>
-        html, body { height: auto; min-height: 100%; overflow: auto; }
+        html, body { 
+            height: auto; 
+            min-height: 100vh; 
+            overflow: auto;
+            background-color: #fafafa;
+        }
+
         @@media print {
-            html, body { height: auto !important; overflow: visible !important; }
-            .container { max-width: none; padding: 0 !important; }
+            html, body { 
+                height: auto !important; 
+                overflow: visible !important;
+                background-color: #fff !important;
+            }
+            .container { 
+                max-width: none; 
+                padding: 0 !important;
+                margin: 0 !important;
+            }
         }
     </style>
 }
 
-<div class="container" style="padding:20px 0;">
-    <div class="d-print-none mb-3">
-        <a class="btn btn-outline-secondary me-2" href="@((ViewData["ReturnUrl"] as string) ?? Url.Action("Index", "POS", new { area = "Cashier" }))">
+<div class="receipt-page">
+    <div class="receipt-actions no-print">
+        <a class="btn btn-outline-secondary" href="@((ViewData["ReturnUrl"] as string) ?? Url.Action("Index", "POS", new { area = "Cashier" }))">
             <i class="bi bi-arrow-left"></i> Quay lại
         </a>
-        <button type="button" class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> In hóa đơn</button>
+        <button type="button" class="btn btn-print" onclick="window.print()">
+            <i class="bi bi-printer"></i> In hóa đơn
+        </button>
     </div>
 
-    <div class="print-area bg-white p-4">
-        @await Html.PartialAsync("~/Views/Shared/_Bill.cshtml", Model)
-    </div>
+    @await Html.PartialAsync("~/Views/Shared/_Bill.cshtml", Model)
 </div>
 
 <script>
     window.addEventListener('load', function() {
-        setTimeout(() => {
-            window.print();
-        }, 300);
+        // Auto-print after 300ms if opened directly from POS
+        // Uncomment if you want auto-print on page load
+        // setTimeout(() => {
+        //     window.print();
+        // }, 300);
     });
 </script>

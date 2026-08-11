@@ -82,6 +82,8 @@ namespace Quản_lý_quán_cafe.Services
             if (notes?.Length > 500)
                 return ReservationCreateResult.FailureResult("Ghi chú không được vượt quá 500 ký tự.", "INVALID_NOTES");
 
+            // Ensure reservationDate is treated as local business time (Vietnam)
+            // If coming from datetime-local input, it's already in local time
             if (reservationDate <= BusinessClock.Now)
                 return ReservationCreateResult.FailureResult("Thời gian đặt phải ở tương lai.", "INVALID_DATE");
 

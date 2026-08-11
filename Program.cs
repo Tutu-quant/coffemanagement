@@ -77,8 +77,12 @@ builder.Services.AddScoped<IRestaurantTableService, RestaurantTableService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<ILoyaltyService, LoyaltyService>();
 builder.Services.AddScoped<CustomerSessionService>();
+builder.Services.AddScoped<ReservationStatusService>();
 builder.Services.AddSingleton<IApplicationMutationCoordinator, ApplicationMutationCoordinator>();
 builder.Services.AddSingleton<IStaffNotificationConnectionRegistry, StaffNotificationConnectionRegistry>();
+
+// Background services for reservation management
+builder.Services.AddHostedService<ReservationAutoCleanupService>();
 
 // Payment
 builder.Services.AddSingleton<PaymentGatewaySecretProtector>();
