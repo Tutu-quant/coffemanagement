@@ -265,7 +265,22 @@ const ReservationManager = {
         const date = reservationDate.toLocaleDateString('vi-VN');
         const guestCount = parseInt(guestInput.value);
 
-        let html = `
+        
+        const isCapacityExceeded = guestCount > this.selectedTableCapacity;
+
+        let html = ``;
+
+        
+        if (isCapacityExceeded) {
+            html += `
+                <div class="alert alert-danger mb-3" style="margin: 0;">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>Cảnh báo:</strong> Số khách (${guestCount}) vượt quá sức chứa của bàn (${this.selectedTableCapacity} khách)
+                </div>
+            `;
+        }
+
+        html += `
             <div class="summary-item">
                 <span class="label">Bàn:</span>
                 <span class="value">Bàn ${this.escapeHtml(this.selectedTableNumber)}</span>
@@ -286,13 +301,18 @@ const ReservationManager = {
                 <span class="label">Giờ:</span>
                 <span class="value">${time}</span>
             </div>
-            <div class="summary-item">
+            <div class="summary-item ${isCapacityExceeded ? 'text-danger' : ''}">
                 <span class="label">Khách:</span>
-                <span class="value">${guestCount}</span>
+                <span class="value ${isCapacityExceeded ? 'fw-bold text-danger' : ''}">${guestCount}${isCapacityExceeded ? ' ⚠️' : ''}</span>
             </div>
         `;
 
         summaryEl.innerHTML = html;
+
+        // Vô hiệu hóa nút nếu vượt quá sức chứa
+        if (confirmBtn) {
+            confirmBtn.disabled = isCapacityExceeded;
+        }
     }
 };
 
