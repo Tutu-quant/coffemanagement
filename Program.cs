@@ -78,6 +78,7 @@ builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<ILoyaltyService, LoyaltyService>();
 builder.Services.AddScoped<CustomerSessionService>();
 builder.Services.AddScoped<ReservationStatusService>();
+builder.Services.AddScoped<DemoDataSeeder>(); // Development-only demo data seeder
 builder.Services.AddSingleton<IApplicationMutationCoordinator, ApplicationMutationCoordinator>();
 builder.Services.AddSingleton<IStaffNotificationConnectionRegistry, StaffNotificationConnectionRegistry>();
 

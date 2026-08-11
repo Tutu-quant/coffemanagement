@@ -275,7 +275,6 @@ html, body {
     margin-bottom: 20px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
 }
 
 .form-check-left {
@@ -292,6 +291,7 @@ html, body {
     cursor: pointer;
     transition: var(--transition);
     margin: 0;
+    flex-shrink: 0;
 }
 
 .form-check-input:hover {
@@ -314,6 +314,20 @@ html, body {
     color: var(--text-dark);
     cursor: pointer;
     margin: 0;
+    margin-left: 8px;
+}
+
+/* Form Footer - Ghi nhớ đăng nhập & Quên mật khẩu */
+.form-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    gap: 16px;
+}
+
+.form-footer .form-check {
+    margin-bottom: 0;
 }
 
 .forgot-password-link {
@@ -322,6 +336,7 @@ html, body {
     font-size: 13px;
     font-weight: 500;
     transition: var(--transition);
+    white-space: nowrap;
 }
 
 .forgot-password-link:hover {

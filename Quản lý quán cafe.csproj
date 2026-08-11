@@ -19,6 +19,7 @@
   <ItemGroup>
     <Folder Include="Quản lý quán cafe\Models\" />
     <Folder Include="Scripts\" />
+    <Folder Include="Views\Development\" />
   </ItemGroup>
 
 </Project>

@@ -233,6 +233,60 @@
 
         <!-- Sidebar -->
         <div class="dashboard-sidebar">
+            <!-- Kitchen Order Alerts -->
+            @if (Model.KitchenOrderAlerts.Count > 0)
+            {
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title">
+                        <i class="fas fa-bell"></i> Đơn Từ Bếp
+                    </h3>
+                    <div class="sidebar-content">
+                        <div class="notifications-list">
+                            @foreach (var alert in Model.KitchenOrderAlerts)
+                            {
+                                var notifClass = alert.PriorityLevel switch
+                                {
+                                    "warning" => "notification-warning",
+                                    "urgent" => "notification-danger",
+                                    "overdue" => "notification-danger",
+                                    _ => "notification-info"
+                                };
+
+                                <div class="notification-item @notifClass">
+                                    <div class="notification-icon">
+                                        <i class="fas @alert.IconClass"></i>
+                                    </div>
+                                    <div class="notification-body">
+                                        <p class="notification-title">@alert.PriorityText</p>
+                                        <p class="notification-message">
+                                            Bàn @alert.TableNumber - Đơn #@alert.OrderID - @alert.StatusText
+                                        </p>
+                                        <p class="notification-message" style="font-size: 12px; margin-top: 2px;">
+                                            @alert.ItemCount món
+                                        </p>
+                                        <small class="notification-time">@alert.ElapsedTimeShort</small>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title">
+                        <i class="fas fa-bell"></i> Đơn Từ Bếp
+                    </h3>
+                    <div class="sidebar-content">
+                        <div class="empty-state">
+                            <i class="fas fa-coffee"></i>
+                            <p>Không có đơn cần chú ý</p>
+                        </div>
+                    </div>
+                </div>
+            }
+
             <!-- Upcoming Reservations -->
             @if (Model.UpcomingReservations.Count > 0)
             {

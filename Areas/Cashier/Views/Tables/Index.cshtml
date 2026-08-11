@@ -6,108 +6,152 @@
     var reservedTableIds = ViewBag.ReservedTableIds as HashSet<int> ?? new HashSet<int>();
 }
 
-<div class="cashier-content">
-    <div style="padding: 20px;">
-        <h2 style="color: var(--primary-color); margin-bottom: 20px;">Quản lý bàn</h2>
+<div class="cashier-dashboard">
+    @if (TempData["SuccessMessage"] is not null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] is not null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
 
-        @if (TempData["SuccessMessage"] is not null)
-        {
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                @TempData["SuccessMessage"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card stat-card-empty">
+            <div class="stat-icon">
+                <i class="fas fa-chair"></i>
             </div>
-        }
-        @if (TempData["ErrorMessage"] is not null)
-        {
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                @TempData["ErrorMessage"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        }
-
-        <!-- Statistics Cards -->
-        <div class="row g-3 mb-4">
-            <div class="col-md-3">
-                <div class="card text-center" style="border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #28a745;">
-                    <div class="card-body">
-                        <h3 style="color: #28a745; margin: 0;">@Model.Count(t => t.TableStatus == TableStatuses.Available && !reservedTableIds.Contains(t.TableID))</h3>
-                        <p class="mb-0" style="color: #666; margin-top: 8px;">Bàn trống</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card text-center" style="border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #ffc107;">
-                    <div class="card-body">
-                        <h3 style="color: #ffc107; margin: 0;">@Model.Count(t => t.TableStatus == TableStatuses.Occupied)</h3>
-                        <p class="mb-0" style="color: #666; margin-top: 8px;">Đang sử dụng</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card text-center" style="border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #dc3545;">
-                    <div class="card-body">
-                        <h3 style="color: #dc3545; margin: 0;">@Model.Count(t => t.TableStatus == TableStatuses.WaitingPayment)</h3>
-                        <p class="mb-0" style="color: #666; margin-top: 8px;">Chờ thanh toán</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card text-center" style="border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-left: 4px solid #6c757d;">
-                    <div class="card-body">
-                        <h3 style="color: #6c757d; margin: 0;">@Model.Count(t => t.TableStatus == TableStatuses.Reserved || reservedTableIds.Contains(t.TableID))</h3>
-                        <p class="mb-0" style="color: #666; margin-top: 8px;">Đã đặt trước</p>
-                    </div>
-                </div>
+            <div class="stat-content">
+                <p class="stat-label">Bàn Trống</p>
+                <div class="stat-value">@Model.Count(t => t.TableStatus == TableStatuses.Available && !reservedTableIds.Contains(t.TableID))</div>
+                <p class="stat-desc">Sẵn sàng phục vụ</p>
             </div>
         </div>
 
-        <!-- Tables Grid -->
-        <div class="row g-4">
+        <div class="stat-card stat-card-serving">
+            <div class="stat-icon">
+                <i class="fas fa-utensils"></i>
+            </div>
+            <div class="stat-content">
+                <p class="stat-label">Đang Sử Dụng</p>
+                <div class="stat-value">@Model.Count(t => t.TableStatus == TableStatuses.Occupied)</div>
+                <p class="stat-desc">Đang ăn</p>
+            </div>
+        </div>
+
+        <div class="stat-card stat-card-pending">
+            <div class="stat-icon">
+                <i class="fas fa-credit-card"></i>
+            </div>
+            <div class="stat-content">
+                <p class="stat-label">Chờ Thanh Toán</p>
+                <div class="stat-value">@Model.Count(t => t.TableStatus == TableStatuses.WaitingPayment)</div>
+                <p class="stat-desc">Chờ thanh toán</p>
+            </div>
+        </div>
+
+        <div class="stat-card stat-card-reserved">
+            <div class="stat-icon">
+                <i class="fas fa-bookmark"></i>
+            </div>
+            <div class="stat-content">
+                <p class="stat-label">Đã Đặt Trước</p>
+                <div class="stat-value">@Model.Count(t => t.TableStatus == TableStatuses.Reserved || reservedTableIds.Contains(t.TableID))</div>
+                <p class="stat-desc">Khách sắp tới</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tables Grid -->
+    <div>
+        <div class="section-title">
+            <h2>Sơ đồ bàn</h2>
+            <span class="table-count">@Model.Count() bàn</span>
+        </div>
+        <div class="tables-grid">
             @foreach (var table in Model)
             {
                 var displayStatus = reservedTableIds.Contains(table.TableID) ? TableStatuses.Reserved : table.TableStatus;
-                <div class="col-lg-3 col-md-4 col-sm-6">
-                    <div class="card h-100" style="border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden;">
-                        <div class="card-header" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: white; padding: 15px;">
-                            <h5 style="margin: 0; font-size: 20px; font-weight: 600;">@table.TableNumber</h5>
-                            <small style="opacity: 0.9;">Bàn số @table.TableNumber</small>
-                        </div>
-                        <div class="card-body">
-                            <p style="margin-bottom: 12px; color: #666;">
-                                <i class="fas fa-users"></i> @table.Capacity khách
-                            </p>
-                            <p style="margin-bottom: 12px; color: #666;">
-                                <i class="fas fa-map-marker-alt"></i> @table.Location
-                            </p>
-                            <p class="small fw-semibold">Trạng thái hiện tại: @displayStatus</p>
-                            @if (reservedTableIds.Contains(table.TableID))
+                var cardClass = displayStatus switch
+                {
+                    "Available" => "table-card-empty",
+                    "Reserved" => "table-card-reserved",
+                    "Occupied" => "table-card-serving",
+                    "WaitingPayment" => "table-card-pendingpayment",
+                    "Maintenance" => "table-card-maintenance",
+                    _ => "table-card-empty"
+                };
+
+                <div class="table-card @cardClass">
+                    <div class="table-header">
+                        <h3 class="table-number">@table.TableNumber</h3>
+                        <span class="table-capacity">@table.Capacity chỗ</span>
+                    </div>
+
+                    <div class="table-body">
+                        <span class="status-indicator status-@(displayStatus.ToLower())">
+                            @switch (displayStatus)
                             {
-                                <div class="alert alert-warning small py-2">
-                                    Bàn đang được giữ theo lịch đặt; nhận bàn tại POS khi khách đến.
-                                </div>
-                                <a asp-controller="POS" asp-action="Index" asp-route-tableId="@table.TableID" class="btn w-100" style="background: var(--primary-color); color: white;">
-                                    <i class="fas fa-cash-register"></i> Mở tại POS
-                                </a>
+                                case "Available":
+                                    <i class="fas fa-check-circle"></i>
+                                    <text>Trống</text>
+                                    break;
+                                case "Reserved":
+                                    <i class="fas fa-clock"></i>
+                                    <text>Đã đặt</text>
+                                    break;
+                                case "Occupied":
+                                    <i class="fas fa-utensils"></i>
+                                    <text>Đang phục vụ</text>
+                                    break;
+                                case "WaitingPayment":
+                                    <i class="fas fa-credit-card"></i>
+                                    <text>Chờ TT</text>
+                                    break;
+                                case "Maintenance":
+                                    <i class="fas fa-tools"></i>
+                                    <text>Bảo trì</text>
+                                    break;
                             }
-                            else
-                            {
-                            <form asp-action="UpdateStatus" method="post">
+                        </span>
+                        <p class="table-location">
+                            <i class="fas fa-map-marker-alt"></i> @table.Location
+                        </p>
+                    </div>
+
+                    <div class="table-footer">
+                        @if (reservedTableIds.Contains(table.TableID))
+                        {
+                            <button type="button" class="btn btn-sm btn-primary" onclick="location.href='@Url.Action("Index", "POS", new { area = "Cashier", tableId = table.TableID })'">
+                                <i class="fas fa-cash-register"></i> Mở POS
+                            </button>
+                        }
+                        else
+                        {
+                            <form asp-action="UpdateStatus" method="post" style="display: flex; gap: 8px; align-items: center;">
                                 <input type="hidden" name="tableId" value="@table.TableID" />
-                                <select name="status" class="form-select form-select-sm mb-3" style="border-color: var(--primary-color);">
+                                <select name="status" class="form-select form-select-sm" style="flex: 1; border-color: #ccc;">
                                     @foreach (var status in TableStatuses.All.Where(status => status != TableStatuses.Reserved))
                                     {
                                         <option value="@status" selected="@(status == table.TableStatus)">@status</option>
                                     }
                                 </select>
-                                <button type="submit" class="btn w-100" style="background: var(--primary-color); color: white; border: none; font-weight: 500; padding: 8px 12px;">
-                                    <i class="fas fa-save"></i> Cập nhật
+                                <button type="submit" class="btn btn-sm" style="background: var(--primary-color); color: white; border: none;">
+                                    <i class="fas fa-save"></i>
                                 </button>
                             </form>
-                            }
-                        </div>
+                        }
                     </div>
                 </div>
             }
         </div>
     </div>
 </div>
+}

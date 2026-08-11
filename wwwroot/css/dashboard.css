@@ -367,6 +367,24 @@
     text-align: right;
 }
 
+.stock-ok,
+.empty-dashboard {
+    display: flex;
+    gap: 9px;
+    align-items: center;
+    justify-content: center;
+    min-height: 150px;
+    color: #5f8b6f;
+}
+
+.empty-dashboard {
+    color: #998d85;
+}
+
+.text-end {
+    text-align: right;
+}
+
 
 @media (max-width: 1100px) {
     .metric-grid {

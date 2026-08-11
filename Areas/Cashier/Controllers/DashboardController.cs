@@ -47,6 +47,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 var todayOrders = await _context.Orders
                     .Where(o => !o.IsDeleted && o.OrderDate >= todayUtcStart && o.OrderDate < todayUtcEnd && o.OrderStatus != "Cancelled")
                     .Include(o => o.Table)
+                    .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
                     .ToListAsync();
 
                 var now = BusinessClock.Now;
@@ -253,7 +254,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 });
             }
 
-            // 4. Table overdue notifications (tables that have been serving for too long)
+            // 4. Table overdue notifications (tables that have been serving for too long - > 90 minutes)
             var overdueTablesList = model.Tables
                 .Where(t => t.IsOverdue)
                 .Take(3)
@@ -272,7 +273,10 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 });
             }
 
-            // 5. No empty tables warning
+            // 5. Kitchen orders alert - showing orders from kitchen with status/priority
+            BuildKitchenOrderAlerts(model, todayOrders, now);
+
+            // 6. No empty tables warning
             if (model.EmptyTables == 0)
             {
                 notifications.Add(new DashboardNotificationViewModel
@@ -288,5 +292,96 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
 
             return notifications.OrderByDescending(n => n.CreatedAt).ToList();
         }
+
+        private void BuildKitchenOrderAlerts(
+            CashierDashboardViewModel model,
+            List<Order> todayOrders,
+            DateTime now)
+        {
+            // Priority thresholds (in seconds) - aligned with Kitchen
+            const int WARNING_THRESHOLD = 10 * 60;      // 10:00
+            const int URGENT_THRESHOLD = 15 * 60;       // 15:00
+            const int OVERDUE_THRESHOLD = 20 * 60;      // 20:00
+
+            var kitchenOrders = todayOrders
+                .Where(o => o.TableID.HasValue && 
+                           !o.IsDeleted && 
+                           (o.OrderStatus == "Pending" || o.OrderStatus == "Preparing") &&
+                           o.OrderDetails.Any(d => !d.IsDeleted))
+                .ToList();
+
+            var alertsByOrderId = new Dictionary<int, KitchenOrderAlertViewModel>();
+
+            foreach (var order in kitchenOrders)
+            {
+                // Calculate elapsed time in seconds (UTC-based, like Kitchen)
+                // Order.OrderDate is always UTC, so use DateTime.UtcNow
+                var elapsedSeconds = (int)(DateTime.UtcNow - order.OrderDate).TotalSeconds;
+                if (elapsedSeconds < 0) elapsedSeconds = 0;
+
+                // Only show alert if >= 10 minutes
+                if (elapsedSeconds < WARNING_THRESHOLD)
+                    continue;
+
+                // Determine priority level
+                string priorityLevel;
+                string priorityText;
+                string badgeClass;
+                string iconClass;
+
+                if (elapsedSeconds >= OVERDUE_THRESHOLD)
+                {
+                    priorityLevel = "overdue";
+                    priorityText = "QUÁ LÂU";
+                    badgeClass = "alert-overdue";
+                    iconClass = "fa-exclamation-circle";
+                }
+                else if (elapsedSeconds >= URGENT_THRESHOLD)
+                {
+                    priorityLevel = "urgent";
+                    priorityText = "GẤP";
+                    badgeClass = "alert-urgent";
+                    iconClass = "fa-fire";
+                }
+                else  // >= WARNING_THRESHOLD
+                {
+                    priorityLevel = "warning";
+                    priorityText = "ƯU TIÊN";
+                    badgeClass = "alert-warning";
+                    iconClass = "fa-exclamation-triangle";
+                }
+
+                var table = model.Tables.FirstOrDefault(t => t.OrderID == order.OrderID);
+                if (table != null)
+                {
+                    var alert = new KitchenOrderAlertViewModel
+                    {
+                        OrderID = order.OrderID,
+                        TableNumber = table.TableNumber,
+                        ElapsedSeconds = elapsedSeconds,
+                        OrderStatus = order.OrderStatus,
+                        ItemCount = table.OrderItemCount ?? 0,
+                        PriorityLevel = priorityLevel,
+                        PriorityText = priorityText,
+                        BadgeClass = badgeClass,
+                        IconClass = iconClass
+                    };
+
+                    // Deduplicate by OrderID (only keep first/highest priority)
+                    if (!alertsByOrderId.ContainsKey(order.OrderID))
+                    {
+                        alertsByOrderId[order.OrderID] = alert;
+                    }
+                }
+            }
+
+            // Convert to list and sort: OVERDUE → URGENT → WARNING, then by elapsed time descending
+            var sortOrder = new Dictionary<string, int> { { "overdue", 0 }, { "urgent", 1 }, { "warning", 2 } };
+            model.KitchenOrderAlerts = alertsByOrderId.Values
+                .OrderBy(a => sortOrder.GetValueOrDefault(a.PriorityLevel, 99))
+                .ThenByDescending(a => a.ElapsedSeconds)
+                .ToList();
+        }
+
     }
 }

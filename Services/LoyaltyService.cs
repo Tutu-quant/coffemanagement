@@ -19,24 +19,40 @@ public sealed class LoyaltyService(
         if (query.Length < 2) return [];
         limit = Math.Clamp(limit, 1, 20);
 
-        return await context.Customers.AsNoTracking()
+        // Normalize phone number for searching (remove spaces, hyphens, etc.)
+        var normalizedQuery = System.Text.RegularExpressions.Regex.Replace(query, @"[\s\-\(\).]", "");
+        var isPhoneSearch = query.All(c => char.IsDigit(c) || c == ' ' || c == '-' || c == '(' || c == ')' || c == '.');
+
+        // Fetch all customers first (will be filtered in memory to handle complex logic)
+        var allCustomers = await context.Customers.AsNoTracking()
             .Where(customer => !customer.IsDeleted && customer.IsActive && customer.User != null
-                && !customer.User.IsDeleted && customer.User.IsActive
-                && (customer.CustomerName.Contains(query)
-                    || (customer.Phone != null && customer.Phone.Contains(query))
-                    || customer.User.Username.Contains(query)))
+                && !customer.User.IsDeleted && customer.User.IsActive)
+            .Take(limit * 5)  // Get more results to filter in memory
+            .ToListAsync(cancellationToken);
+
+        // Filter in memory
+        var results = allCustomers
+            .Where(customer => 
+                customer.CustomerName.Contains(query, StringComparison.OrdinalIgnoreCase)
+                || (customer.Phone != null && customer.Phone.Contains(query))
+                || (isPhoneSearch && customer.Phone != null 
+                    && System.Text.RegularExpressions.Regex.Replace(customer.Phone, @"[\s\-\(\).]", "")
+                        .Contains(normalizedQuery))
+                || (customer.User != null && customer.User.Username.Contains(query, StringComparison.OrdinalIgnoreCase)))
             .OrderBy(customer => customer.CustomerName)
             .ThenBy(customer => customer.CustomerID)
             .Take(limit)
             .Select(customer => new LoyaltyAccountDto(
                 customer.CustomerID,
                 customer.CustomerName,
-                customer.User!.Username,
+                customer.User?.Username ?? string.Empty,
                 customer.Phone ?? string.Empty,
                 customer.RewardPoints,
                 0,
                 0))
-            .ToListAsync(cancellationToken);
+            .ToList();
+
+        return results;
     }
 
     public async Task<CustomerLoyaltySummaryDto> GetCustomerSummaryAsync(
