@@ -1,0 +1,195 @@
+@{
+    ViewData["Title"] = "Màn Hình Bếp";
+    Layout = null;
+}
+
+@model Quản_lý_quán_cafe.Areas.Cashier.ViewModels.KitchenBoardViewModel
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - BrewPoint Cafe</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/kitchen.css" />
+</head>
+<body class="kitchen-display">
+    <!-- Kitchen Header -->
+    <header class="kitchen-header">
+        <div class="header-left">
+            <div class="logo-box">
+                <i class="fas fa-chef-hat"></i>
+            </div>
+            <div class="header-title-group">
+                <h1 class="header-title">Màn hình bếp</h1>
+                <p class="header-subtitle">BrewPoint Cafe · Đơn trực tiếp</p>
+            </div>
+        </div>
+
+        <div class="header-middle">
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter="all">Tất cả</button>
+                <button class="filter-btn" data-filter="Pending">Chờ</button>
+                <button class="filter-btn" data-filter="Preparing">Đang pha</button>
+                <button class="filter-btn" data-filter="Ready">Hoàn thành</button>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <div class="status-counters">
+                <span class="counter-item">
+                    <span class="counter-dot pending"></span>
+                    <span class="counter-text" id="pendingCountDisplay">@Model.PendingCount chờ</span>
+                </span>
+                <span class="counter-item">
+                    <span class="counter-dot preparing"></span>
+                    <span class="counter-text" id="preparingCountDisplay">@Model.PreparingCount đang pha</span>
+                </span>
+            </div>
+            <a href="@Url.Action("Index", "Dashboard", new { area = "Cashier" })" class="btn-staff-link">
+                Nhân viên <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="kitchen-main">
+        <div class="orders-grid" id="ordersGrid">
+            @if (Model.Orders.Any())
+            {
+                @foreach (var order in Model.Orders)
+                {
+                    <div class="order-card" data-order-id="@order.OrderId" data-status="@order.OrderStatus" data-order-date="@order.OrderDate.ToString("yyyy-MM-ddTHH:mm:ssZ")">
+                        <!-- Card Header -->
+                        <div class="card-header" style="background-color: @GetHeaderBgColor(order.OrderStatus)">
+                            <div class="card-header-top">
+                                <span class="order-code">@order.OrderCode</span>
+                                <span class="kitchen-priority-badge" id="priority-@order.OrderId"></span>
+                                <span class="kitchen-timer-wrapper" id="timer-wrapper-@order.OrderId">
+                                    <span class="kitchen-warning-icon" id="warning-icon-@order.OrderId"></span>
+                                    <span class="kitchen-timer" id="timer-@order.OrderId" data-order-date="@order.OrderDate.ToString("yyyy-MM-ddTHH:mm:ssZ")">0:00</span>
+                                </span>
+                            </div>
+                            <div class="card-header-bottom">
+                                @if (!string.IsNullOrEmpty(order.TableNumber))
+                                {
+                                    <span class="table-info">Bàn @order.TableNumber@(order.TableCapacity.HasValue ? $" · {order.TableCapacity} người" : "")</span>
+                                }
+                                <span class="status-indicator" id="status-indicator-@order.OrderId">
+                                    <span class="status-dot"></span>
+                                    <span>@GetStatusDisplay(order.OrderStatus)</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Card Body -->
+                        <div class="card-body">
+                            <div class="items-list">
+                                @foreach (var item in order.Items)
+                                {
+                                    <div class="item">
+                                        <div class="item-icon">
+                                            <i class="fas fa-leaf"></i>
+                                        </div>
+                                        <div class="item-content">
+                                            <span class="item-name">@item.ProductName</span>
+                                            @if (!string.IsNullOrEmpty(item.Notes))
+                                            {
+                                                <span class="item-notes">@item.Notes</span>
+                                            }
+                                        </div>
+                                        <span class="item-quantity">×@item.Quantity</span>
+                                    </div>
+                                }
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(order.OrderNotes))
+                            {
+                                <div class="order-notes-section">
+                                    <strong>Ghi chú:</strong>
+                                    <p>@order.OrderNotes</p>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Card Footer -->
+                        <div class="card-footer" style="background-color: @GetFooterBgColor(order.OrderStatus)">
+                            @if (order.OrderStatus == "Pending")
+                            {
+                                <button class="action-btn btn-start-preparing" data-order-id="@order.OrderId" type="button">
+                                    <i class="fas fa-play"></i> Bắt đầu pha chế
+                                </button>
+                            }
+                            else if (order.OrderStatus == "Preparing")
+                            {
+                                <button class="action-btn btn-mark-ready" data-order-id="@order.OrderId" type="button">
+                                    <i class="fas fa-check"></i> Đánh dấu sẵn sàng
+                                </button>
+                            }
+                            else if (order.OrderStatus == "Ready")
+                            {
+                                <div class="status-complete">
+                                    <i class="fas fa-check-circle"></i> Hoàn thành
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>Không có đơn cần xử lý</p>
+                </div>
+            }
+        </div>
+    </main>
+
+    <!-- Hidden form for antiforgery token -->
+    <form id="antiForgeryForm" style="display: none;">
+        @Html.AntiForgeryToken()
+    </form>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/js/kitchen.js"></script>
+</body>
+</html>
+
+@functions {
+    string GetStatusDisplay(string status)
+    {
+        return status switch
+        {
+            "Pending" => "CHỜ",
+            "Preparing" => "ĐANG PHA",
+            "Ready" => "XONG",
+            _ => status
+        };
+    }
+
+    string GetHeaderBgColor(string status)
+    {
+        return status switch
+        {
+            "Pending" => "#FBF8EF",      // cream-50
+            "Preparing" => "#F7F1E2",    // cream-100
+            "Ready" => "#EAF7ED",        // success-bg
+            _ => "#FFFFFF"
+        };
+    }
+
+    string GetFooterBgColor(string status)
+    {
+        return status switch
+        {
+            "Pending" => "#2D1B14",      // coffee-900 (dark for button)
+            "Preparing" => "#C97822",    // caramel-500 (warm for button)
+            "Ready" => "#EAF7ED",        // success-bg
+            _ => "#FFFFFF"
+        };
+    }
+}

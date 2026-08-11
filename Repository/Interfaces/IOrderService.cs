@@ -81,6 +81,24 @@ namespace Quản_lý_quán_cafe.Services.Interfaces
 
         Task<List<Order>> GetOrdersByPaymentIdAsync(int paymentId);
 
+        #endregion
+
+        #region Kitchen Display
+
+        /// <summary>
+        /// Get orders for kitchen display (Pending, Preparing, Ready)
+        /// </summary>
+        Task<List<Order>> GetKitchenOrdersAsync();
+
+        /// <summary>
+        /// Start preparing an order (transition from Pending to Preparing)
+        /// </summary>
+        Task<(bool Success, string Message)> StartPreparingAsync(int orderId);
+
+        /// <summary>
+        /// Mark order as ready (transition from Preparing to Ready)
+        /// </summary>
+        Task<(bool Success, string Message)> MarkReadyAsync(int orderId);
 
         #endregion
     }

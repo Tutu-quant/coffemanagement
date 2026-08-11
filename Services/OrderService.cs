@@ -417,5 +417,90 @@ namespace Quản_lý_quán_cafe.Services
             }
         }
         #endregion
+
+        #region Kitchen Display
+
+        /// <summary>
+        /// Get orders for kitchen display (Pending, Preparing, Ready)
+        /// </summary>
+        public async Task<List<Order>> GetKitchenOrdersAsync()
+        {
+            try
+            {
+                return await _repository.GetKitchenOrdersAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Could not retrieve kitchen orders");
+                return new List<Order>();
+            }
+        }
+
+        /// <summary>
+        /// Start preparing an order (transition from Pending to Preparing)
+        /// </summary>
+        public async Task<(bool Success, string Message)> StartPreparingAsync(int orderId)
+        {
+            try
+            {
+                if (orderId <= 0)
+                    return (false, "ID đơn hàng không hợp lệ");
+
+                var order = await _repository.GetByIdForUpdateAsync(orderId);
+                if (order == null)
+                    return (false, "Không tìm thấy đơn hàng");
+
+                // Only allow transition from Pending to Preparing
+                if (order.OrderStatus != OrderStatusConstants.Pending)
+                    return (false, $"Không thể bắt đầu pha chế từ trạng thái {order.OrderStatus}");
+
+                order.OrderStatus = OrderStatusConstants.Preparing;
+                order.UpdatedAt = DateTime.UtcNow;
+
+                await _repository.UpdateAsync(order);
+
+                return (true, "Bắt đầu pha chế thành công");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Could not start preparing order {OrderId}", orderId);
+                return (false, "Không thể bắt đầu pha chế. Vui lòng thử lại.");
+            }
+        }
+
+        /// <summary>
+        /// Mark order as ready (transition from Preparing to Ready)
+        /// </summary>
+        public async Task<(bool Success, string Message)> MarkReadyAsync(int orderId)
+        {
+            try
+            {
+                if (orderId <= 0)
+                    return (false, "ID đơn hàng không hợp lệ");
+
+                var order = await _repository.GetByIdForUpdateAsync(orderId);
+                if (order == null)
+                    return (false, "Không tìm thấy đơn hàng");
+
+                // Only allow transition from Preparing to Ready
+                if (order.OrderStatus != OrderStatusConstants.Preparing)
+                    return (false, $"Không thể đánh dấu sẵn sàng từ trạng thái {order.OrderStatus}");
+
+                order.OrderStatus = OrderStatusConstants.Ready;
+                order.UpdatedAt = DateTime.UtcNow;
+
+                await _repository.UpdateAsync(order);
+
+                return (true, "Đánh dấu sẵn sàng thành công");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Could not mark ready order {OrderId}", orderId);
+                return (false, "Không thể đánh dấu sẵn sàng. Vui lòng thử lại.");
+            }
+        }
+
+        #endregion
     }
 }
+

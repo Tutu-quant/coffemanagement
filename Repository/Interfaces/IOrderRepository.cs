@@ -104,5 +104,14 @@ namespace Quản_lý_quán_cafe.Repository.Interfaces
         Task<dynamic> GetRevenueByDateAsync(DateTime startDate, DateTime endDate);
 
         #endregion
+
+        #region Kitchen Display
+
+        /// <summary>
+        /// Get orders for kitchen display (Pending, Preparing, Ready) sorted by oldest first
+        /// </summary>
+        Task<List<Order>> GetKitchenOrdersAsync();
+
+        #endregion
     }
 }

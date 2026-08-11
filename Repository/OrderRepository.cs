@@ -509,5 +509,29 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
         }
 
         #endregion
+
+        #region Kitchen Display
+
+        /// <summary>
+        /// Get orders for kitchen display (Pending, Preparing, Ready) sorted by oldest first
+        /// Includes all necessary relationships and filters deleted orders
+        /// </summary>
+        public async Task<List<Order>> GetKitchenOrdersAsync()
+        {
+            var kitchenStatuses = new[] { "Pending", "Preparing", "Ready" };
+
+            return await _context.Orders
+                .AsNoTracking()
+                .Include(o => o.Table)
+                .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
+                    .ThenInclude(od => od.Product)
+                .Where(o =>
+                    !o.IsDeleted &&
+                    kitchenStatuses.Contains(o.OrderStatus))
+                .OrderBy(o => o.OrderDate)  // Oldest first for kitchen
+                .ToListAsync();
+        }
+
+        #endregion
     }
 }
