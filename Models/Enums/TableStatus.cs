@@ -6,10 +6,11 @@ public static class TableStatus
     public const string Reserved = "Reserved";
     public const string Occupied = "Occupied";
     public const string WaitingPayment = "WaitingPayment";
+    public const string GroupedOccupied = "GroupedOccupied";
     public const string Maintenance = "Maintenance";
 
     public static readonly string[] All =
-        [Available, Reserved, Occupied, WaitingPayment, Maintenance];
+        [Available, Reserved, Occupied, WaitingPayment, GroupedOccupied, Maintenance];
 
     public static bool IsValid(string? status) =>
         !string.IsNullOrWhiteSpace(status) && All.Contains(status, StringComparer.OrdinalIgnoreCase);

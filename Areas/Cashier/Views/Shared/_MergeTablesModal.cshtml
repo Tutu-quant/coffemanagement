@@ -1,0 +1,27 @@
+@model dynamic
+
+<div class="modal fade" id="mergeTablesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ghép bàn</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="mergeTablesForm">
+                    <input type="hidden" id="mergePrimaryTableId" name="primaryTableId" />
+                    <div class="mb-3">
+                        <label class="form-label">Chọn các bàn phụ (chỉ bàn trống)</label>
+                        <div id="mergeTablesList" class="d-flex flex-wrap gap-2">
+                            <!-- populated by JS -->
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" id="confirmMergeBtn">Ghép</button>
+            </div>
+        </div>
+    </div>
+</div>

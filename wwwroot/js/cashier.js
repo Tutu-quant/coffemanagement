@@ -33,6 +33,50 @@ function initializeDashboard() {
         startAutoRefresh();
     }
 
+function openMergeModal(primaryTableId) {
+    document.getElementById('mergePrimaryTableId').value = primaryTableId;
+    // fetch candidate tables
+    fetch(`/Cashier/POS/GetMergeCandidates?primaryTableId=${primaryTableId}`)
+        .then(r => r.json())
+        .then(data => {
+            const list = document.getElementById('mergeTablesList');
+            list.innerHTML = '';
+            data.forEach(t => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn btn-outline-primary btn-sm';
+                btn.dataset.tableId = t.tableID;
+                btn.textContent = `${t.tableNumber} (${t.capacity})`;
+                btn.onclick = () => btn.classList.toggle('active');
+                list.appendChild(btn);
+            });
+            var modal = new bootstrap.Modal(document.getElementById('mergeTablesModal'));
+            modal.show();
+        });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const confirmBtn = document.getElementById('confirmMergeBtn');
+    if (confirmBtn) confirmBtn.addEventListener('click', function () {
+        const primaryId = document.getElementById('mergePrimaryTableId').value;
+        const buttons = Array.from(document.querySelectorAll('#mergeTablesList button.active'));
+        const ids = buttons.map(b => parseInt(b.dataset.tableId));
+        fetch('/Cashier/POS/CreateTableGroup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getCsrfToken() },
+            body: JSON.stringify({ primaryTableId: parseInt(primaryId), secondaryTableIds: ids })
+        }).then(r => r.json()).then(res => {
+            if (res.success) location.reload();
+            else alert(res.message || 'Không thể ghép bàn');
+        });
+    });
+});
+
+function getCsrfToken() {
+    const el = document.querySelector('input[name="__RequestVerificationToken"]');
+    return el ? el.value : '';
+}
+
     console.log('✅ Dashboard initialized');
 }
 
