@@ -44,6 +44,10 @@
                 <a href="@Url.Action("Index", "Reservations", new { area = "Admin" })" class="nav-link">
                     <i class="bi bi-calendar-event"></i>
                     <span>Đặt bàn</span>
+                    <span class="staff-sidebar-notification-badge"
+                          data-reservation-notification-count
+                          aria-label="0 lịch đặt bàn đang chờ"
+                          hidden>0</span>
                 </a>
             </li>
             <li class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "RestaurantTables" ? "active" : "")">
@@ -75,9 +79,11 @@
                 <p class="user-role">@Context.Session.GetString("RoleName")</p>
             </div>
         </div>
-        <a href="@Url.Action("Logout", "Account", new { area = "" })" class="btn-logout">
+        <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+        <button type="submit" class="btn-logout">
             <i class="bi bi-box-arrow-right"></i>
             Đăng xuất
-        </a>
+        </button>
+        </form>
     </div>
 </aside>

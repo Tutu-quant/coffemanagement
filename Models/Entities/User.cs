@@ -12,6 +12,8 @@ namespace Quản_lý_quán_cafe.Models.Entities
 
         public int? EmployeeID { get; set; }
 
+        public int? CustomerID { get; set; }
+
         public bool IsActive { get; set; } = true;
 
         public string? CreatedBy { get; set; }
@@ -29,5 +31,6 @@ namespace Quản_lý_quán_cafe.Models.Entities
 
         public virtual Role? Role { get; set; }
         public virtual Employee? Employee { get; set; }
+        public virtual Customer? Customer { get; set; }
     }
 }

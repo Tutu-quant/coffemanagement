@@ -50,10 +50,10 @@
                         <i class="bi bi-lightning-fill"></i> Theo dõi trực tiếp
                     </div>
                     <div class="feature-pill">
-                        <i class="bi bi-gift"></i> Tích điểm
+                        <i class="bi bi-calendar-check"></i> Đặt bàn
                     </div>
                     <div class="feature-pill">
-                        <i class="bi bi-graph-up"></i> Phân tích
+                        <i class="bi bi-stars"></i> Tích điểm
                     </div>
                 </div>
             </div>
@@ -94,11 +94,7 @@
                         <span asp-validation-for="Password" class="form-error-message"></span>
                     </div>
                     <div class="form-check">
-                        <div class="form-check-left">
-                            <input type="checkbox" id="rememberMe" asp-for="RememberMe" class="form-check-input" />
-                            <label for="rememberMe" class="form-check-label">Ghi nhớ đăng nhập</label>
-                        </div>
-                        <a href="#" class="forgot-password-link">Quên mật khẩu?</a>
+                        <a asp-controller="Account" asp-action="ForgotPassword" class="forgot-password-link">Quên mật khẩu?</a>
                     </div>
 
                     <button type="submit" class="login-btn">Đăng nhập</button>

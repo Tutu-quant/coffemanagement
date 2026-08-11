@@ -3,24 +3,29 @@ using Microsoft.AspNetCore.Authorization;
 using Quản_lý_quán_cafe.Models.ViewModels.Product;
 using Quản_lý_quán_cafe.Services.Interfaces;
 using System.Security.Claims;
+using Quản_lý_quán_cafe.Filters;
 
 namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
 {
     [Area("Admin")]
-
+    [SessionAuthorize("Admin")]
     public class ProductsController : Controller
     {
         private readonly IProductService _productService;
         private readonly IWebHostEnvironment _hostEnvironment;
+        private readonly ILogger<ProductsController> _logger;
 
-        public ProductsController(IProductService productService, IWebHostEnvironment hostEnvironment)
+        public ProductsController(IProductService productService, IWebHostEnvironment hostEnvironment, ILogger<ProductsController> logger)
         {
             _productService = productService;
             _hostEnvironment = hostEnvironment;
+            _logger = logger;
         }
 
         public async Task<IActionResult> Index(int pageNumber = 1, string? search = null, int? category = null, string? status = null, string? sort = null)
         {
+            pageNumber = Math.Clamp(pageNumber, 1, 1_000_000);
+            search = search?.Trim();
             ProductListViewModel model;
 
             if (!string.IsNullOrWhiteSpace(search) || category.HasValue || !string.IsNullOrEmpty(status) || !string.IsNullOrEmpty(sort))
@@ -39,6 +44,9 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 model = await _productService.GetAllAsync(pageNumber, 10);
             }
 
+            if (model.TotalPages > 0 && pageNumber > model.TotalPages)
+                return RedirectToAction(nameof(Index), new { pageNumber = model.TotalPages, search, category, status, sort });
+
             return View(model);
         }
 
@@ -54,10 +62,20 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ProductCreateViewModel model)
         {
+            model.Name = model.Name?.Trim() ?? string.Empty;
+            model.Description = string.IsNullOrWhiteSpace(model.Description) ? null : model.Description.Trim();
             if (!ModelState.IsValid)
             {
                 var categories = await _productService.GetAllCategoriesAsync();
                 ViewBag.Categories = categories;
+                return View(model);
+            }
+
+            var activeCategories = await _productService.GetAllCategoriesAsync();
+            if (!activeCategories.Any(category => category.Id == model.CategoryId))
+            {
+                ModelState.AddModelError(nameof(model.CategoryId), "Danh mục không còn hoạt động.");
+                ViewBag.Categories = activeCategories;
                 return View(model);
             }
 
@@ -80,6 +98,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 return View(model);
             }
 
+            string? savedFileName = null;
             try
             {
 
@@ -97,6 +116,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
 
 
                     var fileName = await SaveImageFile(model.ImageFile);
+                    savedFileName = fileName;
                     model.ImageFile = new FormFile(
                         new MemoryStream(await System.IO.File.ReadAllBytesAsync(
                             Path.Combine(_hostEnvironment.WebRootPath, "uploads", "products", fileName))),
@@ -113,7 +133,9 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             }
             catch (Exception ex)
             {
-                ModelState.AddModelError(string.Empty, "Có lỗi xảy ra: " + ex.Message);
+                if (savedFileName is not null) DeleteImageFile(savedFileName);
+                _logger.LogError(ex, "Could not create product {ProductName}.", model.Name);
+                ModelState.AddModelError(string.Empty, "Không thể tạo sản phẩm. Vui lòng thử lại.");
                 var categories = await _productService.GetAllCategoriesAsync();
                 ViewBag.Categories = categories;
                 return View(model);
@@ -135,6 +157,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 Description = product.Description,
                 CategoryId = product.CategoryId,
                 Price = product.Price,
+                Quantity = product.Quantity,
                 IsAvailable = product.IsAvailable,
                 ImageUrl = product.ImageUrl
             };
@@ -153,10 +176,25 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 return NotFound();
             }
 
+            model.Name = model.Name?.Trim() ?? string.Empty;
+            model.Description = string.IsNullOrWhiteSpace(model.Description) ? null : model.Description.Trim();
+
+            var currentProduct = await _productService.GetByIdAsync(id);
+            if (currentProduct is null) return NotFound();
+            model.ImageUrl = currentProduct.ImageUrl;
+
             if (!ModelState.IsValid)
             {
                 var categories = await _productService.GetAllCategoriesAsync();
                 ViewBag.Categories = categories;
+                return View(model);
+            }
+
+            var activeCategories = await _productService.GetAllCategoriesAsync();
+            if (!activeCategories.Any(category => category.Id == model.CategoryId))
+            {
+                ModelState.AddModelError(nameof(model.CategoryId), "Danh mục không còn hoạt động.");
+                ViewBag.Categories = activeCategories;
                 return View(model);
             }
 
@@ -179,6 +217,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 return View(model);
             }
 
+            string? savedFileName = null;
             try
             {
 
@@ -195,13 +234,8 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                     }
 
 
-                    if (!string.IsNullOrEmpty(model.ImageUrl))
-                    {
-                        DeleteImageFile(model.ImageUrl);
-                    }
-
-
                     var fileName = await SaveImageFile(model.ImageFile);
+                    savedFileName = fileName;
                     model.ImageFile = new FormFile(
                         new MemoryStream(await System.IO.File.ReadAllBytesAsync(
                             Path.Combine(_hostEnvironment.WebRootPath, "uploads", "products", fileName))),
@@ -213,12 +247,16 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 }
 
                 await _productService.UpdateAsync(model);
+                if ((savedFileName is not null || model.RemoveImage) && !string.IsNullOrWhiteSpace(currentProduct.ImageUrl))
+                    DeleteImageFile(currentProduct.ImageUrl);
                 TempData["SuccessMessage"] = "Sản phẩm được cập nhật thành công!";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                ModelState.AddModelError(string.Empty, "Có lỗi xảy ra: " + ex.Message);
+                if (savedFileName is not null) DeleteImageFile(savedFileName);
+                _logger.LogError(ex, "Could not update product {ProductId}.", id);
+                ModelState.AddModelError(string.Empty, "Không thể cập nhật sản phẩm. Vui lòng thử lại.");
                 var categories = await _productService.GetAllCategoriesAsync();
                 ViewBag.Categories = categories;
                 return View(model);
@@ -253,13 +291,17 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
         {
             try
             {
+                var product = await _productService.GetByIdAsync(id);
+                if (product is null) return NotFound();
                 await _productService.DeleteAsync(id);
+                if (!string.IsNullOrWhiteSpace(product.ImageUrl)) DeleteImageFile(product.ImageUrl);
                 TempData["SuccessMessage"] = "Sản phẩm được xóa thành công!";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "Có lỗi xảy ra: " + ex.Message;
+                _logger.LogError(ex, "Could not delete product {ProductId}.", id);
+                TempData["ErrorMessage"] = "Không thể xóa sản phẩm. Vui lòng thử lại.";
                 return RedirectToAction(nameof(Index));
             }
         }
@@ -268,6 +310,9 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
         {
             if (file == null)
                 return (true, string.Empty);
+
+            if (file.Length <= 0)
+                return (false, "Tệp ảnh đang trống.");
 
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
             var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
@@ -282,6 +327,19 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             {
                 return (false, "Kích thước ảnh không được vượt quá 5MB");
             }
+
+            Span<byte> header = stackalloc byte[12];
+            using var stream = file.OpenReadStream();
+            var bytesRead = stream.Read(header);
+            var validSignature = fileExtension switch
+            {
+                ".jpg" or ".jpeg" => bytesRead >= 3 && header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF,
+                ".png" => bytesRead >= 8 && header[..8].SequenceEqual(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }),
+                ".webp" => bytesRead >= 12 && header[..4].SequenceEqual("RIFF"u8) && header[8..12].SequenceEqual("WEBP"u8),
+                _ => false
+            };
+            if (!validSignature)
+                return (false, "Nội dung tệp không đúng định dạng ảnh đã chọn.");
 
             return (true, string.Empty);
         }
@@ -311,7 +369,13 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             if (string.IsNullOrEmpty(fileName))
                 return;
 
-            var filePath = Path.Combine(_hostEnvironment.WebRootPath, "uploads", "products", fileName);
+            var uploadsFolder = Path.GetFullPath(Path.Combine(_hostEnvironment.WebRootPath, "uploads", "products"));
+            var safeName = Path.GetFileName(fileName);
+            if (!string.Equals(safeName, fileName, StringComparison.Ordinal) || string.IsNullOrWhiteSpace(safeName))
+                return;
+            var filePath = Path.GetFullPath(Path.Combine(uploadsFolder, safeName));
+            if (!string.Equals(Path.GetDirectoryName(filePath), uploadsFolder, StringComparison.OrdinalIgnoreCase))
+                return;
             if (System.IO.File.Exists(filePath))
             {
                 System.IO.File.Delete(filePath);

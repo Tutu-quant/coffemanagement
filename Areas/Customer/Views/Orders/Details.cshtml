@@ -98,6 +98,11 @@
         color: #856404;
     }
 
+    .status-preparing, .status-ready, .status-waitingpayment {
+        background-color: #DDEAF7;
+        color: #24547A;
+    }
+
     .status-completed {
         background-color: #D4EDDA;
         color: #155724;
@@ -257,6 +262,52 @@
         border-radius: 8px;
         margin-top: 16px;
     }
+    .order-items-scroll { overflow-x: auto; }
+
+    .loyalty-card {
+        background: #fffaf3;
+        border: 1px solid #e5d1bc;
+        border-radius: 12px;
+        padding: 20px;
+    }
+
+    .loyalty-balance {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        background: #5b3524;
+        color: #fff;
+        border-radius: 9px;
+        margin-bottom: 14px;
+    }
+
+    .loyalty-actions { display: grid; gap: 12px; }
+    .loyalty-voucher-form { display: flex; gap: 8px; }
+    .loyalty-voucher-form input { min-width: 0; text-transform: uppercase; }
+    .loyalty-feedback { display: none; margin: 0 0 12px; }
+    .loyalty-feedback.show { display: block; }
+    .loyalty-applied {
+        border-left: 4px solid #7a4b31;
+        background: #fff;
+        border-radius: 8px;
+        padding: 12px;
+    }
+
+    @@media (max-width: 900px) {
+        .order-details-container { grid-template-columns: 1fr; }
+        .order-summary { position: static; }
+    }
+
+    @@media (max-width: 576px) {
+        .order-details-container { gap: 16px; margin-top: 12px; }
+        .detail-card, .order-summary { padding: 16px; }
+        .info-row { grid-template-columns: 1fr; gap: 4px; }
+        .order-items-table { min-width: 560px; }
+        .button-group { flex-direction: column; }
+        .loyalty-voucher-form { flex-direction: column; }
+    }
 </style>
 
 <div class="order-details-container">
@@ -311,7 +362,7 @@
             </div>
             @if (Model.Items.Any())
             {
-                <table class="order-items-table">
+                <div class="order-items-scroll"><table class="order-items-table">
                     <thead>
                         <tr>
                             <th>Tên món</th>
@@ -331,7 +382,7 @@
                             </tr>
                         }
                     </tbody>
-                </table>
+                </table></div>
             }
             else
             {
@@ -380,6 +431,98 @@
             </div>
         }
 
+        <div class="loyalty-card">
+            <div class="detail-card-header">
+                <i class="bi bi-stars"></i>
+                <h3>Điểm thưởng &amp; voucher</h3>
+            </div>
+
+            <div id="loyaltyFeedback" class="alert loyalty-feedback" role="status" aria-live="polite"></div>
+
+            <div class="loyalty-balance">
+                <div>
+                    <div class="small opacity-75">Điểm khả dụng</div>
+                    <strong class="fs-5">@Model.AvailableRewardPoints.ToString("N0") điểm</strong>
+                </div>
+                <span class="small text-end">Tương đương<br />@((Model.AvailableRewardPoints * 100m).ToString("N0"))đ</span>
+            </div>
+
+            @if (Model.LoyaltyDiscountMode == "Points")
+            {
+                <div class="loyalty-applied mb-3">
+                    <div class="d-flex justify-content-between gap-2">
+                        <strong>Đã chọn dùng điểm</strong>
+                        <span class="text-danger">-@Model.PointDiscountAmount.ToString("N0")đ</span>
+                    </div>
+                    <div class="small text-muted mt-1">Hệ thống dự kiến dùng @Model.AppliedRewardPoints.ToString("N0") điểm. Điểm dư vẫn được giữ lại.</div>
+                </div>
+            }
+            else if (Model.LoyaltyDiscountMode == "Voucher")
+            {
+                <div class="loyalty-applied mb-3">
+                    <div class="d-flex justify-content-between gap-2">
+                        <strong>Voucher @Model.AppliedVoucherCode</strong>
+                        <span class="text-danger">-@Model.VoucherDiscountAmount.ToString("N0")đ</span>
+                    </div>
+                </div>
+            }
+
+            @if (Model.CanApplyLoyaltyDiscount)
+            {
+                <div class="loyalty-actions">
+                    <form asp-area="Customer" asp-controller="Orders" asp-action="ApplyPoints" asp-route-id="@Model.OrderId"
+                          method="post" class="js-loyalty-form">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-primary w-100"
+                                disabled="@(Model.AvailableRewardPoints <= 0)">
+                            <i class="bi bi-stars"></i> Dùng toàn bộ điểm khả dụng
+                        </button>
+                    </form>
+
+                    <div class="text-center small text-muted">hoặc</div>
+
+                    <form asp-area="Customer" asp-controller="Orders" asp-action="ApplyVoucher" asp-route-id="@Model.OrderId"
+                          method="post" class="js-loyalty-form loyalty-voucher-form">
+                        @Html.AntiForgeryToken()
+                        <label for="voucherCode" class="visually-hidden">Mã voucher</label>
+                        <input id="voucherCode" name="code" class="form-control" maxlength="50"
+                               autocomplete="off" autocapitalize="characters" placeholder="Nhập mã voucher" required />
+                        <button type="submit" class="btn btn-outline-primary text-nowrap">Áp dụng</button>
+                    </form>
+
+                    @if (Model.LoyaltyDiscountMode != "None")
+                    {
+                        <form asp-area="Customer" asp-controller="Orders" asp-action="ClearDiscount" asp-route-id="@Model.OrderId"
+                              method="post" class="js-loyalty-form">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-link text-danger w-100">Bỏ ưu đãi đang áp dụng</button>
+                        </form>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="small text-muted mb-0">Đơn đã chốt hoặc đã thanh toán nên không thể thay đổi ưu đãi.</p>
+            }
+
+            <div class="small text-muted mt-3">
+                @if (string.Equals(Model.PaymentStatus, "Completed", StringComparison.OrdinalIgnoreCase))
+                {
+                    <text>Đơn này đã được cộng @Model.ProjectedEarnedPoints.ToString("N0") điểm theo giá trị trước giảm giá.</text>
+                }
+                else
+                {
+                    <text>Đơn này dự kiến được cộng @Model.ProjectedEarnedPoints.ToString("N0") điểm sau khi hoàn tất thanh toán.</text>
+                }
+            </div>
+            @if (Model.TotalAmount <= 0)
+            {
+                <div class="alert alert-success mt-3 mb-0">
+                    <i class="bi bi-check-circle"></i> Đơn còn 0đ; khi thu ngân chốt đơn, hệ thống sẽ bỏ qua QR/tiền mặt và mở thẳng hóa đơn để in.
+                </div>
+            }
+        </div>
+
         <!-- Action Buttons -->
         <div class="button-group">
             <a href="@Url.Action("History")" class="btn-back">
@@ -413,8 +556,28 @@
             <span class="status-badge status-@Model.OrderStatus.ToLower()">@GetStatusDisplay(Model.OrderStatus)</span>
         </div>
 
+        <div class="summary-row">
+            <span class="summary-label">Tạm tính:</span>
+            <span class="summary-value">@Model.LoyaltySubtotalAmount.ToString("N0")đ</span>
+        </div>
+
+        @if (Model.PointDiscountAmount > 0)
+        {
+            <div class="summary-row text-danger">
+                <span>Giảm bằng điểm:</span>
+                <span>-@Model.PointDiscountAmount.ToString("N0")đ</span>
+            </div>
+        }
+        @if (Model.VoucherDiscountAmount > 0)
+        {
+            <div class="summary-row text-danger">
+                <span>Voucher:</span>
+                <span>-@Model.VoucherDiscountAmount.ToString("N0")đ</span>
+            </div>
+        }
+
         <div class="summary-row summary-total">
-            <span class="summary-label">Tổng cộng:</span>
+            <span class="summary-label">Phải thanh toán:</span>
             <span class="summary-value">@Model.TotalAmount.ToString("N0")đ</span>
         </div>
 
@@ -434,9 +597,71 @@
         return status?.ToLower() switch
         {
             "pending" => "Đang chờ",
+            "preparing" => "Đang chuẩn bị",
+            "ready" => "Sẵn sàng",
+            "waitingpayment" => "Chờ thanh toán",
             "completed" => "Đã hoàn thành",
             "cancelled" => "Đã hủy",
             _ => status ?? string.Empty
         };
     }
+}
+
+@section Scripts {
+<script>
+    (() => {
+        const messageKey = 'brewpoint:loyalty-message:@Model.OrderId';
+        const feedback = document.getElementById('loyaltyFeedback');
+
+        function showFeedback(message, isError) {
+            if (!feedback) return;
+            feedback.textContent = message || (isError ? 'Không thể cập nhật ưu đãi.' : 'Đã cập nhật ưu đãi.');
+            feedback.className = `alert loyalty-feedback show ${isError ? 'alert-danger' : 'alert-success'}`;
+            if (isError) feedback.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        const savedMessage = sessionStorage.getItem(messageKey);
+        if (savedMessage) {
+            sessionStorage.removeItem(messageKey);
+            showFeedback(savedMessage, false);
+        }
+
+        document.querySelectorAll('.js-loyalty-form').forEach(form => {
+            form.addEventListener('submit', async event => {
+                event.preventDefault();
+                const button = form.querySelector('button[type="submit"]');
+                if (button?.disabled) return;
+
+                if (button) button.disabled = true;
+                window.BrewPointRealtime?.markDirty();
+                window.BrewPointRealtime?.suppressReloadFor(10000);
+
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: new FormData(form),
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    const contentType = response.headers.get('content-type') || '';
+                    const data = contentType.includes('application/json')
+                        ? await response.json()
+                        : { message: 'Phiên làm việc đã hết hạn hoặc máy chủ không phản hồi đúng định dạng.' };
+
+                    if (!response.ok || data.success === false) {
+                        showFeedback(data.message, true);
+                        return;
+                    }
+
+                    sessionStorage.setItem(messageKey, data.message || 'Đã cập nhật ưu đãi.');
+                    window.location.reload();
+                } catch {
+                    showFeedback('Không thể kết nối để cập nhật ưu đãi. Vui lòng thử lại.', true);
+                } finally {
+                    window.BrewPointRealtime?.clearDirty();
+                    if (button) button.disabled = false;
+                }
+            });
+        });
+    })();
+</script>
 }

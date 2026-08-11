@@ -45,6 +45,15 @@
             <div class="card h-100"><div class="card-body">
                 <h2 class="h5 mb-3"><i class="bi bi-credit-card"></i> Thanh toán</h2>
                 <dl class="row mb-0">
+                    <dt class="col-6">Tạm tính</dt><dd class="col-6 text-end">@(Model.LoyaltySubtotalAmount > 0 ? Model.LoyaltySubtotalAmount.ToString("N0") : Model.Subtotal.ToString("N0"))đ</dd>
+                    @if (Model.PointDiscountAmount > 0)
+                    {
+                        <dt class="col-6">Điểm (@Model.AppliedRewardPoints)</dt><dd class="col-6 text-end text-danger">-@Model.PointDiscountAmount.ToString("N0")đ</dd>
+                    }
+                    @if (Model.VoucherDiscountAmount > 0)
+                    {
+                        <dt class="col-6">Voucher @Model.AppliedVoucherCode</dt><dd class="col-6 text-end text-danger">-@Model.VoucherDiscountAmount.ToString("N0")đ</dd>
+                    }
                     <dt class="col-6">Tổng tiền</dt><dd class="col-6 text-end fw-bold">@Model.TotalAmount.ToString("N0")đ</dd>
                     <dt class="col-6">Đã thanh toán</dt><dd class="col-6 text-end">@Model.PaidAmount.ToString("N0")đ</dd>
                     <dt class="col-6">Còn lại</dt><dd class="col-6 text-end">@Model.RemainingAmount.ToString("N0")đ</dd>

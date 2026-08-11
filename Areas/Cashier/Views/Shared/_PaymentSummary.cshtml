@@ -12,10 +12,19 @@
         </div>
         <div class="summary-row">
             <span>Giảm giá:</span>
-            <span id="discountDisplay">@($"{Model.DiscountAmount:N0}đ")</span>
+            <span id="discountDisplay" class="text-danger">-@($"{Model.DiscountAmount:N0}đ")</span>
+        </div>
+        <div class="summary-row summary-benefit" id="discountModeRow"
+             @(string.Equals(Model.DiscountMode, "None", StringComparison.OrdinalIgnoreCase) ? "hidden" : null)>
+            <span>Ưu đãi:</span>
+            <span id="discountModeDisplay">@(string.Equals(Model.DiscountMode, "Points", StringComparison.OrdinalIgnoreCase) ? "Điểm thưởng" : Model.VoucherCode ?? "Voucher")</span>
+        </div>
+        <div class="summary-row summary-benefit">
+            <span>Điểm sẽ nhận:</span>
+            <span id="earnedPointsDisplay">+@Model.EarnedPoints.ToString("N0")</span>
         </div>
         <div class="summary-row total">
-            <span>Tổng cộng:</span>
+            <span>Cần thanh toán:</span>
             <span id="totalDisplay">@($"{Model.Total:N0}đ")</span>
         </div>
     </div>
@@ -23,22 +32,13 @@
     <div class="payment-divider"></div>
 
 
-    @if (Model.Customer?.CustomerID.HasValue == true)
-    {
-        <div class="customer-reward">
-            <i class="bi bi-gift"></i>
-            <span>Khách tích thêm +@Model.PointsToAdd điểm</span>
-        </div>
-    }
-
-
-    <div class="payment-methods">
+    <div class="payment-methods" id="paymentMethodSection">
         <div class="payment-header-small">PHƯƠNG THỨC THANH TOÁN</div>
         <div class="method-buttons">
-            <button class="method-btn @(Model.PaymentMethod == "cash" ? "active" : "")" onclick="selectPaymentMethod('cash', this)">
+            <button type="button" class="method-btn @(Model.PaymentMethod == "cash" ? "active" : "")" onclick="selectPaymentMethod('cash', this)">
                 <i class="bi bi-wallet2"></i> Tiền mặt
             </button>
-            <button class="method-btn @(Model.PaymentMethod == "qr" ? "active" : "")" onclick="selectPaymentMethod('qr', this)">
+            <button type="button" class="method-btn @(Model.PaymentMethod == "qr" ? "active" : "")" onclick="selectPaymentMethod('qr', this)">
                 <i class="bi bi-qr-code"></i> MoMo / VietQR
             </button>
         </div>
@@ -47,7 +47,9 @@
 
     <div class="payment-input" id="cashPaymentFields" style="display:@(Model.PaymentMethod == "cash" ? "block" : "none")">
         <label>Tiền khách đưa (ngàn đồng)</label>
-        <input type="number" class="form-control" placeholder="VD: 200" id="paidAmount" onchange="calculateChange()" value="@(Model.PaidAmount > 0 ? (Model.PaidAmount/1000).ToString() : string.Empty)" @(Model.PaymentMethod == "qr" ? "disabled" : "") />
+        <input type="number" class="form-control" placeholder="VD: 200" id="paidAmount" min="0" step="1"
+               onchange="calculateChange()" value="@(Model.PaidAmount > 0 ? (Model.PaidAmount/1000).ToString() : string.Empty)"
+               @(Model.PaymentMethod == "qr" ? "disabled" : "") />
         <div class="change-row" id="changeRow" style="display:@(Model.PaymentMethod == "cash" ? "block" : "none"); margin-top:8px;">
             <label for="changeAmountDisplay">Tiền trả lại</label>
             <input type="text" id="changeAmountDisplay" class="form-control" readonly value="@($"{Model.ChangeAmount:N0}đ")" />
@@ -56,10 +58,11 @@
 
 
     <div class="payment-actions">
-        <button class="btn-checkout" id="btnCheckout" onclick="proceedCheckout()">
-            <i class="bi bi-credit-card"></i> Xác nhận thanh toán
+        <button type="button" class="btn-checkout" id="btnCheckout" onclick="proceedCheckout()" disabled="@(!Model.OrderItems.Any() ? "disabled" : null)">
+            <i class="bi bi-credit-card" aria-hidden="true"></i>
+            <span id="checkoutButtonLabel">Xác nhận thanh toán</span>
         </button>
-        <button class="btn-print">
+        <button type="button" class="btn-print" onclick="printCurrentOrder()">
             <i class="bi bi-printer"></i> In hóa đơn
         </button>
     </div>

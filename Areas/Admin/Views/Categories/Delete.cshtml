@@ -21,10 +21,10 @@
 
         <h4 style="margin-bottom: 12px;">Xác nhận xóa danh mục</h4>
         <p style="color: var(--text-light); margin-bottom: 24px;">
-            Bạn chắc chắn muốn xóa danh mục <strong>@Model?.Name</strong>? Hành động này không thể hoàn tác.
+            Bạn chắc chắn muốn xóa danh mục <strong>@Model?.Name</strong>? Danh mục sẽ bị ẩn và các sản phẩm thuộc danh mục sẽ ngừng bán.
         </p>
 
-        <form method="post" asp-action="DeleteConfirmed" style="display: inline;">
+        <form method="post" asp-action="Delete" style="display: inline;">
             <input type="hidden" asp-for="Id" />
             <div style="display: flex; gap: 12px; justify-content: center;">
                 <a href="@Url.Action("Index")" class="btn btn-secondary">

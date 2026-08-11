@@ -26,7 +26,7 @@
                 <div class="row g-4">
                     <div class="col-md-6"><div class="text-muted small">Bàn</div><div class="fs-5 fw-semibold">@(Model.Table?.TableNumber ?? Model.TableID.ToString())</div></div>
                     <div class="col-md-6"><div class="text-muted small">Số khách</div><div class="fs-5 fw-semibold">@Model.NumberOfGuests người</div></div>
-                    <div class="col-md-6"><div class="text-muted small">Ngày giờ đặt</div><div class="fs-5 fw-semibold">@Model.ReservationDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div></div>
+                    <div class="col-md-6"><div class="text-muted small">Ngày giờ đặt</div><div class="fs-5 fw-semibold">@Model.ReservationDate.ToString("dd/MM/yyyy HH:mm")</div></div>
                     <div class="col-md-6"><div class="text-muted small">Vị trí</div><div class="fs-5 fw-semibold">@(Model.Table?.Location ?? "-")</div></div>
                     @if (!string.IsNullOrWhiteSpace(Model.Notes))
                     {

@@ -1,17 +1,24 @@
 using Microsoft.AspNetCore.Mvc;
 using Quản_lý_quán_cafe.Services.Interfaces;
 using Quản_lý_quán_cafe.Models.ViewModels.Order;
+using Quản_lý_quán_cafe.Filters;
+using Quản_lý_quán_cafe.Models;
 
 namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
 {
     [Area("Cashier")]
+    [SessionAuthorize("Cashier,Admin")]
     public class OrdersController : Controller
     {
         private readonly IOrderService _orderService;
+        private readonly ILogger<OrdersController> _logger;
 
-        public OrdersController(IOrderService orderService)
+        public OrdersController(
+            IOrderService orderService,
+            ILogger<OrdersController> logger)
         {
             _orderService = orderService ?? throw new ArgumentNullException(nameof(orderService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         [HttpGet]
@@ -19,10 +26,17 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
         {
             try
             {
-                if (pageNumber < 1) pageNumber = 1;
+                pageNumber = Math.Clamp(pageNumber, 1, 1_000_000);
                 if (pageSize < 1 || pageSize > 100) pageSize = 20;
 
                 var (orders, totalCount) = await _orderService.GetOrdersAsync(pageNumber, pageSize);
+                var totalPages = Math.Max(1, (totalCount + pageSize - 1) / pageSize);
+                if (pageNumber > totalPages)
+                {
+                    pageNumber = totalPages;
+                    (orders, totalCount) = await _orderService.GetOrdersAsync(pageNumber, pageSize);
+                }
+
                 var viewModel = new OrderListContainerViewModel
                 {
                     Orders = MapToOrderListViewModels(orders),
@@ -31,24 +45,12 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                     PageSize = pageSize
                 };
 
-                // debug: also fetch a larger set to inspect DB contents when UI appears empty
-                try
-                {
-                    var (allOrders, allTotal) = await _orderService.GetOrdersAsync(1, 1000);
-                    ViewData["Debug_TotalOrders"] = allTotal;
-                    ViewData["Debug_RecentOrders"] = MapToOrderListViewModels(allOrders).Take(10).ToList();
-                }
-                catch
-                {
-                    ViewData["Debug_TotalOrders"] = 0;
-                    ViewData["Debug_RecentOrders"] = new List<OrderListViewModel>();
-                }
-
                 return View(viewModel);
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Lỗi khi tải danh sách: {ex.Message}";
+                _logger.LogError(ex, "Không thể tải danh sách đơn hàng cho thu ngân");
+                TempData["Error"] = "Không thể tải danh sách đơn hàng. Vui lòng thử lại.";
                 return View(new OrderListContainerViewModel());
             }
         }
@@ -65,7 +67,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 OrderStatus = o.OrderStatus ?? "Unknown",
                 PaymentStatus = o.Payment?.PaymentStatus ?? "Pending",
                 TotalAmount = o.TotalAmount,
-                OrderDate = DateTime.SpecifyKind(o.OrderDate, DateTimeKind.Utc).ToLocalTime(),
+                OrderDate = ToLocalFromUtc(o.OrderDate),
                 ItemCount = o.OrderDetails?.Count ?? 0,
                 StatusBadgeClass = GetStatusBadgeClass(o.OrderStatus)
             }).ToList();
@@ -95,8 +97,10 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 var viewModel = MapToOrderDetailViewModel(order);
                 return View(viewModel);
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Không thể tải chi tiết đơn hàng {OrderId} cho thu ngân", id);
+                TempData["Error"] = "Không thể tải chi tiết đơn hàng. Vui lòng thử lại.";
                 return RedirectToAction(nameof(Index));
             }
         }
@@ -120,8 +124,10 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 }
                 return View("~/Areas/Cashier/Views/Orders/Print.cshtml", viewModel);
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Không thể tải bản in đơn hàng {OrderId} cho thu ngân", id);
+                TempData["Error"] = "Không thể tải bản in đơn hàng. Vui lòng thử lại.";
                 return RedirectToAction(nameof(Index));
             }
         }
@@ -132,9 +138,9 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             {
                 OrderId = order.OrderID,
                 OrderCode = $"#{order.OrderID:D6}",
-                OrderDate = DateTime.SpecifyKind(order.OrderDate, DateTimeKind.Utc).ToLocalTime(),
+                OrderDate = ToLocalFromUtc(order.OrderDate),
                 OrderStatus = order.OrderStatus ?? "Unknown",
-                CompletedDate = order.CompletedDate.HasValue ? DateTime.SpecifyKind(order.CompletedDate.Value, DateTimeKind.Utc).ToLocalTime() : (DateTime?)null,
+                CompletedDate = order.CompletedDate.HasValue ? ToLocalFromUtc(order.CompletedDate.Value) : null,
                 Notes = order.Notes,
 
                 CustomerId = order.CustomerID,
@@ -146,11 +152,27 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 TableNumber = order.Table?.TableNumber,
                 TableCapacity = order.Table?.Capacity,
 
-                PaymentId = order.PaymentID,
+                PaymentId = order.Payment?.PaymentID,
                 PaymentStatus = order.Payment?.PaymentStatus ?? "Pending",
                 TotalAmount = order.TotalAmount,
-                PaidAmount = order.Payment?.Amount ?? 0,
-                PaidDate = order.Payment != null ? DateTime.SpecifyKind(order.Payment.CreatedAt, DateTimeKind.Utc).ToLocalTime() : (DateTime?)null,
+                PaidAmount = order.Payment?.PaymentStatus == "Completed" ? order.Payment.Amount : 0,
+                PaidDate = order.Payment?.PaymentStatus == "Completed" ? ToLocalFromUtc(order.Payment.PaymentDate) : null,
+                LoyaltySubtotalAmount = order.SubtotalAmount > 0
+                    ? order.SubtotalAmount
+                    : order.OrderDetails.Where(detail => !detail.IsDeleted).Sum(detail => detail.Subtotal),
+                PointDiscountAmount = order.PointDiscountAmount,
+                VoucherDiscountAmount = order.VoucherDiscountAmount,
+                LoyaltyDiscountMode = order.VoucherDiscountAmount > 0
+                    ? LoyaltyDiscountModes.Voucher
+                    : order.PointDiscountAmount > 0 ? LoyaltyDiscountModes.Points : LoyaltyDiscountModes.None,
+                AppliedVoucherCode = order.VoucherCode,
+                AppliedRewardPoints = order.PointRedemptions.Sum(redemption => redemption.PointsUsed),
+                ProjectedEarnedPoints = order.CustomerID.HasValue
+                    ? (int)decimal.Floor((order.SubtotalAmount > 0
+                        ? order.SubtotalAmount
+                        : order.OrderDetails.Where(detail => !detail.IsDeleted).Sum(detail => detail.Subtotal))
+                        / LoyaltyRules.VndPerEarnedPoint)
+                    : 0,
 
                 Items = order.OrderDetails?.Select(od => new Models.ViewModels.Order.OrderItemViewModel
                 {
@@ -175,7 +197,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             var list = new List<Models.ViewModels.Order.OrderTimelineEventViewModel>();
             list.Add(new Models.ViewModels.Order.OrderTimelineEventViewModel
             {
-                EventDate = order.OrderDate.ToLocalTime(),
+                EventDate = ToLocalFromUtc(order.OrderDate),
                 EventType = "Created",
                 EventDescription = "Order created"
             });
@@ -184,7 +206,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             {
                 list.Add(new Models.ViewModels.Order.OrderTimelineEventViewModel
                 {
-                    EventDate = order.CompletedDate.Value.ToLocalTime(),
+                    EventDate = ToLocalFromUtc(order.CompletedDate.Value),
                     EventType = "Completed",
                     EventDescription = "Order completed"
                 });
@@ -192,5 +214,8 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
 
             return list;
         }
+
+        private static DateTime ToLocalFromUtc(DateTime value) =>
+            BusinessClock.FromUtc(value);
     }
 }

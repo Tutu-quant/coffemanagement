@@ -54,13 +54,15 @@ namespace Quản_lý_quán_cafe.Repository
 
         public async Task<List<Reservation>> GetUpcomingAsync(int days = 7)
         {
-            var fromDate = DateTime.UtcNow;
+            var fromDate = Models.BusinessClock.Now;
             var toDate = fromDate.AddDays(days);
 
             return await _context.Reservations
                 .Include(r => r.Customer)
                 .Include(r => r.Table)
                 .Where(r => !r.IsDeleted &&
+                           r.ReservationStatus != "Cancelled" && r.ReservationStatus != "Completed" &&
+                           r.ReservationStatus != "CheckedIn" &&
                            r.ReservationDate >= fromDate &&
                            r.ReservationDate <= toDate)
                 .OrderBy(r => r.ReservationDate)
@@ -85,7 +87,10 @@ namespace Quản_lý_quán_cafe.Repository
         public async Task UpdateAsync(Reservation reservation)
         {
             reservation.UpdatedAt = DateTime.UtcNow;
-            _context.Reservations.Update(reservation);
+            var entry = _context.Entry(reservation);
+            if (entry.State == EntityState.Detached)
+                _context.Reservations.Attach(reservation);
+            _context.Entry(reservation).State = EntityState.Modified;
             await _context.SaveChangesAsync();
         }
 

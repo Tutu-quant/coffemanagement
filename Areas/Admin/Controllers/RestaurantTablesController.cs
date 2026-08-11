@@ -1,21 +1,27 @@
 using Microsoft.AspNetCore.Mvc;
 using Quản_lý_quán_cafe.Models.ViewModels.RestaurantTable;
 using Quản_lý_quán_cafe.Services.Interfaces;
+using Quản_lý_quán_cafe.Filters;
 
 namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [SessionAuthorize("Admin")]
     public class RestaurantTablesController : Controller
     {
         private readonly IRestaurantTableService _service;
+        private readonly ILogger<RestaurantTablesController> _logger;
 
-        public RestaurantTablesController(IRestaurantTableService service)
+        public RestaurantTablesController(IRestaurantTableService service, ILogger<RestaurantTablesController> logger)
         {
             _service = service;
+            _logger = logger;
         }
 
         public async Task<IActionResult> Index(int pageNumber = 1, string? search = null, string? location = null, string? status = null, string? sort = null)
         {
+            pageNumber = Math.Clamp(pageNumber, 1, 1_000_000);
+            search = search?.Trim();
             RestaurantTableListViewModel model;
 
             if (!string.IsNullOrWhiteSpace(search) || !string.IsNullOrWhiteSpace(location) || !string.IsNullOrWhiteSpace(status) || !string.IsNullOrEmpty(sort))
@@ -27,6 +33,9 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             {
                 model = await _service.GetAllAsync(pageNumber, 12);
             }
+
+            if (model.TotalPages > 0 && pageNumber > model.TotalPages)
+                return RedirectToAction(nameof(Index), new { pageNumber = model.TotalPages, search, location, status, sort });
 
             ViewData["Title"] = "Quản lý bàn";
             ViewData["PageTitle"] = "Bàn";
@@ -51,6 +60,8 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(RestaurantTableCreateViewModel model)
         {
+            model.TableNumber = model.TableNumber?.Trim() ?? string.Empty;
+            model.Location = string.IsNullOrWhiteSpace(model.Location) ? null : model.Location.Trim();
             if (!ModelState.IsValid)
             {
                 var locations = await _service.GetAllLocationsAsync();
@@ -85,7 +96,8 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             }
             catch (Exception ex)
             {
-                ModelState.AddModelError(string.Empty, "Có lỗi xảy ra: " + ex.Message);
+                _logger.LogError(ex, "Could not create restaurant table {TableNumber}.", model.TableNumber);
+                ModelState.AddModelError(string.Empty, "Không thể tạo bàn. Vui lòng thử lại.");
                 var locations = await _service.GetAllLocationsAsync();
                 ViewBag.Locations = locations;
                 return View(model);
@@ -128,6 +140,9 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 return NotFound();
             }
 
+            model.TableNumber = model.TableNumber?.Trim() ?? string.Empty;
+            model.Location = string.IsNullOrWhiteSpace(model.Location) ? null : model.Location.Trim();
+
             if (!ModelState.IsValid)
             {
                 var locations = await _service.GetAllLocationsAsync();
@@ -160,9 +175,16 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 TempData["SuccessMessage"] = "Bàn được cập nhật thành công!";
                 return RedirectToAction(nameof(Index));
             }
+            catch (InvalidOperationException ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                ViewBag.Locations = await _service.GetAllLocationsAsync();
+                return View(model);
+            }
             catch (Exception ex)
             {
-                ModelState.AddModelError(string.Empty, "Có lỗi xảy ra: " + ex.Message);
+                _logger.LogError(ex, "Could not update restaurant table {TableId}.", id);
+                ModelState.AddModelError(string.Empty, "Không thể cập nhật bàn. Vui lòng thử lại.");
                 var locations = await _service.GetAllLocationsAsync();
                 ViewBag.Locations = locations;
                 return View(model);
@@ -216,7 +238,8 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "Có lỗi xảy ra: " + ex.Message;
+                _logger.LogError(ex, "Could not delete restaurant table {TableId}.", id);
+                TempData["ErrorMessage"] = "Không thể xóa bàn. Vui lòng thử lại.";
                 return RedirectToAction(nameof(Index));
             }
         }

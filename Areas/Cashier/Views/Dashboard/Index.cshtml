@@ -1,3 +1,4 @@
+@using Quản_lý_quán_cafe.Models
 @{
     ViewData["Title"] = "Tổng Quan";
     Layout = "~/Areas/Cashier/Views/Shared/_CashierLayout.cshtml";
@@ -6,6 +7,10 @@
 @model Quản_lý_quán_cafe.Areas.Cashier.ViewModels.CashierDashboardViewModel
 
 <div class="cashier-dashboard">
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+    }
     <!-- Header -->
     <div class="dashboard-header">
         <div class="header-left">
@@ -19,7 +24,7 @@
             </div>
         </div>
         <div class="header-right">
-            <button class="btn-icon" title="Thông báo">
+            <button type="button" class="btn-icon btn-notification" title="Thông báo" aria-label="Đi đến thông báo">
                 <i class="fas fa-bell"></i>
                 @if (Model.Notifications.Count > 0)
                 {
@@ -29,15 +34,6 @@
             <a href="@Url.Action("Index", "POS", new { area = "Cashier" })" class="btn-quick-action btn-primary" style="flex: 0 0 auto; padding: 8px 16px; margin: 0;">
                 <i class="fas fa-cash-register"></i> Thu ngân POS
             </a>
-            <div style="display: flex; align-items: center; gap: 10px; margin-left: 15px; padding-left: 15px; border-left: 1px solid #e8e3dd;">
-                <div style="width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px;" id="avatarInitials">
-                    NV
-                </div>
-                <div>
-                    <p style="margin: 0; font-size: 13px; color: #333; font-weight: 500;" id="dashboardEmployeeName">Nhân Viên</p>
-                    <a asp-area="" asp-controller="Account" asp-action="Logout" style="font-size: 12px; color: var(--primary-color); text-decoration: none; font-weight: 500;">Đăng xuất</a>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -140,20 +136,24 @@
                     <div class="legend-color legend-overdue"></div>
                     <span>Quá giờ</span>
                 </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-maintenance"></div>
+                    <span>Bảo trì</span>
+                </div>
             </div>
 
             <!-- Quick Actions -->
             <div class="quick-actions">
-                <button class="btn-quick-action btn-success" onclick="window.location.href='@Url.Action("Index", "POS")'">
+                <a class="btn-quick-action btn-success" href="@Url.Action("Index", "POS", new { area = "Cashier" })">
                     <i class="fas fa-plus"></i> Tạo Order
-                </button>
-                <button class="btn-quick-action" style="background-color: var(--status-reserved); color: white;">
-                    <i class="fas fa-calendar-alt"></i> Đặt Bàn
-                </button>
-                <button class="btn-quick-action btn-info" onclick="window.location.href='@Url.Action("Index", "Payments")'">
+                </a>
+                <a class="btn-quick-action" href="@Url.Action("Index", "Tables", new { area = "Cashier" })" style="background-color: var(--status-reserved); color: white;">
+                    <i class="fas fa-chair"></i> Quản lý bàn
+                </a>
+                <a class="btn-quick-action btn-info" href="@Url.Action("Index", "Payments", new { area = "Cashier" })">
                     <i class="fas fa-cash-register"></i> Thanh Toán
-                </button>
-                <button class="btn-quick-action" style="background-color: #6B7280; color: white;">
+                </a>
+                <button type="button" class="btn-quick-action btn-refresh" style="background-color: #6B7280; color: white;">
                     <i class="fas fa-sync"></i> Làm mới
                 </button>
             </div>
@@ -172,7 +172,8 @@
                             "Empty" => "table-card-empty",
                             "Reserved" => "table-card-reserved",
                             "Serving" => "table-card-serving",
-                            "PendingPayment" => "table-card-pendinypayment",
+                            "PendingPayment" => "table-card-pendingpayment",
+                            "Maintenance" => "table-card-maintenance",
                             _ => "table-card-empty"
                         };
 
@@ -182,10 +183,15 @@
                             "Reserved" => "status-reserved",
                             "Serving" => "status-serving",
                             "PendingPayment" => "status-pending",
+                            "Maintenance" => "status-maintenance",
                             _ => "status-empty"
                         };
+                        if (table.IsOverdue) cardClass = "table-card-overdue";
 
-                        <div class="table-card @cardClass" onclick="handleTableClick(@table.TableID, '@table.TableStatus')" title="Bàn @table.TableNumber">
+                        <div class="table-card @cardClass" role="button" tabindex="0"
+                             onclick="handleTableClick(@table.TableID, '@table.TableStatus')"
+                             onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); handleTableClick(@table.TableID, '@table.TableStatus'); }"
+                             title="Bàn @table.TableNumber">
                             <div class="table-header">
                                 <h3 class="table-number">@table.TableNumber</h3>
                                 <span class="table-capacity">@table.Capacity chỗ</span>
@@ -206,13 +212,13 @@
                                         </span>
                                         @if (table.ReservationTime.HasValue)
                                         {
-                                            <p class="table-time" data-datetime="@table.ReservationTime.Value.ToUniversalTime().ToString("o")">@table.ReservationTime.Value.ToString("HH:mm")</p>
+                                            <p class="table-time" data-datetime="@BusinessClock.ToUtc(table.ReservationTime.Value).ToString("o")">@table.ReservationTime.Value.ToString("HH:mm")</p>
                                         }
                                         <p class="table-customer">@table.ReservationCustomerName</p>
                                         <p class="table-guest">@table.ReservationGuestCount người</p>
                                         @if (table.ReservationTime.HasValue)
                                         {
-                                            <p class="table-countdown" data-reservation="@table.ReservationTime.Value.ToUniversalTime().ToString("o")">Còn @table.MinutesUntilReservation phút</p>
+                                            <p class="table-countdown" data-reservation="@BusinessClock.ToUtc(table.ReservationTime.Value).ToString("o")">Còn @table.MinutesUntilReservation phút</p>
                                         }
                                         break;
 
@@ -223,7 +229,7 @@
                                         <p class="table-order-info">@(table.OrderItemCount ?? 0) món</p>
                                         @if (table.OrderCreatedAt.HasValue)
                                         {
-                                            <p class="table-order-info" data-order-start="@table.OrderCreatedAt.Value.ToUniversalTime().ToString("o")">@table.MinutesUsed phút</p>
+                                            <p class="table-order-info" data-order-start="@BusinessClock.ToUtc(table.OrderCreatedAt.Value).ToString("o")">@table.MinutesUsed phút</p>
                                         }
                                         else
                                         {
@@ -251,6 +257,12 @@
                                         {
                                             <p class="table-order-info">0 phút</p>
                                         }
+                                        break;
+
+                                    case "Maintenance":
+                                        <span class="status-indicator status-maintenance">
+                                            <i class="fas fa-tools"></i> Bảo trì
+                                        </span>
                                         break;
                                 }
                             </div>
@@ -287,8 +299,8 @@
                                         <p class="reservation-guest">@reservation.GuestCount người</p>
                                     </div>
                                     <div class="reservation-countdown">
-                                        <span class="countdown-text">Còn @reservation.MinutesUntilArrival phút</span>
-                                        <button class="btn-small btn-success" style="width: 100%;">Chuẩn bị</button>
+                                        <span class="countdown-text">@reservation.TimeDisplay</span>
+                                        <span class="reservation-state-label">Sắp đến</span>
                                     </div>
                                 </div>
                             }
@@ -312,7 +324,7 @@
             }
 
             <!-- Notifications -->
-            <div class="sidebar-section">
+            <div class="sidebar-section" id="dashboardNotifications" tabindex="-1">
                 <h3 class="sidebar-title">
                     <i class="fas fa-bell"></i> Thông báo
                 </h3>
@@ -333,7 +345,7 @@
 
                                 <div class="notification-item @notifClass">
                                     <div class="notification-icon">
-                                        <i class="fas fa-@notification.Icon"></i>
+                                        <i class="fas @notification.Icon"></i>
                                     </div>
                                     <div class="notification-body">
                                         <p class="notification-title">@notification.Title</p>
@@ -381,22 +393,7 @@
             document.getElementById('dateDisplay').textContent = dateString;
         }
 
-        // Get employee name and set avatar
-        function initializeEmployee() {
-            const employeeName = localStorage.getItem('employeeName') || 'Nhân Viên';
-            document.getElementById('dashboardEmployeeName').textContent = employeeName;
-
-            // Get initials for avatar
-            const initials = employeeName
-                .split(' ')
-                .map(word => word.charAt(0).toUpperCase())
-                .join('')
-                .slice(0, 2);
-            document.getElementById('avatarInitials').textContent = initials || 'NV';
-        }
-
         updateTimeAndDate();
-        initializeEmployee();
         setInterval(updateTimeAndDate, 60000);
         // Real-time time renderers
         function formatTimeLocal(isoString) {
@@ -446,28 +443,18 @@
         function handleTableClick(tableId, status) {
             switch (status) {
                 case 'Empty':
-                    // Open POS and select the table to create an order there
+                case 'Reserved':
+                case 'Serving':
                     window.location.href = `@Url.Action("Index", "POS", new { area = "Cashier" })?tableId=${tableId}`;
                     break;
-                case 'Reserved':
-                    window.location.href = `@Url.Action("Details", "Orders", new { area = "Cashier" })?tableId=${tableId}`;
-                    break;
-                case 'Serving':
-                    window.location.href = `@Url.Action("Details", "Orders", new { area = "Cashier" })?tableId=${tableId}`;
-                    break;
                 case 'PendingPayment':
-                    window.location.href = `@Url.Action("Index", "Payments", new { area = "Cashier" })?tableId=${tableId}`;
+                    window.location.href = `@Url.Action("Index", "POS", new { area = "Cashier" })?tableId=${tableId}`;
+                    break;
+                case 'Maintenance':
+                    window.location.href = `@Url.Action("Index", "Tables", new { area = "Cashier" })`;
                     break;
             }
         }
 
-        // Refresh button
-        document.querySelectorAll('.btn-quick-action').forEach(btn => {
-            if (btn.innerHTML.includes('Làm mới')) {
-                btn.addEventListener('click', function() {
-                    location.reload();
-                });
-            }
-        });
     </script>
 }

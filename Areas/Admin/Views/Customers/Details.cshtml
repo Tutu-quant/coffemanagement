@@ -1,4 +1,5 @@
 @using Quản_lý_quán_cafe.Models.ViewModels.Customer
+@using Quản_lý_quán_cafe.Models
 @model CustomerDetailViewModel
 
 @{
@@ -23,6 +24,21 @@
         </a>
     </div>
 </div>
+
+@if (TempData["SuccessMessage"] is string successMessage)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @successMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] is string errorMessage)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @errorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+    </div>
+}
 
 <div class="row">
     <div class="col-lg-8">
@@ -62,6 +78,13 @@
                                 <p class="mb-0">@Model?.Email</p>
                             </div>
                             <div class="col-6">
+                                <label class="text-muted small">Tài khoản đăng nhập</label>
+                                <p class="mb-0"><i class="bi bi-person-badge"></i> @(Model?.Username ?? "Chưa liên kết")</p>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-12">
                                 <label class="text-muted small">Địa chỉ</label>
                                 <p class="mb-0">@Model?.Address</p>
                             </div>
@@ -70,7 +93,7 @@
                         <div class="row mb-3">
                             <div class="col-6">
                                 <label class="text-muted small">Ngày tham gia</label>
-                                <p class="mb-0">@Model?.CreatedAt.ToString("dd/MM/yyyy")</p>
+                                <p class="mb-0">@(Model is null ? "-" : BusinessClock.FromUtc(Model.CreatedAt).ToString("dd/MM/yyyy"))</p>
                             </div>
                             <div class="col-6">
                                 <label class="text-muted small">Trạng thái</label>
@@ -115,7 +138,7 @@
                             {
                                 <tr>
                                     <td><strong>#@order.Id</strong></td>
-                                    <td>@order.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>@BusinessClock.FromUtc(order.CreatedAt).ToString("dd/MM/yyyy HH:mm")</td>
                                     <td>@order.TotalAmount.ToString("N0")₫</td>
                                     <td>
                                         <span class="badge bg-info text-dark">@order.Status</span>
@@ -127,51 +150,110 @@
                 </div>
             </div>
         }
+
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0"><i class="bi bi-clock-history"></i> Lịch sử điểm</h5>
+                <span class="badge text-bg-light">@(Model?.PointHistory.Count ?? 0) giao dịch gần nhất</span>
+            </div>
+            @if (Model!.PointHistory.Count == 0)
+            {
+                <div class="card-body text-center text-muted py-4">Chưa có giao dịch điểm.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Thời gian</th>
+                                <th>Nội dung</th>
+                                <th>Đơn</th>
+                                <th class="text-end">Số dư</th>
+                                <th class="text-end">Thay đổi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.PointHistory)
+                        {
+                            var isCredit = item.Points >= 0;
+                            <tr>
+                                <td class="text-nowrap">@BusinessClock.FromUtc(item.TransactionDate).ToString("HH:mm · dd/MM/yyyy")</td>
+                                <td>
+                                    <strong>@PointTypeLabel(item.TransactionType)</strong>
+                                    @if (!string.IsNullOrWhiteSpace(item.Description))
+                                    {
+                                        <div class="small text-muted">@item.Description</div>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.OrderId.HasValue)
+                                    {
+                                        <a asp-area="Admin" asp-controller="Orders" asp-action="Details" asp-route-id="@item.OrderId">#@item.OrderId</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td class="text-end">@item.BalanceAfter.ToString("N0")</td>
+                                <td class="text-end fw-bold @(isCredit ? "text-success" : "text-danger")">
+                                    @(isCredit ? "+" : string.Empty)@item.Points.ToString("N0")
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
     </div>
 
 
     <div class="col-lg-4">
 
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-star"></i> Hạng thành viên
-                </h5>
-            </div>
-            <div class="card-body text-center">
-                @{
-                    var tierClass = Model?.MembershipTier switch
-                    {
-                        "VIP" => "badge-vip",
-                        "Diamond" => "badge-diamond",
-                        "Gold" => "badge-gold",
-                        "Silver" => "badge-silver",
-                        _ => "badge-member"
-                    };
-                }
-                <span class="badge @tierClass" style="font-size: 16px; padding: 8px 12px;">
-                    @Model?.MembershipTier
-                </span>
-            </div>
-        </div>
-
-
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-gift"></i> Điểm tích lũy
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="text-center">
-                    <p class="text-muted small mb-1">Tổng điểm</p>
-                    <p style="font-size: 28px; font-weight: bold; color: #FF8C42; margin: 0;">
-                        @Model?.RewardPoints.ToString("N0")
-                    </p>
+        <div class="card mb-4 border-0 shadow-sm" style="overflow: hidden;">
+            <div class="card-body text-white" style="background: linear-gradient(135deg, #4a2b1d, #7a4b31);">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="small text-uppercase opacity-75">Điểm khả dụng</div>
+                        <div class="display-6 fw-bold">@Model.RewardPoints.ToString("N0")</div>
+                        <div class="small opacity-75">Tương đương @((Model.RewardPoints * 100m).ToString("N0"))đ</div>
+                    </div>
+                    <i class="bi bi-stars fs-2"></i>
                 </div>
             </div>
+            <div class="card-body">
+                <h6 class="mb-3">Tặng điểm cho tài khoản</h6>
+                <form asp-area="Admin" asp-controller="Customers" asp-action="GiftPoints" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label for="giftPoints" class="form-label">Số điểm</label>
+                        <input id="giftPoints" name="Points" type="number" min="1" max="1000000" step="1"
+                               class="form-control" required disabled="@(string.IsNullOrWhiteSpace(Model.Username) || !Model.IsActive)" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="giftReason" class="form-label">Lý do</label>
+                        <textarea id="giftReason" name="Reason" rows="2" maxlength="300" class="form-control"
+                                  placeholder="Ví dụ: Chăm sóc khách hàng"
+                                  disabled="@(string.IsNullOrWhiteSpace(Model.Username) || !Model.IsActive)"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100"
+                            disabled="@(string.IsNullOrWhiteSpace(Model.Username) || !Model.IsActive)"
+                            onclick="return confirm('Xác nhận tặng điểm cho tài khoản này?');">
+                        <i class="bi bi-gift"></i> Tặng điểm
+                    </button>
+                </form>
+                @if (string.IsNullOrWhiteSpace(Model.Username))
+                {
+                    <div class="small text-warning mt-2">Khách hàng chưa liên kết tài khoản đăng nhập nên chưa thể nhận điểm.</div>
+                }
+                else if (!Model.IsActive)
+                {
+                    <div class="small text-warning mt-2">Tài khoản đang ngừng hoạt động.</div>
+                }
+            </div>
         </div>
-
 
         <div class="card mb-4">
             <div class="card-header">
@@ -207,6 +289,17 @@
         </div>
     </div>
 </div>
+
+@functions {
+    private static string PointTypeLabel(string? type) => type?.Trim().ToLowerInvariant() switch
+    {
+        "earned" or "earn" => "Cộng từ hóa đơn",
+        "redeemed" or "redeem" => "Đổi điểm",
+        "gift" or "granted" or "grant" => "Admin tặng điểm",
+        "refund" or "refunded" => "Hoàn điểm",
+        _ => string.IsNullOrWhiteSpace(type) ? "Điều chỉnh" : type
+    };
+}
 
 @section Head {
     <link rel="stylesheet" href="~/css/customers.css" asp-append-version="true" />

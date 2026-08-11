@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Quản_lý_quán_cafe.Models;
 
 namespace Quản_lý_quán_cafe.Areas.Cashier.ViewModels
 {
@@ -38,10 +39,10 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.ViewModels
         public DateTime? OrderCreatedAt { get; set; }
         public string? Location { get; set; }
 
-        public TimeSpan TimeUsed => OrderCreatedAt.HasValue ? DateTime.Now - OrderCreatedAt.Value : TimeSpan.Zero;
+        public TimeSpan TimeUsed => OrderCreatedAt.HasValue ? BusinessClock.Now - OrderCreatedAt.Value : TimeSpan.Zero;
         public int MinutesUsed => (int)TimeUsed.TotalMinutes;
-        public TimeSpan TimeUntilReservation => ReservationTime.HasValue ? ReservationTime.Value - DateTime.Now : TimeSpan.Zero;
-        public int MinutesUntilReservation => Math.Max(0, (int)TimeUntilReservation.TotalMinutes);
+        public TimeSpan TimeUntilReservation => ReservationTime.HasValue ? ReservationTime.Value - BusinessClock.Now : TimeSpan.Zero;
+        public int MinutesUntilReservation => (int)Math.Ceiling(TimeUntilReservation.TotalMinutes);
         public bool IsOverdue => MinutesUsed > 90 && TableStatus == "Serving"; 
     }
 
@@ -54,8 +55,8 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.ViewModels
         public int GuestCount { get; set; }
         public string? Notes { get; set; }
 
-        public TimeSpan TimeUntilArrival => ReservationTime - DateTime.Now;
-        public int MinutesUntilArrival => Math.Max(0, (int)TimeUntilArrival.TotalMinutes);
+        public TimeSpan TimeUntilArrival => ReservationTime - BusinessClock.Now;
+        public int MinutesUntilArrival => (int)Math.Ceiling(TimeUntilArrival.TotalMinutes);
         public string TimeDisplay => FormatTimeDisplay();
 
         private string FormatTimeDisplay()
@@ -83,7 +84,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.ViewModels
 
         private string FormatTimeAgo()
         {
-            TimeSpan timeSpan = DateTime.Now - CreatedAt;
+            TimeSpan timeSpan = BusinessClock.Now - CreatedAt;
             if (timeSpan.TotalSeconds < 60) return "Vừa xong";
             if (timeSpan.TotalMinutes < 60) return $"{(int)timeSpan.TotalMinutes}m";
             if (timeSpan.TotalHours < 24) return $"{(int)timeSpan.TotalHours}h";

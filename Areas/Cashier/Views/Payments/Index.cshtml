@@ -6,6 +6,7 @@
     ViewData["PageBreadcrumb"] = "<span class='breadcrumb-item'><i class='bi bi-cash-coin'></i> Thanh toán</span>";
 }
 
+<div class="container-fluid py-3">
 <div class="page-header-cashier">
     <h1 class="page-title">💳 Quản lý thanh toán</h1>
 </div>
@@ -49,6 +50,7 @@
                         <th>Mã đơn</th>
                         <th>Loại thanh toán</th>
                         <th class="text-end">Số tiền</th>
+                        <th>Trạng thái</th>
                         <th>Thời gian</th>
                     </tr>
                 </thead>
@@ -56,7 +58,7 @@
                     @if (Model.Transactions == null || !Model.Transactions.Any())
                     {
                         <tr>
-                            <td colspan="4" class="text-center text-muted py-4">
+                            <td colspan="5" class="text-center text-muted py-4">
                                 <i class="bi bi-inbox"></i> Chưa có dữ liệu
                             </td>
                         </tr>
@@ -82,6 +84,16 @@
                                     }
                                 </td>
                                 <td class="text-end"><span class="fw-bold text-primary">@String.Format(System.Globalization.CultureInfo.GetCultureInfo("vi-VN"), "{0:N0}đ", t.Amount)</span></td>
+                                <td>
+                                    @switch (t.PaymentStatus)
+                                    {
+                                        case "Completed": <span class="badge bg-success">Hoàn tất</span> break;
+                                        case "Pending": <span class="badge bg-warning text-dark">Đang chờ</span> break;
+                                        case "Processing": <span class="badge bg-info text-dark">Đang xử lý</span> break;
+                                        case "Failed": <span class="badge bg-danger">Thất bại</span> break;
+                                        default: <span class="badge bg-secondary">@t.PaymentStatus</span> break;
+                                    }
+                                </td>
                                 <td>@t.Time.ToString("dd/MM/yyyy HH:mm:ss")</td>
                             </tr>
                         }
@@ -90,4 +102,6 @@
             </table>
         </div>
     </div>
+</div>
+
 </div>

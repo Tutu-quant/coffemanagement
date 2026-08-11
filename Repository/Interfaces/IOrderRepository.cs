@@ -68,6 +68,7 @@ namespace Quản_lý_quán_cafe.Repository.Interfaces
         Task<(List<Order> Orders, int Total)> GetFilteredOrdersAsync(
             string? searchTerm = null,
             string? status = null,
+            string? paymentStatus = null,
             DateTime? startDate = null,
             DateTime? endDate = null,
             int? customerId = null,

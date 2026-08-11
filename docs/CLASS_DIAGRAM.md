@@ -23,6 +23,7 @@ class User {
   +string PasswordHash
   +int RoleID
   +int? EmployeeID
+  +int? CustomerID
   +bool IsActive
   +DateTime? LastLogin
   +bool IsDeleted
@@ -47,7 +48,6 @@ class Customer {
   +string? Email
   +int RewardPoints
   +decimal TotalSpent
-  +string MembershipTier
   +bool IsActive
   +bool IsDeleted
 }
@@ -96,9 +96,15 @@ class Reservation {
 class Order {
   +int OrderID
   +int? CustomerID
+  +bool IsLoyaltyCustomerAssigned
   +int? EmployeeID
   +int? TableID
+  +decimal SubtotalAmount
+  +decimal VoucherDiscountAmount
+  +decimal PointDiscountAmount
   +decimal TotalAmount
+  +int? VoucherID
+  +string? VoucherCode
   +string OrderStatus
   +DateTime OrderDate
   +DateTime? CompletedDate
@@ -141,6 +147,39 @@ class Promotion {
   +bool IsActive
 }
 
+class Voucher {
+  +int VoucherID
+  +string Code
+  +string Name
+  +string DiscountType
+  +decimal DiscountValue
+  +bool IsActive
+  +DateTime? StartDate
+  +DateTime? EndDate
+}
+
+class OrderPointRedemption {
+  +int OrderPointRedemptionID
+  +int OrderID
+  +int CustomerID
+  +int? PointHistoryID
+  +int PointsUsed
+  +decimal DiscountAmount
+  +int Sequence
+}
+
+class PointHistory {
+  +int PointHistoryID
+  +int CustomerID
+  +int Points
+  +int BalanceAfter
+  +string TransactionType
+  +int? OrderID
+  +int? ActorUserID
+  +string? IdempotencyKey
+  +DateTime TransactionDate
+}
+
 class Review {
   +int ReviewID
   +int ProductID
@@ -149,15 +188,6 @@ class Review {
   +string? Comment
   +DateTime ReviewDate
   +bool IsApproved
-}
-
-class PointHistory {
-  +int PointHistoryID
-  +int CustomerID
-  +int Points
-  +string TransactionType
-  +int? OrderID
-  +DateTime TransactionDate
 }
 
 class PaymentAccountSetting {
@@ -182,11 +212,11 @@ class PaymentGatewaySetting {
 
 Role "1" --> "0..*" User : phân quyền
 Employee "0..1" --> "0..*" User : tài khoản nhân viên
+Customer "0..1" --> "0..1" User : tài khoản khách hàng
 Employee "0..1" --> "0..*" Order : xử lý
 Customer "0..1" --> "0..*" Order : đặt món
 Customer "1" --> "0..*" Reservation : đặt bàn
 Customer "1" --> "0..*" Review : đánh giá
-Customer "1" --> "0..*" PointHistory : tích điểm
 Category "1" --> "0..*" Product : phân loại
 Product "1" --> "0..*" OrderDetail : được gọi
 Product "1" --> "0..*" Review : nhận đánh giá
@@ -195,7 +225,12 @@ RestaurantTable "0..1" --> "0..*" Order : phục vụ
 RestaurantTable "1" --> "0..*" Reservation : được đặt
 Order "1" *-- "1..*" OrderDetail : gồm
 Order "1" *-- "0..1" Payment : thanh toán
+Voucher "0..1" --> "0..*" Order : giảm giá
+Order "1" *-- "0..*" OrderPointRedemption : góp điểm
+Customer "1" --> "0..*" OrderPointRedemption : dùng điểm
+Customer "1" --> "0..*" PointHistory : sổ điểm
 Order "0..1" --> "0..*" PointHistory : phát sinh điểm
+User "0..1" --> "0..*" PointHistory : người thao tác
 Payment "0..1" --> "0..*" Promotion : sử dụng
 ```
 
@@ -249,7 +284,7 @@ class CashierControllers {
   +AddItem(tableId, productId, quantity) IActionResult
   +UpdateItem(orderDetailId, quantity) IActionResult
   +RemoveItem(orderDetailId) IActionResult
-  +Checkout(tableId, paymentMethod, paidAmount) IActionResult
+  +Checkout(tableId, paymentMethod, amountReceived, expectedTotal, loyaltyCustomerId) IActionResult
   +UpdateStatus(tableId, status) IActionResult
 }
 class CustomerControllers {
@@ -258,6 +293,9 @@ class CustomerControllers {
   +Menu() IActionResult
   +SubmitOrder(model) IActionResult
   +History() IActionResult
+  +ApplyPoints(id) IActionResult
+  +ApplyVoucher(id, code) IActionResult
+  +ClearDiscount(id) IActionResult
   +Create(model) IActionResult
   +Cancel(id) IActionResult
   +SearchAvailableTables(request) IActionResult
@@ -267,11 +305,17 @@ class ApiControllers {
   +TablesApiController
   +ReportsApiController
   +QrPaymentsApiController
+  +LoyaltyAccountsApiController
+  +OrderDiscountsApiController
   +GetAll(categoryId, search) IActionResult
   +Available(at, guests) IActionResult
   +Revenue(from, to) IActionResult
   +CreateIntent(request) IActionResult
   +Status(orderId) IActionResult
+  +Search(query) IActionResult
+  +ApplyPoints(orderId, request) IActionResult
+  +ApplyVoucher(orderId, request) IActionResult
+  +Clear(orderId) IActionResult
 }
 class AccountController {
   +Login() IActionResult
@@ -310,7 +354,7 @@ class ICustomerService {
   <<interface>>
   +GetByIdAsync(id) Task
   +GetAllAsync(pageNumber, pageSize) Task
-  +SearchWithFilterAsync(searchTerm, membershipTier, sortBy) Task
+  +SearchWithFilterAsync(searchTerm, sortBy) Task
   +CreateAsync(model) Task
   +UpdateAsync(model) Task
   +DeleteAsync(id) Task
@@ -346,6 +390,18 @@ class IAccountService {
   +LoginAsync(model) Task
   +LogoutAsync() Task
 }
+class ILoyaltyService {
+  <<interface>>
+  +SearchAccountsAsync(query, limit) Task
+  +GetCustomerSummaryAsync(customerId, historyLimit) Task
+  +GetOrderQuoteAsync(orderId) Task
+  +ApplyPointsAsync(orderId, customerIds, actorUserId, ownerCustomerId) Task
+  +ApplyVoucherAsync(orderId, code, actorUserId, ownerCustomerId) Task
+  +ClearDiscountAsync(orderId, actorUserId, ownerCustomerId) Task
+  +GiftPointsAsync(customerId, points, reason, actorUserId) Task
+  +PrepareCheckoutAsync(orderId, actorUserId) Task
+  +ResetDiscountForChangedOrderAsync(orderId) Task
+}
 
 class ProductService
 class CategoryService
@@ -354,6 +410,7 @@ class OrderService
 class RestaurantTableService
 class UserService
 class AccountService
+class LoyaltyService
 
 IProductService <|.. ProductService
 ICategoryService <|.. CategoryService
@@ -362,6 +419,7 @@ IOrderService <|.. OrderService
 IRestaurantTableService <|.. RestaurantTableService
 IUserService <|.. UserService
 IAccountService <|.. AccountService
+ILoyaltyService <|.. LoyaltyService
 
 AdminControllers ..> IProductService
 AdminControllers ..> ICategoryService
@@ -369,6 +427,9 @@ AdminControllers ..> ICustomerService
 AdminControllers ..> IOrderService
 AdminControllers ..> IRestaurantTableService
 CashierControllers ..> IOrderService
+CashierControllers ..> ILoyaltyService
+CustomerControllers ..> ILoyaltyService
+AdminControllers ..> ILoyaltyService
 AccountController ..> IAccountService
 
 class IProductRepository {
@@ -393,7 +454,7 @@ class ICustomerRepository {
   <<interface>>
   +GetByIdAsync(id) Task
   +GetByEmailAsync(email) Task
-  +SearchWithFilterAsync(searchTerm, membershipTier, sortBy) Task
+  +SearchWithFilterAsync(searchTerm, sortBy) Task
   +AddAsync(customer) Task
   +UpdateAsync(customer) Task
   +DeleteAsync(id) Task
@@ -462,6 +523,7 @@ OrderService ..> IOrderRepository
 RestaurantTableService ..> IRestaurantTableRepository
 UserService ..> IUserRepository
 AccountService ..> IUserRepository
+LoyaltyService ..> ApplicationDbContext
 
 ProductRepository ..> ApplicationDbContext
 CategoryRepository ..> ApplicationDbContext
@@ -515,4 +577,5 @@ DashboardViewModel *-- "0..*" PaymentAccountViewModel
 - Hầu hết entity dùng xóa mềm qua `IsDeleted`.
 - Trạng thái đơn, thanh toán và bàn hiện được lưu bằng `string`; dự án có các lớp hằng số/enum hỗ trợ nhưng chưa thống nhất hoàn toàn.
 - `Order.PaymentID` tồn tại trong model, còn quan hệ một-một thực tế được EF Core ánh xạ bằng `Payment.OrderID`.
-- `Customer` chưa liên kết trực tiếp với `User`; customer đăng nhập được ánh xạ theo email do controller tạo từ username.
+- `User.CustomerID` là khóa ngoại một-một tới `Customer`; số dư `RewardPoints` vì vậy gắn với đúng tài khoản đăng nhập.
+- Voucher và điểm loại trừ nhau trên một hóa đơn. Nhiều `OrderPointRedemption` được xử lý theo `Sequence`; `PointHistory.IdempotencyKey` ngăn cộng/trừ lặp khi thanh toán lại.

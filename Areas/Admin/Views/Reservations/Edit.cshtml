@@ -1,11 +1,11 @@
 @model Quản_lý_quán_cafe.Models.Entities.Reservation
 @{ ViewData["Title"] = "Sửa lịch đặt"; }
 <div class="card shadow-sm"><div class="card-body"><h2 class="mb-4">Sửa lịch đặt #@Model.ReservationID</h2>
-<form method="post"><input asp-for="ReservationID" type="hidden" /><div asp-validation-summary="ModelOnly" class="text-danger"></div><div class="row g-3">
+<form asp-action="Edit" asp-route-id="@Model.ReservationID" method="post"><input asp-for="ReservationID" type="hidden" /><div asp-validation-summary="ModelOnly" class="text-danger"></div><div class="row g-3">
     <div class="col-md-4"><label class="form-label">Bàn</label><select asp-for="TableID" asp-items="ViewBag.Tables" class="form-select"></select><span asp-validation-for="TableID" class="text-danger"></span></div>
-    <div class="col-md-4"><label class="form-label">Thời gian</label><input asp-for="ReservationDate" type="datetime-local" class="form-control" /></div>
+    <div class="col-md-4"><label class="form-label">Thời gian</label><input asp-for="ReservationDate" type="datetime-local" class="form-control" /><span asp-validation-for="ReservationDate" class="text-danger"></span></div>
     <div class="col-md-4"><label class="form-label">Số khách</label><input asp-for="NumberOfGuests" min="1" class="form-control" /><span asp-validation-for="NumberOfGuests" class="text-danger"></span></div>
-    <div class="col-md-4"><label class="form-label">Trạng thái</label><select asp-for="ReservationStatus" class="form-select">@foreach (var s in new[] { "Pending", "Confirmed", "CheckedIn", "Completed", "Cancelled" }) { <option value="@s">@s</option> }</select></div>
-    <div class="col-12"><label class="form-label">Ghi chú</label><textarea asp-for="Notes" class="form-control" rows="3"></textarea></div>
+    <div class="col-md-4"><label class="form-label">Trạng thái</label><input value="@Model.ReservationStatus" class="form-control" readonly /></div>
+    <div class="col-12"><label class="form-label">Ghi chú</label><textarea asp-for="Notes" class="form-control" rows="3" maxlength="500"></textarea><span asp-validation-for="Notes" class="text-danger"></span><div class="form-text">Tối đa 500 ký tự.</div></div>
 </div><div class="mt-4"><button class="btn btn-primary">Cập nhật</button> <a asp-action="Details" asp-route-id="@Model.ReservationID" class="btn btn-outline-secondary">Hủy</a></div></form></div></div>
 @section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -18,7 +18,7 @@ public class EmployeeFormViewModel
     [StringLength(500), Display(Name = "Địa chỉ")]
     public string? Address { get; set; }
     [DataType(DataType.Date), Display(Name = "Ngày vào làm")]
-    public DateTime? HireDate { get; set; } = DateTime.Today;
+    public DateTime? HireDate { get; set; } = Quản_lý_quán_cafe.Models.BusinessClock.Today;
     [Range(0, 1_000_000_000), Display(Name = "Lương")]
     public decimal? Salary { get; set; }
 }

@@ -1,5 +1,7 @@
 @model CategoryListViewModel
 
+@using Quản_lý_quán_cafe.Models
+
 @{
     ViewData["Title"] = "Danh mục sản phẩm";
     ViewData["PageTitle"] = "Danh mục sản phẩm";
@@ -9,7 +11,7 @@
 
 <div class="page-header">
     <div>
-        <p style="color: var(--text-light); margin: 0; font-size: 14px;">Tính năng này sẽ sắn sàng để triển khai</p>
+        <p style="color: var(--text-light); margin: 0; font-size: 14px;">Quản lý nhóm sản phẩm và trạng thái hiển thị.</p>
     </div>
     <a href="@Url.Action("Create")" class="btn btn-primary">
         <i class="bi bi-plus-lg"></i>
@@ -57,7 +59,7 @@
                                     <span class="fw-500">@category.Name</span>
                                 </td>
                                 <td>
-                                    <span class="text-muted">@(string.IsNullOrEmpty(category.Description) ? "---" : category.Description.Substring(0, Math.Min(50, category.Description.Length)) + "...")</span>
+                                    <span class="text-muted">@(string.IsNullOrEmpty(category.Description) ? "---" : category.Description.Length > 50 ? category.Description[..50] + "…" : category.Description)</span>
                                 </td>
                                 <td>
                                     @if (category.IsActive)
@@ -74,7 +76,7 @@
                                     }
                                 </td>
                                 <td>
-                                    <small class="text-muted">@category.CreatedAt.ToString("dd/MM/yyyy")</small>
+                                    <small class="text-muted">@BusinessClock.FromUtc(category.CreatedAt).ToString("dd/MM/yyyy")</small>
                                 </td>
                                 <td>
                                     <div class="table-actions">

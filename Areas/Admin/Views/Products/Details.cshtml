@@ -1,5 +1,7 @@
 ﻿@model ProductDetailViewModel
 
+@using Quản_lý_quán_cafe.Models
+
 @{
     ViewData["Title"] = "Chi tiết sản phẩm";
     ViewData["PageTitle"] = "Chi tiết sản phẩm";
@@ -62,6 +64,11 @@
                         </div>
 
                         <div class="meta-item">
+                            <span class="meta-label">Tồn kho:</span>
+                            <span class="meta-value">@Model.Quantity</span>
+                        </div>
+
+                        <div class="meta-item">
                             <span class="meta-label">Trạng thái:</span>
                             @if (Model.IsAvailable)
                             {
@@ -89,14 +96,14 @@
 
                         <div class="meta-item">
                             <span class="meta-label">Ngày tạo:</span>
-                            <span class="meta-value">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                            <span class="meta-value">@BusinessClock.FromUtc(Model.CreatedAt).ToString("dd/MM/yyyy HH:mm")</span>
                         </div>
 
                         @if (Model.UpdatedAt.HasValue)
                         {
                             <div class="meta-item">
                                 <span class="meta-label">Cập nhật lần cuối:</span>
-                                <span class="meta-value">@Model.UpdatedAt?.ToString("dd/MM/yyyy HH:mm")</span>
+                                <span class="meta-value">@BusinessClock.FromUtc(Model.UpdatedAt.Value).ToString("dd/MM/yyyy HH:mm")</span>
                             </div>
                         }
                     </div>

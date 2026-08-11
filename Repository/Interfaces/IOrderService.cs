@@ -47,6 +47,7 @@ namespace Quản_lý_quán_cafe.Services.Interfaces
         Task<(List<Order> Orders, int Total)> FilterOrdersAsync(
             string? searchTerm = null,
             string? status = null,
+            string? paymentStatus = null,
             DateTime? startDate = null,
             DateTime? endDate = null,
             int? customerId = null,

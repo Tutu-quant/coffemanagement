@@ -25,7 +25,7 @@ public class DashboardViewModel
 public class PaymentGatewayViewModel
 {
     [System.ComponentModel.DataAnnotations.Required]
-    [System.ComponentModel.DataAnnotations.RegularExpression("^(MoMo|VietQR)$", ErrorMessage = "Chỉ hỗ trợ MoMo hoặc VietQR")]
+    [System.ComponentModel.DataAnnotations.RegularExpression("^VietQR$", ErrorMessage = "Hiện tại chỉ hỗ trợ VietQR")]
     [System.ComponentModel.DataAnnotations.Display(Name = "Nhà cung cấp")]
     public string Provider { get; set; } = "VietQR";
 

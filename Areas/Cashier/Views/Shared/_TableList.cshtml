@@ -30,13 +30,14 @@
                 {
                     "occupied" => "Có khách",
                     "waitingpayment" => "Chờ thanh toán",
+                    "reserved" => "Đã đặt",
                     "maintenance" => "Bảo trì",
                     _ => "Trống"
                 };
                 <div class="table-item @key @(table.IsSelected ? "active" : "")" data-table-id="@table.TableID"
                      role="button" tabindex="0" aria-current="@(table.IsSelected ? "true" : "false")"
                      onclick="selectTable(@table.TableID)"
-                     onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectTable(@table.TableID); }">
+                     onkeydown="if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); selectTable(@table.TableID); }">
                     <div class="table-header">
                         <div class="table-info">
                             <div class="table-name">@table.TableName</div>
@@ -51,7 +52,13 @@
                                 <div class="table-badge">@table.StatusBadge</div>
                             }
                         </div>
-                        <div class="btn-group btn-group-sm" role="group" style="gap:6px;">
+                        @if (key == "reserved")
+                        {
+                            <span class="small text-white-50">Nhận bàn khi thêm món</span>
+                        }
+                        else
+                        {
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Đổi trạng thái @table.TableName" style="gap:6px;">
                             <button type="button" class="btn btn-outline-light btn-sm p-1 rounded-circle" title="Đặt bàn trống" onclick="event.stopPropagation(); changeTableStatus(@table.TableID, 'Available')">
                                 <i class="bi bi-check-lg"></i>
                             </button>
@@ -65,6 +72,7 @@
                                 <i class="bi bi-tools"></i>
                             </button>
                         </div>
+                        }
                     </div>
                 </div>
             }

@@ -13,11 +13,13 @@ using Quản_lý_quán_cafe.Services.Interfaces;
 namespace Quản_lý_quán_cafe.Areas.Customer.Controllers;
 
 [Area("Customer")]
+[SessionAuthorize("Customer")]
 public class ReservationsController(
     IReservationService reservationService,
     IRestaurantTableRepository tableRepository,
     ICompositeViewEngine viewEngine,
-    Quản_lý_quán_cafe.Services.CustomerSessionService customerSessionService) : Controller
+    Quản_lý_quán_cafe.Services.CustomerSessionService customerSessionService,
+    ILogger<ReservationsController> logger) : Controller
 {
     private readonly ICompositeViewEngine _viewEngine = viewEngine;
     private readonly Quản_lý_quán_cafe.Services.CustomerSessionService _customerSessionService = customerSessionService;
@@ -43,6 +45,12 @@ public class ReservationsController(
     public async Task<IActionResult> Create(ReservationViewModel model)
     {
         if (!IsLoggedIn()) return RedirectToLogin();
+
+        if (!ModelState.IsValid)
+        {
+            await LoadTablesAsync(model);
+            return View(model);
+        }
 
         var customer = await _customerSessionService.GetOrCreateCustomerAsync();
         var result = await reservationService.CreateReservationAsync(
@@ -136,7 +144,9 @@ public class ReservationsController(
         }
         catch (Exception ex)
         {
-            return Json(new { success = false, message = $"Lỗi: {ex.Message}" });
+            logger.LogError(ex, "Could not search available reservation tables.");
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { success = false, message = "Không thể tìm bàn trống. Vui lòng thử lại." });
         }
     }
 
@@ -183,7 +193,9 @@ public class ReservationsController(
             .ToList();
     }
 
-    private bool IsLoggedIn() => (HttpContext.Session.GetInt32("UserId") ?? 0) > 0;
+    private bool IsLoggedIn() =>
+        (HttpContext.Session.GetInt32("UserId") ?? 0) > 0
+        && HttpContext.Session.GetString("RoleName") == "Customer";
     private IActionResult RedirectToLogin() => RedirectToAction("Login", "Account", new { area = "" });
 
     private async Task<Models.Entities.Customer> GetOrCreateCustomerAsync()

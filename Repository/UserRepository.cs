@@ -19,20 +19,36 @@ namespace Quản_lý_quán_cafe.Repository
         public async Task<User?> GetByIdAsync(int id)
         {
             return await _context.Users
+                .Include(u => u.Employee)
+                .Include(u => u.Customer)
+                .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.UserID == id && !u.IsDeleted);
         }
 
         public async Task<User?> GetByUsernameAsync(string username)
         {
+            username = username.Trim();
+            var normalizedLogin = username.ToLowerInvariant();
             return await _context.Users
-                .FirstOrDefaultAsync(u => u.Username == username && !u.IsDeleted);
+                .Include(u => u.Employee)
+                .Include(u => u.Customer)
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => !u.IsDeleted &&
+                    (u.Username.ToLower() == normalizedLogin
+                     || (u.Employee != null && u.Employee.Email.ToLower() == normalizedLogin)
+                     || (u.Customer != null && u.Customer.Email != null && u.Customer.Email.ToLower() == normalizedLogin)));
         }
 
         public async Task<User?> GetByEmailAsync(string email)
         {
-
-
-            return await Task.FromResult<User?>(null);
+            var normalizedEmail = email.Trim().ToLowerInvariant();
+            return await _context.Users
+                .Include(u => u.Employee)
+                .Include(u => u.Customer)
+                .FirstOrDefaultAsync(u => !u.IsDeleted &&
+                    ((u.Employee != null && !u.Employee.IsDeleted && u.Employee.Email.ToLower() == normalizedEmail)
+                     || (u.Customer != null && !u.Customer.IsDeleted && u.Customer.Email != null
+                         && u.Customer.Email.ToLower() == normalizedEmail)));
         }
 
         public async Task<List<Role>> GetAllRolesAsync()
@@ -57,11 +73,22 @@ namespace Quản_lý_quán_cafe.Repository
                 return null;
             }
 
+            var isStaff = user.Role?.RoleName is "Admin" or "Cashier";
+            if (!user.IsActive
+                || (isStaff && user.Employee is null)
+                || user.Employee?.IsActive == false || user.Employee?.IsDeleted == true
+                || user.Customer?.IsActive == false || user.Customer?.IsDeleted == true)
+                return null;
+
 
             if (!VerifyPasswordHash(password, user.PasswordHash))
             {
                 return null;
             }
+
+            if (!user.PasswordHash.StartsWith("PBKDF2$", StringComparison.Ordinal))
+                user.PasswordHash = HashPassword(password);
+            user.LastLogin = DateTime.UtcNow;
 
             return user;
         }
@@ -76,7 +103,10 @@ namespace Quản_lý_quán_cafe.Repository
         public async Task UpdateAsync(User user)
         {
             user.UpdatedAt = DateTime.UtcNow;
-            _context.Users.Update(user);
+            var entry = _context.Entry(user);
+            if (entry.State == EntityState.Detached)
+                _context.Users.Attach(user);
+            _context.Entry(user).State = EntityState.Modified;
             await _context.SaveChangesAsync();
         }
 
@@ -88,17 +118,43 @@ namespace Quản_lý_quán_cafe.Repository
 
         public static string HashPassword(string password)
         {
-            using (var sha256 = SHA256.Create())
-            {
-                var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                return Convert.ToBase64String(hashedBytes);
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(password);
+            const int iterations = 210_000;
+            var salt = RandomNumberGenerator.GetBytes(16);
+            var hash = Rfc2898DeriveBytes.Pbkdf2(
+                password, salt, iterations, HashAlgorithmName.SHA256, 32);
+            return $"PBKDF2${iterations}${Convert.ToBase64String(salt)}${Convert.ToBase64String(hash)}";
         }
 
         public static bool VerifyPasswordHash(string password, string hash)
         {
-            var hashOfInput = HashPassword(password);
-            return hashOfInput == hash;
+            if (string.IsNullOrEmpty(password) || string.IsNullOrEmpty(hash)) return false;
+            if (hash.StartsWith("PBKDF2$", StringComparison.Ordinal))
+            {
+                var parts = hash.Split('$');
+                if (parts.Length != 4 || !int.TryParse(parts[1], out var iterations) || iterations < 100_000)
+                    return false;
+                try
+                {
+                    var salt = Convert.FromBase64String(parts[2]);
+                    var expected = Convert.FromBase64String(parts[3]);
+                    var actual = Rfc2898DeriveBytes.Pbkdf2(
+                        password, salt, iterations, HashAlgorithmName.SHA256, expected.Length);
+                    return CryptographicOperations.FixedTimeEquals(actual, expected);
+                }
+                catch (FormatException)
+                {
+                    return false;
+                }
+            }
+
+            // Compatibility with databases created by earlier versions. A
+            // successful login is immediately upgraded to PBKDF2 above.
+            var legacy = SHA256.HashData(Encoding.UTF8.GetBytes(password));
+            byte[] expectedLegacy;
+            try { expectedLegacy = Convert.FromBase64String(hash); }
+            catch (FormatException) { return false; }
+            return CryptographicOperations.FixedTimeEquals(legacy, expectedLegacy);
         }
     }
 }

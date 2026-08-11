@@ -36,7 +36,8 @@ namespace Quản_lý_quán_cafe.Data
                 .Where(entry => entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
                 .Where(entry => entry.Entity is Role or User or Employee or Customer or Category or Product
                     or Order or OrderDetail or Payment or RestaurantTable or Reservation or Promotion
-                    or Review or PointHistory or PaymentAccountSetting or PaymentGatewaySetting)
+                    or Review or PointHistory or Voucher or OrderPointRedemption
+                    or PaymentAccountSetting or PaymentGatewaySetting)
                 .Select(entry => (entry, entry.State.ToString()))
                 .ToList();
 
@@ -68,6 +69,8 @@ namespace Quản_lý_quán_cafe.Data
             Promotion item => item.PromotionID,
             Review item => item.ReviewID,
             PointHistory item => item.PointHistoryID,
+            Voucher item => item.VoucherID,
+            OrderPointRedemption item => item.OrderPointRedemptionID,
             PaymentAccountSetting item => item.PaymentAccountSettingID,
             PaymentGatewaySetting item => item.PaymentGatewaySettingID,
             _ => 0
@@ -87,6 +90,8 @@ namespace Quản_lý_quán_cafe.Data
         public DbSet<Review> Reviews { get; set; }
         public DbSet<Promotion> Promotions { get; set; }
         public DbSet<PointHistory> PointHistories { get; set; }
+        public DbSet<Voucher> Vouchers { get; set; }
+        public DbSet<OrderPointRedemption> OrderPointRedemptions { get; set; }
         public DbSet<PaymentAccountSetting> PaymentAccountSettings { get; set; }
         public DbSet<PaymentGatewaySetting> PaymentGatewaySettings { get; set; }
 
@@ -194,6 +199,11 @@ namespace Quản_lý_quán_cafe.Data
                     .WithOne(emp => emp.User)
                     .HasForeignKey<User>(e => e.EmployeeID)
                     .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(e => e.Customer)
+                    .WithOne(customer => customer.User)
+                    .HasForeignKey<User>(e => e.CustomerID)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             modelBuilder.Entity<Category>(entity =>
@@ -275,6 +285,10 @@ namespace Quản_lý_quán_cafe.Data
                 entity.Property(e => e.Phone)
                     .HasMaxLength(20);
 
+                entity.HasIndex(e => e.Phone)
+                    .IsUnique()
+                    .HasFilter("\"Phone\" IS NOT NULL");
+
                 entity.Property(e => e.Email)
                     .HasMaxLength(100);
 
@@ -285,15 +299,12 @@ namespace Quản_lý_quán_cafe.Data
                     .HasMaxLength(500);
 
                 entity.Property(e => e.RewardPoints)
+                    .IsConcurrencyToken()
                     .HasDefaultValue(0);
 
                 entity.Property(e => e.TotalSpent)
                     .HasPrecision(18, 2)
                     .HasDefaultValue(0);
-
-                entity.Property(e => e.MembershipTier)
-                    .HasMaxLength(30)
-                    .HasDefaultValue("Member");
 
                 entity.Property(e => e.IsActive)
                     .HasDefaultValue(true);
@@ -312,11 +323,6 @@ namespace Quản_lý_quán_cafe.Data
                 entity.HasMany(e => e.Reservations)
                     .WithOne(r => r.Customer)
                     .HasForeignKey(r => r.CustomerID)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasMany(e => e.PointHistories)
-                    .WithOne(ph => ph.Customer)
-                    .HasForeignKey(ph => ph.CustomerID)
                     .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasMany(e => e.Reviews)
@@ -368,8 +374,26 @@ namespace Quản_lý_quán_cafe.Data
                     .IsRequired()
                     .HasMaxLength(50);
 
+                entity.Property(e => e.IsLoyaltyCustomerAssigned)
+                    .HasDefaultValue(false);
+
                 entity.Property(e => e.TotalAmount)
                     .HasPrecision(18, 2);
+
+                entity.Property(e => e.SubtotalAmount)
+                    .HasPrecision(18, 2)
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.VoucherDiscountAmount)
+                    .HasPrecision(18, 2)
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.PointDiscountAmount)
+                    .HasPrecision(18, 2)
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.VoucherCode)
+                    .HasMaxLength(50);
 
                 entity.Property(e => e.Notes)
                     .HasMaxLength(1000);
@@ -399,6 +423,16 @@ namespace Quản_lý_quán_cafe.Data
                     .WithOne(od => od.Order)
                     .HasForeignKey(od => od.OrderID)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Voucher)
+                    .WithMany(v => v.Orders)
+                    .HasForeignKey(e => e.VoucherID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasMany(e => e.PointRedemptions)
+                    .WithOne(redemption => redemption.Order)
+                    .HasForeignKey(redemption => redemption.OrderID)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<OrderDetail>(entity =>
@@ -586,6 +620,13 @@ namespace Quản_lý_quán_cafe.Data
                 entity.Property(e => e.Description)
                     .HasMaxLength(500);
 
+                entity.Property(e => e.IdempotencyKey)
+                    .HasMaxLength(200);
+
+                entity.HasIndex(e => e.IdempotencyKey)
+                    .IsUnique()
+                    .HasFilter("\"IdempotencyKey\" IS NOT NULL");
+
                 entity.Property(e => e.CreatedAt)
                     .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -593,15 +634,100 @@ namespace Quản_lý_quán_cafe.Data
                     .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.HasOne(e => e.Customer)
-                    .WithMany(c => c.PointHistories)
+                    .WithMany(customer => customer.PointHistories)
                     .HasForeignKey(e => e.CustomerID)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.Order)
                     .WithMany()
                     .HasForeignKey(e => e.OrderID)
                     .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(e => e.ActorUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.ActorUserID)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.ToTable(table =>
+                {
+                    table.HasCheckConstraint("CK_PointHistories_Points_NotZero", "\"Points\" <> 0");
+                    table.HasCheckConstraint("CK_PointHistories_BalanceAfter_NonNegative", "\"BalanceAfter\" >= 0");
+                });
             });
+
+            modelBuilder.Entity<Voucher>(entity =>
+            {
+                entity.HasKey(e => e.VoucherID);
+
+                entity.Property(e => e.Code)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .UseCollation("NOCASE");
+
+                entity.HasIndex(e => e.Code)
+                    .IsUnique();
+
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(200);
+
+                entity.Property(e => e.DiscountType)
+                    .IsRequired()
+                    .HasMaxLength(20);
+
+                entity.Property(e => e.DiscountValue)
+                    .HasPrecision(18, 2);
+
+                entity.Property(e => e.CreatedAt)
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.Property(e => e.UpdatedAt)
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.ToTable(table => table.HasCheckConstraint(
+                    "CK_Vouchers_Discount",
+                    "(\"DiscountType\" = 'Percent' AND CAST(\"DiscountValue\" AS NUMERIC) > 0 " +
+                    "AND CAST(\"DiscountValue\" AS NUMERIC) <= 100) OR " +
+                    "(\"DiscountType\" = 'Fixed' AND CAST(\"DiscountValue\" AS NUMERIC) > 0)"));
+            });
+
+            modelBuilder.Entity<OrderPointRedemption>(entity =>
+            {
+                entity.HasKey(e => e.OrderPointRedemptionID);
+
+                entity.Property(e => e.DiscountAmount)
+                    .HasPrecision(18, 2);
+
+                entity.HasIndex(e => new { e.OrderID, e.CustomerID })
+                    .IsUnique();
+
+                entity.HasIndex(e => e.PointHistoryID)
+                    .IsUnique()
+                    .HasFilter("\"PointHistoryID\" IS NOT NULL");
+
+                entity.Property(e => e.CreatedAt)
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.HasOne(e => e.Customer)
+                    .WithMany(customer => customer.PointRedemptions)
+                    .HasForeignKey(e => e.CustomerID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.PointHistory)
+                    .WithOne(history => history.PointRedemption)
+                    .HasForeignKey<OrderPointRedemption>(e => e.PointHistoryID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.ToTable(table =>
+                {
+                    table.HasCheckConstraint("CK_OrderPointRedemptions_Points_Positive", "\"PointsUsed\" > 0");
+                    table.HasCheckConstraint(
+                        "CK_OrderPointRedemptions_Discount_Positive",
+                        "CAST(\"DiscountAmount\" AS NUMERIC) > 0");
+                    table.HasCheckConstraint("CK_OrderPointRedemptions_Sequence_NonNegative", "\"Sequence\" >= 0");
+                });
+            });
+
         }
     }
 }

@@ -91,21 +91,9 @@ namespace Quản_lý_quán_cafe.Migrations
                     b.Property<DateTime?>("LastVisit")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("MembershipTier")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(30)
-                        .HasColumnType("TEXT")
-                        .HasDefaultValue("Member");
-
                     b.Property<string>("Phone")
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
-
-                    b.Property<int>("RewardPoints")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(0);
 
                     b.Property<decimal>("TotalSpent")
                         .ValueGeneratedOnAdd()
@@ -453,55 +441,6 @@ namespace Quản_lý_quán_cafe.Migrations
                         .IsUnique();
 
                     b.ToTable("PaymentGatewaySettings");
-                });
-
-            modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.PointHistory", b =>
-                {
-                    b.Property<int>("PointHistoryID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<int>("CustomerID")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int?>("OrderID")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Points")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("TransactionDate")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("TransactionType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.HasKey("PointHistoryID");
-
-                    b.HasIndex("CustomerID");
-
-                    b.HasIndex("OrderID");
-
-                    b.ToTable("PointHistories");
                 });
 
             modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.Product", b =>
@@ -909,24 +848,6 @@ namespace Quản_lý_quán_cafe.Migrations
                     b.Navigation("Order");
                 });
 
-            modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.PointHistory", b =>
-                {
-                    b.HasOne("Quản_lý_quán_cafe.Models.Entities.Customer", "Customer")
-                        .WithMany("PointHistories")
-                        .HasForeignKey("CustomerID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Quản_lý_quán_cafe.Models.Entities.Order", "Order")
-                        .WithMany()
-                        .HasForeignKey("OrderID")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Customer");
-
-                    b.Navigation("Order");
-                });
-
             modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.Product", b =>
                 {
                     b.HasOne("Quản_lý_quán_cafe.Models.Entities.Category", "Category")
@@ -1019,8 +940,6 @@ namespace Quản_lý_quán_cafe.Migrations
             modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.Customer", b =>
                 {
                     b.Navigation("Orders");
-
-                    b.Navigation("PointHistories");
 
                     b.Navigation("Reservations");
 

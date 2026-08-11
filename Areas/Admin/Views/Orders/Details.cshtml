@@ -139,6 +139,24 @@
             </div>
             <div class="card-body">
                 <div class="info-row">
+                    <label>Tạm tính:</label>
+                    <span>@($"{(Model.LoyaltySubtotalAmount > 0 ? Model.LoyaltySubtotalAmount : Model.Subtotal):N0}đ")</span>
+                </div>
+                @if (Model.PointDiscountAmount > 0)
+                {
+                    <div class="info-row">
+                        <label>Đổi @Model.AppliedRewardPoints điểm:</label>
+                        <span class="text-danger">-@($"{Model.PointDiscountAmount:N0}đ")</span>
+                    </div>
+                }
+                @if (Model.VoucherDiscountAmount > 0)
+                {
+                    <div class="info-row">
+                        <label>Voucher @Model.AppliedVoucherCode:</label>
+                        <span class="text-danger">-@($"{Model.VoucherDiscountAmount:N0}đ")</span>
+                    </div>
+                }
+                <div class="info-row">
                     <label>Tổng tiền:</label>
                     <strong style="color: var(--coffee-brown); font-size: 18px;">@($"{Model.TotalAmount:N0}đ")</strong>
                 </div>

@@ -4,7 +4,8 @@
     var isOrdering = currentController == "Orders" && currentAction is "Menu" or "Index" or "Place";
     var isMyOrders = currentController == "Orders" && currentAction is "MyOrders" or "History" or "Details";
     var isReservations = currentController == "Reservations";
-    var isProfile = currentController == "Profile";
+    var isPoints = currentController == "Profile" && currentAction == "Points";
+    var isProfile = currentController == "Profile" && !isPoints;
 }
 
 <aside class="admin-sidebar">
@@ -32,6 +33,12 @@
                     <i class="bi bi-calendar-plus"></i><span>Đặt bàn</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a asp-area="Customer" asp-controller="Profile" asp-action="Points"
+                   class="nav-link @(isPoints ? "active" : "")" aria-current="@(isPoints ? "page" : null)">
+                    <i class="bi bi-stars"></i><span>Điểm thưởng</span>
+                </a>
+            </li>
         </ul>
     </nav>
     <div class="sidebar-footer">
@@ -41,8 +48,10 @@
             <div class="user-avatar">@(Context.Session.GetString("Username")?.Substring(0, 1).ToUpper() ?? "K")</div>
             <div class="user-info"><p class="user-name">@Context.Session.GetString("Username")</p><p class="user-role">Khách hàng</p></div>
         </a>
-        <a asp-area="" asp-controller="Account" asp-action="Logout" class="btn-logout">
+        <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+        <button type="submit" class="btn-logout">
             <i class="bi bi-box-arrow-right"></i> Đăng xuất
-        </a>
+        </button>
+        </form>
     </div>
 </aside>

@@ -49,7 +49,7 @@
                     </p>
                 </div>
 
-                <form method="post" action="@Url.Action("DeleteConfirmed")">
+                <form method="post" asp-action="Delete">
                     <input type="hidden" name="id" value="@Model.Id" />
                     @Html.AntiForgeryToken()
 

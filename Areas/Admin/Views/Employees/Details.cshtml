@@ -1,5 +1,7 @@
 @model EmployeeDetailViewModel
 
+@using Quản_lý_quán_cafe.Models
+
 @{
     ViewData["Title"] = "Chi tiết nhân viên";
     ViewData["PageTitle"] = "Chi tiết nhân viên";
@@ -136,14 +138,14 @@
                     </div>
                     <div class="info-item">
                         <label>Ngày tạo</label>
-                        <p>@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                        <p>@BusinessClock.FromUtc(Model.CreatedAt).ToString("dd/MM/yyyy HH:mm")</p>
                     </div>
                     <div class="info-item">
                         <label>Cập nhật lần cuối</label>
                         <p>
                             @if (Model.UpdatedAt.HasValue)
                             {
-                                @Model.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")
+                                @BusinessClock.FromUtc(Model.UpdatedAt.Value).ToString("dd/MM/yyyy HH:mm")
                             }
                             else
                             {

@@ -17,6 +17,7 @@ namespace Quản_lý_quán_cafe.Repository
         public async Task<Customer?> GetByIdAsync(int id)
         {
             return await _context.Customers
+                .Include(c => c.User)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.CustomerID == id && !c.IsDeleted);
         }
@@ -24,15 +25,17 @@ namespace Quản_lý_quán_cafe.Repository
         public async Task<List<Customer>> GetAllAsync()
         {
             return await _context.Customers
+                .Include(c => c.User)
                 .Where(c => !c.IsDeleted)
                 .AsNoTracking()
                 .OrderBy(c => c.CustomerName)
                 .ToListAsync();
         }
 
-        public async Task<List<Customer>> SearchWithFilterAsync(string searchTerm, string? membershipTier, string sortBy, int skip, int take)
+        public async Task<List<Customer>> SearchWithFilterAsync(string searchTerm, string sortBy, int skip, int take)
         {
             var query = _context.Customers
+                .Include(c => c.User)
                 .Where(c => !c.IsDeleted)
                 .AsNoTracking();
 
@@ -41,22 +44,16 @@ namespace Quản_lý_quán_cafe.Repository
             {
                 query = query.Where(c => c.CustomerName.Contains(searchTerm) ||
                                         (c.Phone != null && c.Phone.Contains(searchTerm)) ||
-                                        (c.Email != null && c.Email.Contains(searchTerm)));
+                                        (c.Email != null && c.Email.Contains(searchTerm)) ||
+                                        (c.User != null && c.User.Username.Contains(searchTerm)));
             }
-
-
-            if (!string.IsNullOrEmpty(membershipTier))
-            {
-                query = query.Where(c => c.MembershipTier == membershipTier);
-            }
-
 
             query = sortBy switch
             {
                 "name_asc" => query.OrderBy(c => c.CustomerName),
                 "name_desc" => query.OrderByDescending(c => c.CustomerName),
-                "points_desc" => query.OrderByDescending(c => c.RewardPoints),
                 "spent_desc" => query.OrderByDescending(c => c.TotalSpent),
+                "points_desc" => query.OrderByDescending(c => c.RewardPoints),
                 "newest" => query.OrderByDescending(c => c.CreatedAt),
                 _ => query.OrderByDescending(c => c.CreatedAt)
             };
@@ -74,7 +71,7 @@ namespace Quản_lý_quán_cafe.Repository
                 .CountAsync();
         }
 
-        public async Task<int> GetCountByFilterAsync(string searchTerm, string? membershipTier)
+        public async Task<int> GetCountByFilterAsync(string searchTerm)
         {
             var query = _context.Customers
                 .Where(c => !c.IsDeleted);
@@ -83,43 +80,30 @@ namespace Quản_lý_quán_cafe.Repository
             {
                 query = query.Where(c => c.CustomerName.Contains(searchTerm) ||
                                         (c.Phone != null && c.Phone.Contains(searchTerm)) ||
-                                        (c.Email != null && c.Email.Contains(searchTerm)));
-            }
-
-            if (!string.IsNullOrEmpty(membershipTier))
-            {
-                query = query.Where(c => c.MembershipTier == membershipTier);
+                                        (c.Email != null && c.Email.Contains(searchTerm)) ||
+                                        (c.User != null && c.User.Username.Contains(searchTerm)));
             }
 
             return await query.CountAsync();
         }
 
-        public async Task<int> GetCountVIPAsync()
-        {
-            return await _context.Customers
-                .Where(c => !c.IsDeleted && (c.MembershipTier == "VIP" || c.MembershipTier == "Diamond"))
-                .CountAsync();
-        }
-
         public async Task<int> GetCountTodayAsync()
         {
-            var today = DateTime.UtcNow.Date;
+            var start = Models.BusinessClock.StartOfTodayUtc;
+            var end = Models.BusinessClock.StartOfTomorrowUtc;
             return await _context.Customers
-                .Where(c => !c.IsDeleted && c.CreatedAt.Date == today)
+                .Where(c => !c.IsDeleted && c.CreatedAt >= start && c.CreatedAt < end)
                 .CountAsync();
         }
 
-        public async Task<long> GetTotalPointsAsync()
+        public async Task<bool> ExistsByPhoneAsync(string? phone, int? excludeId = null)
         {
-            return await _context.Customers
-                .Where(c => !c.IsDeleted)
-                .SumAsync(c => (long)c.RewardPoints);
-        }
+            if (string.IsNullOrWhiteSpace(phone))
+                return false;
 
-        public async Task<bool> ExistsByPhoneAsync(string phone, int? excludeId = null)
-        {
+            var normalizedPhone = phone.Trim();
             var query = _context.Customers
-                .Where(c => !c.IsDeleted && c.Phone == phone);
+                .Where(c => !c.IsDeleted && c.Phone == normalizedPhone);
 
             if (excludeId.HasValue)
             {
@@ -147,17 +131,16 @@ namespace Quản_lý_quán_cafe.Repository
 
         public async Task<decimal> GetCustomerTotalSpentAsync(int customerId)
         {
-            return await _context.Orders
-                .Where(o => o.CustomerID == customerId && !o.IsDeleted)
-                .SumAsync(o => o.TotalAmount);
+            return await _context.Customers
+                .Where(c => c.CustomerID == customerId && !c.IsDeleted)
+                .Select(c => c.TotalSpent)
+                .FirstOrDefaultAsync();
         }
 
         public async Task AddAsync(Customer customer)
         {
             customer.CreatedAt = DateTime.UtcNow;
             customer.UpdatedAt = DateTime.UtcNow;
-            if (string.IsNullOrEmpty(customer.MembershipTier))
-                customer.MembershipTier = "Member";
             await _context.Customers.AddAsync(customer);
             await _context.SaveChangesAsync();
         }
@@ -165,7 +148,10 @@ namespace Quản_lý_quán_cafe.Repository
         public async Task UpdateAsync(Customer customer)
         {
             customer.UpdatedAt = DateTime.UtcNow;
-            _context.Customers.Update(customer);
+            var entry = _context.Entry(customer);
+            if (entry.State == EntityState.Detached)
+                _context.Customers.Attach(customer);
+            _context.Entry(customer).State = EntityState.Modified;
             await _context.SaveChangesAsync();
         }
 

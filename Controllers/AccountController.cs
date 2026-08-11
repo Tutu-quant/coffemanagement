@@ -3,11 +3,13 @@ using System.Linq;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Quản_lý_quán_cafe.Data;
 using Quản_lý_quán_cafe.Models.Entities;
 using Quản_lý_quán_cafe.Models.ViewModels.Account;
 using Quản_lý_quán_cafe.Repository;
 using Quản_lý_quán_cafe.Repository.Interfaces;
 using Quản_lý_quán_cafe.Services.Interfaces;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Quản_lý_quán_cafe.Controllers
 {
@@ -15,11 +17,19 @@ namespace Quản_lý_quán_cafe.Controllers
     {
         private readonly IAccountService _accountService;
         private readonly IUserRepository _userRepository;
+        private readonly ApplicationDbContext _context;
+        private readonly ILogger<AccountController> _logger;
 
-        public AccountController(IAccountService accountService, IUserRepository userRepository)
+        public AccountController(
+            IAccountService accountService,
+            IUserRepository userRepository,
+            ApplicationDbContext context,
+            ILogger<AccountController> logger)
         {
             _accountService = accountService;
             _userRepository = userRepository;
+            _context = context;
+            _logger = logger;
         }
 
 
@@ -30,8 +40,10 @@ namespace Quản_lý_quán_cafe.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("account-auth")]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
+            model.Username = model.Username?.Trim() ?? string.Empty;
             if (!ModelState.IsValid)
             {
                 return View(model);
@@ -47,6 +59,7 @@ namespace Quản_lý_quán_cafe.Controllers
                     return View(model);
                 }
 
+                HttpContext.Session.Clear();
 
                 if (result.UserId.HasValue)
                     HttpContext.Session.SetInt32("UserId", result.UserId.Value);
@@ -55,7 +68,13 @@ namespace Quản_lý_quán_cafe.Controllers
                 if (!string.IsNullOrEmpty(result.RoleName))
                     HttpContext.Session.SetString("RoleName", result.RoleName);
                 HttpContext.Session.SetString("Username", model.Username);
-                HttpContext.Session.SetString("FullName", model.Username);
+                var sessionUser = result.UserId.HasValue
+                    ? await _userRepository.GetByIdAsync(result.UserId.Value)
+                    : null;
+                var fullName = sessionUser?.Employee?.FullName ?? sessionUser?.Customer?.CustomerName ?? model.Username;
+                HttpContext.Session.SetString("FullName", fullName);
+                if (sessionUser?.CustomerID is int customerId)
+                    HttpContext.Session.SetInt32("CustomerId", customerId);
 
 
                 TempData["SuccessMessage"] = result.Message ?? "Đăng nhập thành công";
@@ -70,13 +89,7 @@ namespace Quản_lý_quán_cafe.Controllers
             }
             catch (Exception ex)
             {
-
-                System.Diagnostics.Debug.WriteLine($"Unexpected error during login: {ex.Message}");
-                if (ex.InnerException != null)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Inner Exception: {ex.InnerException.Message}");
-                }
-
+                _logger.LogError(ex, "Unexpected error while signing in as {Login}.", model.Username);
                 ModelState.AddModelError(string.Empty, "Lỗi khi đăng nhập. Vui lòng thử lại.");
                 return View(model);
             }
@@ -89,18 +102,45 @@ namespace Quản_lý_quán_cafe.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("account-auth")]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
+            model.Username = model.Username?.Trim() ?? string.Empty;
+            model.FullName = model.FullName?.Trim() ?? string.Empty;
+            model.Email = model.Email?.Trim().ToLowerInvariant() ?? string.Empty;
             if (!ModelState.IsValid)
             {
                 return View(model);
             }
 
 
-            var existingUser = await _userRepository.GetByUsernameAsync(model.Username);
-            if (existingUser != null)
+            var normalizedUsername = model.Username.ToLowerInvariant();
+            var existingUser = await _context.Users.AnyAsync(user =>
+                user.Username.ToLower() == normalizedUsername);
+            if (existingUser)
             {
                 ModelState.AddModelError(nameof(RegisterViewModel.Username), "Tên đăng nhập đã tồn tại");
+                return View(model);
+            }
+            if (await _context.Employees.AnyAsync(employee => employee.Email.ToLower() == normalizedUsername)
+                || await _context.Customers.AnyAsync(customer => customer.Email != null &&
+                    customer.Email.ToLower() == normalizedUsername))
+            {
+                ModelState.AddModelError(nameof(RegisterViewModel.Username), "Tên đăng nhập trùng với email đã được sử dụng");
+                return View(model);
+            }
+            if (await _context.Customers.AnyAsync(customer => customer.Email != null && customer.Email.ToLower() == model.Email)
+                || await _context.Employees.AnyAsync(employee => employee.Email.ToLower() == model.Email)
+                || await _context.Users.AnyAsync(user => user.Username.ToLower() == model.Email))
+            {
+                ModelState.AddModelError(nameof(RegisterViewModel.Email), "Email đã được sử dụng");
+                return View(model);
+            }
+            var normalizedPhone = string.IsNullOrWhiteSpace(model.Phone) ? null : model.Phone.Trim();
+            if (normalizedPhone is not null && await _context.Customers.AnyAsync(customer =>
+                    customer.Phone == normalizedPhone))
+            {
+                ModelState.AddModelError(nameof(RegisterViewModel.Phone), "Số điện thoại đã được sử dụng");
                 return View(model);
             }
 
@@ -112,10 +152,7 @@ namespace Quản_lý_quán_cafe.Controllers
 
                 if (customerRole == null)
                 {
-
-                    System.Diagnostics.Debug.WriteLine("ERROR: Customer role not found in database. Available roles: " +
-                        string.Join(", ", allRoles?.Select(r => r.RoleName) ?? new List<string>()));
-
+                    _logger.LogError("Customer role was not found while registering {Username}.", model.Username);
                     ModelState.AddModelError(string.Empty, "Hệ thống chưa được cấu hình quyền Customer. Vui lòng liên hệ quản trị viên.");
                     return View(model);
                 }
@@ -123,9 +160,18 @@ namespace Quản_lý_quán_cafe.Controllers
 
                 var newUser = new User
                 {
-                    Username = model.Username,
+                    Username = model.Username.Trim(),
                     PasswordHash = UserRepository.HashPassword(model.Password),
                     RoleID = customerRole.RoleID,
+                    Customer = new Customer
+                    {
+                        CustomerName = model.FullName.Trim(),
+                        Email = model.Email.Trim().ToLowerInvariant(),
+                        Phone = string.IsNullOrWhiteSpace(model.Phone) ? null : model.Phone.Trim(),
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    },
                     IsActive = true,
                     CreatedBy = "System",
                     CreatedAt = DateTime.UtcNow,
@@ -140,26 +186,23 @@ namespace Quản_lý_quán_cafe.Controllers
             }
             catch (DbUpdateException dbEx)
             {
-                System.Diagnostics.Debug.WriteLine($"Database Error during registration: {dbEx.Message}");
-                if (dbEx.InnerException != null)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Inner Exception: {dbEx.InnerException.Message}");
-                }
+                _logger.LogWarning(dbEx, "Database rejected registration for {Username}.", model.Username);
                 ModelState.AddModelError(string.Empty, "Lỗi khi tạo tài khoản. Vui lòng thử lại.");
                 return View(model);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Unexpected error during registration: {ex.Message}");
-                if (ex.InnerException != null)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Inner Exception: {ex.InnerException.Message}");
-                }
+                _logger.LogError(ex, "Unexpected error while registering {Username}.", model.Username);
                 ModelState.AddModelError(string.Empty, "Lỗi khi tạo tài khoản. Vui lòng thử lại.");
                 return View(model);
             }
         }
 
+        [HttpGet]
+        public IActionResult ForgotPassword() => View();
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
             await _accountService.LogoutAsync();

@@ -17,7 +17,7 @@
     </div>
     <div class="dashboard-date">
         <i class="bi bi-calendar3"></i>
-        @DateTime.Today.ToString("dd/MM/yyyy")
+        @Quản_lý_quán_cafe.Models.BusinessClock.Today.ToString("dd/MM/yyyy")
     </div>
 </div>
 
@@ -102,7 +102,7 @@
     <header>
         <div>
             <span class="panel-label">KẾT NỐI THANH TOÁN</span>
-            <h3>Merchant API MoMo / VietQR</h3>
+            <h3>VietQR chuyển khoản</h3>
         </div>
         <span class="badge @(Model.PaymentGateway.IsActive ? "text-bg-success" : "text-bg-secondary")">
             @(Model.PaymentGateway.IsActive ? "Đang bật" : "Chưa liên kết")
@@ -120,31 +120,16 @@
 
     <form asp-area="Admin" asp-controller="Dashboard" asp-action="UpdatePaymentGateway" method="post"
           class="row g-3 align-items-end">
-        <div class="col-md-3">
+        <div class="col-md-4">
             <label asp-for="PaymentGateway.Provider" class="form-label"></label>
             <select asp-for="PaymentGateway.Provider" class="form-select">
                 <option value="VietQR">VietQR</option>
-                <option value="MoMo">MoMo</option>
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
             <label asp-for="PaymentGateway.MerchantId" class="form-label"></label>
             <input asp-for="PaymentGateway.MerchantId" class="form-control" autocomplete="off"
-                   placeholder="VietQR: BANK_ID/BIN; MoMo: PartnerCode" />
-        </div>
-        <div class="col-md-3">
-            <label asp-for="PaymentGateway.ApiKey" class="form-label"></label>
-            <input asp-for="PaymentGateway.ApiKey" type="password" class="form-control" autocomplete="new-password"
-                   placeholder="@(Model.PaymentGateway.HasApiKey ? "Đã lưu — bỏ trống để giữ nguyên" : "Nhập API key")" />
-        </div>
-        <div class="col-md-3">
-            <label asp-for="PaymentGateway.SecretKey" class="form-label"></label>
-            <input asp-for="PaymentGateway.SecretKey" type="password" class="form-control" autocomplete="new-password"
-                   placeholder="@(Model.PaymentGateway.HasSecretKey ? "Đã lưu — bỏ trống để giữ nguyên" : "Nhập secret key")" />
-        </div>
-        <div class="col-md-8">
-            <label asp-for="PaymentGateway.Endpoint" class="form-label"></label>
-            <input asp-for="PaymentGateway.Endpoint" class="form-control" placeholder="https://..." />
+                   placeholder="BANK_ID/BIN, ví dụ 970407" />
         </div>
         <div class="col-md-2">
             <div class="form-check form-switch mb-2">
@@ -154,13 +139,13 @@
         </div>
         <div class="col-md-2">
             <button type="submit" class="btn btn-primary w-100">
-                <i class="bi bi-key"></i> Lưu kết nối
+                <i class="bi bi-qr-code"></i> Lưu VietQR
             </button>
         </div>
         <div class="col-12">
             <small class="text-muted">
-                API key và secret key được mã hóa trước khi lưu. Hệ thống không hiển thị lại giá trị đã lưu.
-                Với VietQR, trường Merchant ID / Client ID là BANK_ID (mã BIN hoặc tên viết tắt ngân hàng).
+                BANK_ID là mã BIN hoặc tên viết tắt ngân hàng được VietQR hỗ trợ. Mã QR chỉ tạo lệnh chuyển khoản;
+                thu ngân vẫn phải xác nhận tiền đã nhận trước khi hoàn tất đơn.
             </small>
         </div>
     </form>

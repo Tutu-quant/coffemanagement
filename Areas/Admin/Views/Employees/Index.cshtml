@@ -82,6 +82,14 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 }
+@if (!string.IsNullOrEmpty(TempData["ErrorMessage"]?.ToString()))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle"></i>
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
 
 <!-- Search & Filter Bar -->
 <div class="card mb-4">
@@ -219,7 +227,7 @@
     </div>
 </div>
 
-<form id="deleteForm" method="post" style="display: none;">
+<form id="deleteForm" asp-action="Delete" method="post" style="display: none;">
     <input type="hidden" name="id" id="deleteId" />
 </form>
 
@@ -360,7 +368,6 @@
         function confirmDelete(id) {
             if (confirm('Bạn chắc chắn muốn xóa nhân viên này? Tài khoản sẽ bị vô hiệu hóa.')) {
                 const form = document.getElementById('deleteForm');
-                form.action = '@Url.Action("Delete")';
                 document.getElementById('deleteId').value = id;
                 form.submit();
             }

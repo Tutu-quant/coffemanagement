@@ -88,18 +88,12 @@ namespace Quản_lý_quán_cafe.Migrations
                     b.Property<DateTime?>("LastVisit")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("MembershipTier")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(30)
-                        .HasColumnType("TEXT")
-                        .HasDefaultValue("Member");
-
                     b.Property<string>("Phone")
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("RewardPoints")
+                        .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(0);
@@ -119,6 +113,10 @@ namespace Quản_lý_quán_cafe.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique();
+
+                    b.HasIndex("Phone")
+                        .IsUnique()
+                        .HasFilter("\"Phone\" IS NOT NULL");
 
                     b.ToTable("Customers");
                 });
@@ -221,6 +219,11 @@ namespace Quản_lý_quán_cafe.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsLoyaltyCustomerAssigned")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
                         .HasColumnType("TEXT");
@@ -236,6 +239,18 @@ namespace Quản_lý_quán_cafe.Migrations
                     b.Property<int?>("PaymentID")
                         .HasColumnType("INTEGER");
 
+                    b.Property<decimal>("PointDiscountAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue(0m);
+
+                    b.Property<decimal>("SubtotalAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue(0m);
+
                     b.Property<int?>("TableID")
                         .HasColumnType("INTEGER");
 
@@ -248,6 +263,19 @@ namespace Quản_lý_quán_cafe.Migrations
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+                    b.Property<string>("VoucherCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("VoucherDiscountAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue(0m);
+
+                    b.Property<int?>("VoucherID")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("OrderID");
 
                     b.HasIndex("CustomerID");
@@ -255,6 +283,8 @@ namespace Quản_lý_quán_cafe.Migrations
                     b.HasIndex("EmployeeID");
 
                     b.HasIndex("TableID");
+
+                    b.HasIndex("VoucherID");
 
                     b.ToTable("Orders");
                 });
@@ -306,6 +336,57 @@ namespace Quản_lý_quán_cafe.Migrations
                     b.HasIndex("ProductID");
 
                     b.ToTable("OrderDetails");
+                });
+
+            modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.OrderPointRedemption", b =>
+                {
+                    b.Property<int>("OrderPointRedemptionID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("CustomerID")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("OrderID")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("PointHistoryID")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PointsUsed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("OrderPointRedemptionID");
+
+                    b.HasIndex("CustomerID");
+
+                    b.HasIndex("PointHistoryID")
+                        .IsUnique()
+                        .HasFilter("\"PointHistoryID\" IS NOT NULL");
+
+                    b.HasIndex("OrderID", "CustomerID")
+                        .IsUnique();
+
+                    b.ToTable("OrderPointRedemptions", t =>
+                        {
+                            t.HasCheckConstraint("CK_OrderPointRedemptions_Discount_Positive", "CAST(\"DiscountAmount\" AS NUMERIC) > 0");
+
+                            t.HasCheckConstraint("CK_OrderPointRedemptions_Points_Positive", "\"PointsUsed\" > 0");
+
+                            t.HasCheckConstraint("CK_OrderPointRedemptions_Sequence_NonNegative", "\"Sequence\" >= 0");
+                        });
                 });
 
             modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.Payment", b =>
@@ -458,6 +539,12 @@ namespace Quản_lý_quán_cafe.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("ActorUserID")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("BalanceAfter")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT")
@@ -468,6 +555,10 @@ namespace Quản_lý_quán_cafe.Migrations
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsDeleted")
@@ -494,11 +585,22 @@ namespace Quản_lý_quán_cafe.Migrations
 
                     b.HasKey("PointHistoryID");
 
+                    b.HasIndex("ActorUserID");
+
                     b.HasIndex("CustomerID");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique()
+                        .HasFilter("\"IdempotencyKey\" IS NOT NULL");
 
                     b.HasIndex("OrderID");
 
-                    b.ToTable("PointHistories");
+                    b.ToTable("PointHistories", t =>
+                        {
+                            t.HasCheckConstraint("CK_PointHistories_BalanceAfter_NonNegative", "\"BalanceAfter\" >= 0");
+
+                            t.HasCheckConstraint("CK_PointHistories_Points_NotZero", "\"Points\" <> 0");
+                        });
                 });
 
             modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.Product", b =>
@@ -649,6 +751,9 @@ namespace Quản_lý_quán_cafe.Migrations
                     b.Property<string>("ReservationStatus")
                         .IsRequired()
                         .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ReservationTime")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("TableID")
@@ -807,6 +912,9 @@ namespace Quản_lý_quán_cafe.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("CustomerID")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("EmployeeID")
                         .HasColumnType("INTEGER");
 
@@ -842,6 +950,9 @@ namespace Quản_lý_quán_cafe.Migrations
 
                     b.HasKey("UserID");
 
+                    b.HasIndex("CustomerID")
+                        .IsUnique();
+
                     b.HasIndex("EmployeeID")
                         .IsUnique();
 
@@ -851,6 +962,65 @@ namespace Quản_lý_quán_cafe.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.Voucher", b =>
+                {
+                    b.Property<int>("VoucherID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("DiscountType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("DiscountValue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.HasKey("VoucherID");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Vouchers", t =>
+                        {
+                            t.HasCheckConstraint("CK_Vouchers_Discount", "(\"DiscountType\" = 'Percent' AND CAST(\"DiscountValue\" AS NUMERIC) > 0 AND CAST(\"DiscountValue\" AS NUMERIC) <= 100) OR (\"DiscountType\" = 'Fixed' AND CAST(\"DiscountValue\" AS NUMERIC) > 0)");
+                        });
                 });
 
             modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.Order", b =>
@@ -869,11 +1039,18 @@ namespace Quản_lý_quán_cafe.Migrations
                         .HasForeignKey("TableID")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("Quản_lý_quán_cafe.Models.Entities.Voucher", "Voucher")
+                        .WithMany("Orders")
+                        .HasForeignKey("VoucherID")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Customer");
 
                     b.Navigation("Employee");
 
                     b.Navigation("Table");
+
+                    b.Navigation("Voucher");
                 });
 
             modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.OrderDetail", b =>
@@ -895,6 +1072,32 @@ namespace Quản_lý_quán_cafe.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.OrderPointRedemption", b =>
+                {
+                    b.HasOne("Quản_lý_quán_cafe.Models.Entities.Customer", "Customer")
+                        .WithMany("PointRedemptions")
+                        .HasForeignKey("CustomerID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Quản_lý_quán_cafe.Models.Entities.Order", "Order")
+                        .WithMany("PointRedemptions")
+                        .HasForeignKey("OrderID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Quản_lý_quán_cafe.Models.Entities.PointHistory", "PointHistory")
+                        .WithOne("PointRedemption")
+                        .HasForeignKey("Quản_lý_quán_cafe.Models.Entities.OrderPointRedemption", "PointHistoryID")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Order");
+
+                    b.Navigation("PointHistory");
+                });
+
             modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.Payment", b =>
                 {
                     b.HasOne("Quản_lý_quán_cafe.Models.Entities.Order", "Order")
@@ -908,16 +1111,23 @@ namespace Quản_lý_quán_cafe.Migrations
 
             modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.PointHistory", b =>
                 {
+                    b.HasOne("Quản_lý_quán_cafe.Models.Entities.User", "ActorUser")
+                        .WithMany()
+                        .HasForeignKey("ActorUserID")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Quản_lý_quán_cafe.Models.Entities.Customer", "Customer")
                         .WithMany("PointHistories")
                         .HasForeignKey("CustomerID")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Quản_lý_quán_cafe.Models.Entities.Order", "Order")
                         .WithMany()
                         .HasForeignKey("OrderID")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ActorUser");
 
                     b.Navigation("Customer");
 
@@ -992,6 +1202,11 @@ namespace Quản_lý_quán_cafe.Migrations
 
             modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.User", b =>
                 {
+                    b.HasOne("Quản_lý_quán_cafe.Models.Entities.Customer", "Customer")
+                        .WithOne("User")
+                        .HasForeignKey("Quản_lý_quán_cafe.Models.Entities.User", "CustomerID")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Quản_lý_quán_cafe.Models.Entities.Employee", "Employee")
                         .WithOne("User")
                         .HasForeignKey("Quản_lý_quán_cafe.Models.Entities.User", "EmployeeID")
@@ -1002,6 +1217,8 @@ namespace Quản_lý_quán_cafe.Migrations
                         .HasForeignKey("RoleID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Customer");
 
                     b.Navigation("Employee");
 
@@ -1019,9 +1236,13 @@ namespace Quản_lý_quán_cafe.Migrations
 
                     b.Navigation("PointHistories");
 
+                    b.Navigation("PointRedemptions");
+
                     b.Navigation("Reservations");
 
                     b.Navigation("Reviews");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.Employee", b =>
@@ -1034,11 +1255,18 @@ namespace Quản_lý_quán_cafe.Migrations
                     b.Navigation("OrderDetails");
 
                     b.Navigation("Payment");
+
+                    b.Navigation("PointRedemptions");
                 });
 
             modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.Payment", b =>
                 {
                     b.Navigation("PromotionUses");
+                });
+
+            modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.PointHistory", b =>
+                {
+                    b.Navigation("PointRedemption");
                 });
 
             modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.Product", b =>
@@ -1060,6 +1288,11 @@ namespace Quản_lý_quán_cafe.Migrations
             modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.Role", b =>
                 {
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("Quản_lý_quán_cafe.Models.Entities.Voucher", b =>
+                {
+                    b.Navigation("Orders");
                 });
 #pragma warning restore 612, 618
         }

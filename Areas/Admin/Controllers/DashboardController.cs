@@ -4,10 +4,13 @@ using Quản_lý_quán_cafe.Areas.Admin.ViewModels;
 using Quản_lý_quán_cafe.Data;
 using Quản_lý_quán_cafe.Models.Entities;
 using Quản_lý_quán_cafe.Services;
+using Quản_lý_quán_cafe.Filters;
+using Quản_lý_quán_cafe.Models;
 
 namespace Quản_lý_quán_cafe.Areas.Admin.Controllers;
 
 [Area("Admin")]
+[SessionAuthorize("Admin")]
 public class DashboardController : Controller
 {
     private readonly ApplicationDbContext _context;
@@ -25,26 +28,29 @@ public class DashboardController : Controller
         if (HttpContext.Session.GetString("RoleName") != "Admin")
             return RedirectToAction("Login", "Account", new { area = "" });
 
-        var today = DateTime.Today;
+        var today = BusinessClock.Today;
         var tomorrow = today.AddDays(1);
         var monthStart = new DateTime(today.Year, today.Month, 1);
         var sevenDaysAgo = today.AddDays(-6);
-        var yesterday = today.AddDays(-1);
+        var todayUtc = BusinessClock.ToUtc(today);
+        var tomorrowUtc = BusinessClock.ToUtc(tomorrow);
+        var monthStartUtc = BusinessClock.ToUtc(monthStart);
+        var sevenDaysAgoUtc = BusinessClock.ToUtc(sevenDaysAgo);
 
-        var completedOrders = await _context.Orders
+        var completedPayments = await _context.Payments
             .AsNoTracking()
-            .Where(o => !o.IsDeleted
-                && o.OrderStatus == "Completed"
-                && o.OrderDate >= sevenDaysAgo)
-            .Select(o => new { o.OrderDate, o.TotalAmount })
+            .Where(payment => !payment.IsDeleted && payment.PaymentStatus == "Completed"
+                && payment.PaymentDate >= sevenDaysAgoUtc && payment.PaymentDate < tomorrowUtc)
+            .Select(payment => new { payment.PaymentDate, payment.Amount })
             .ToListAsync();
 
         var revenuePoints = Enumerable.Range(0, 7)
             .Select(offset =>
             {
                 var date = sevenDaysAgo.AddDays(offset);
-                var orders = completedOrders.Where(o => o.OrderDate.Date == date);
-                return new RevenuePoint(date, orders.Sum(o => o.TotalAmount), orders.Count());
+                var payments = completedPayments.Where(payment =>
+                    BusinessClock.FromUtc(payment.PaymentDate).Date == date);
+                return new RevenuePoint(date, payments.Sum(payment => payment.Amount), payments.Count());
             })
             .ToList();
 
@@ -54,13 +60,11 @@ public class DashboardController : Controller
             ? (todayRevenue > 0 ? 100 : 0)
             : Math.Round((todayRevenue - yesterdayRevenue) / yesterdayRevenue * 100, 1);
 
-        var monthRevenue = await _context.Orders
+        var monthRevenue = await _context.Payments
             .AsNoTracking()
-            .Where(o => !o.IsDeleted
-                && o.OrderStatus == "Completed"
-                && o.OrderDate >= monthStart
-                && o.OrderDate < tomorrow)
-            .SumAsync(o => (decimal?)o.TotalAmount) ?? 0;
+            .Where(payment => !payment.IsDeleted && payment.PaymentStatus == "Completed"
+                && payment.PaymentDate >= monthStartUtc && payment.PaymentDate < tomorrowUtc)
+            .SumAsync(payment => (decimal?)payment.Amount) ?? 0;
 
         var bestSellerRows = await _context.OrderDetails
             .AsNoTracking()
@@ -68,7 +72,8 @@ public class DashboardController : Controller
                 && d.Order != null
                 && !d.Order.IsDeleted
                 && d.Order.OrderStatus == "Completed"
-                && d.Order.OrderDate >= monthStart)
+                && d.Order.CompletedDate >= monthStartUtc
+                && d.Order.CompletedDate < tomorrowUtc)
             .GroupBy(d => new { d.ProductID, d.Product!.ProductName })
             .Select(g => new
             {
@@ -84,19 +89,29 @@ public class DashboardController : Controller
             .Select(x => new BestSellerItem(x.ProductID, x.ProductName, x.Quantity, x.Revenue))
             .ToList();
 
-        var recentOrders = await _context.Orders
+        var recentOrderRows = await _context.Orders
             .AsNoTracking()
             .Where(o => !o.IsDeleted)
             .OrderByDescending(o => o.OrderDate)
             .Take(8)
-            .Select(o => new RecentOrderItem(
+            .Select(o => new
+            {
                 o.OrderID,
-                o.Table != null ? o.Table.TableNumber : "Mang đi",
-                o.Customer != null ? o.Customer.CustomerName : "Khách lẻ",
+                TableName = o.Table != null ? o.Table.TableNumber : "Mang đi",
+                CustomerName = o.Customer != null ? o.Customer.CustomerName : "Khách lẻ",
                 o.TotalAmount,
                 o.OrderStatus,
-                o.OrderDate))
+                o.OrderDate
+            })
             .ToListAsync();
+        var recentOrders = recentOrderRows.Select(o => new RecentOrderItem(
+                o.OrderID,
+                o.TableName,
+                o.CustomerName,
+                o.TotalAmount,
+                o.OrderStatus,
+                BusinessClock.FromUtc(o.OrderDate)))
+            .ToList();
 
         var lowStockItems = await _context.Products
             .AsNoTracking()
@@ -109,15 +124,14 @@ public class DashboardController : Controller
         var paymentAccount = await _context.PaymentAccountSettings.AsNoTracking()
             .FirstOrDefaultAsync(x => x.Provider == "Placeholder");
         var paymentGateway = await _context.PaymentGatewaySettings.AsNoTracking()
-            .OrderByDescending(x => x.IsActive)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(x => x.Provider == "VietQR");
 
         var viewModel = new DashboardViewModel
         {
             TodayRevenue = todayRevenue,
             MonthRevenue = monthRevenue,
             TodayOrders = await _context.Orders.CountAsync(o =>
-                !o.IsDeleted && o.OrderDate >= today && o.OrderDate < tomorrow),
+                !o.IsDeleted && o.OrderDate >= todayUtc && o.OrderDate < tomorrowUtc),
             ActiveTables = await _context.RestaurantTables.CountAsync(t =>
                 !t.IsDeleted && t.TableStatus != "Available"),
             TotalCustomers = await _context.Customers.CountAsync(c => !c.IsDeleted && c.IsActive),

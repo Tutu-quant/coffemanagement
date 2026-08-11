@@ -28,9 +28,12 @@
         @Html.AntiForgeryToken()
         <input asp-for="TableID" type="hidden" id="TableID" />
 
-        <div asp-validation-summary="ModelOnly" class="alert alert-danger alert-dismissible fade show d-none">
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger alert-dismissible fade show">
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
 
         <div class="reservation-layout">
             <div class="tables-section">

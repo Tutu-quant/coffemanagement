@@ -78,7 +78,10 @@ namespace Quản_lý_quán_cafe.Repository
         public async Task UpdateAsync(Category category)
         {
             category.UpdatedAt = DateTime.UtcNow;
-            _context.Categories.Update(category);
+            var entry = _context.Entry(category);
+            if (entry.State == EntityState.Detached)
+                _context.Categories.Attach(category);
+            _context.Entry(category).State = EntityState.Modified;
             await _context.SaveChangesAsync();
         }
 
@@ -88,7 +91,17 @@ namespace Quản_lý_quán_cafe.Repository
             if (category != null)
             {
                 category.IsDeleted = true;
-                await UpdateAsync(category);
+                category.IsActive = false;
+                category.UpdatedAt = DateTime.UtcNow;
+                var products = await _context.Products
+                    .Where(product => product.CategoryID == id && !product.IsDeleted)
+                    .ToListAsync();
+                foreach (var product in products)
+                {
+                    product.IsActive = false;
+                    product.UpdatedAt = DateTime.UtcNow;
+                }
+                await _context.SaveChangesAsync();
             }
         }
 

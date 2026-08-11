@@ -31,6 +31,8 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
                 .AsNoTracking()
                 .Include(o => o.Customer)
                 .Include(o => o.Table)
+                .Include(o => o.Payment)
+                .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
                 .Where(o =>
                     !o.IsDeleted &&
                     statuses.Contains(o.OrderStatus))
@@ -47,8 +49,12 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
                 .Include(o => o.Employee)
                 .Include(o => o.Table)
                 .Include(o => o.Payment)
-                .Include(o => o.OrderDetails)
+                .Include(o => o.Voucher)
+                .Include(o => o.PointRedemptions)
+                    .ThenInclude(redemption => redemption.Customer)
+                .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
                     .ThenInclude(od => od.Product)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(o =>
                     o.OrderID == id &&
                     !o.IsDeleted);
@@ -61,8 +67,12 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
                 .Include(o => o.Employee)
                 .Include(o => o.Table)
                 .Include(o => o.Payment)
-                .Include(o => o.OrderDetails)
+                .Include(o => o.Voucher)
+                .Include(o => o.PointRedemptions)
+                    .ThenInclude(redemption => redemption.Customer)
+                .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
                     .ThenInclude(od => od.Product)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(o =>
                     o.OrderID == id &&
                     !o.IsDeleted);
@@ -76,6 +86,7 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
                 .Include(o => o.Employee)
                 .Include(o => o.Table)
                 .Include(o => o.Payment)
+                .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
                 .OrderByDescending(o => o.OrderDate)
                 .ToListAsync();
         }
@@ -93,7 +104,10 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
         {
             order.UpdatedAt = DateTime.UtcNow;
 
-            _context.Orders.Update(order);
+            var entry = _context.Entry(order);
+            if (entry.State == EntityState.Detached)
+                _context.Orders.Attach(order);
+            _context.Entry(order).State = EntityState.Modified;
             await _context.SaveChangesAsync();
         }
 
@@ -107,7 +121,7 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
             order.IsDeleted = true;
             order.UpdatedAt = DateTime.UtcNow;
 
-            _context.Orders.Update(order);
+            _context.Entry(order).State = EntityState.Modified;
             await _context.SaveChangesAsync();
         }
 
@@ -135,7 +149,7 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
                 .Include(o => o.Customer)
                 .Include(o => o.Employee)
                 .Include(o => o.Payment)
-                .Include(o => o.OrderDetails)
+                .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
                     .ThenInclude(od => od.Product)
                 .Where(o => o.TableID == tableId && !o.IsDeleted)
                 .OrderByDescending(o => o.OrderDate)
@@ -170,6 +184,8 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
                 .Include(o => o.Customer)
                 .Include(o => o.Table)
                 .Include(o => o.Employee)
+                .Include(o => o.Payment)
+                .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
                 .Where(o =>
                     !o.IsDeleted &&
                     (
@@ -190,7 +206,8 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
             int skip = 0,
             int take = 50)
         {
-            var today = DateTime.Today;
+            var start = Quản_lý_quán_cafe.Models.BusinessClock.StartOfTodayUtc;
+            var end = Quản_lý_quán_cafe.Models.BusinessClock.StartOfTomorrowUtc;
 
             return await _context.Orders
                 .AsNoTracking()
@@ -198,7 +215,7 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
                 .Include(o => o.Table)
                 .Where(o =>
                     !o.IsDeleted &&
-                    o.OrderDate.Date == today)
+                    o.OrderDate >= start && o.OrderDate < end)
                 .OrderByDescending(o => o.OrderDate)
                 .Skip(skip)
                 .Take(take)
@@ -237,7 +254,7 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
                 .Where(o =>
                     !o.IsDeleted &&
                     o.OrderDate >= startDate &&
-                    o.OrderDate <= endDate)
+                    o.OrderDate < endDate)
                 .OrderByDescending(o => o.OrderDate)
                 .Skip(skip)
                 .Take(take)
@@ -253,6 +270,8 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
                 .Include(o => o.Customer)
                 .Include(o => o.Employee)
                 .Include(o => o.Table)
+                .Include(o => o.Payment)
+                .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
                 .Where(o => !o.IsDeleted);
 
             var total = await query.CountAsync();
@@ -269,6 +288,7 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
         public async Task<(List<Order> Orders, int Total)> GetFilteredOrdersAsync(
             string? searchTerm = null,
             string? status = null,
+            string? paymentStatus = null,
             DateTime? startDate = null,
             DateTime? endDate = null,
             int? customerId = null,
@@ -282,6 +302,8 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
                 .Include(o => o.Customer)
                 .Include(o => o.Employee)
                 .Include(o => o.Table)
+                .Include(o => o.Payment)
+                .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
                 .Where(o => !o.IsDeleted)
                 .AsQueryable();
 
@@ -290,12 +312,21 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
                 query = query.Where(o =>
                     o.OrderID.ToString().Contains(searchTerm) ||
                     (o.Customer != null &&
-                     o.Customer.CustomerName.Contains(searchTerm)));
+                     o.Customer.CustomerName.Contains(searchTerm)) ||
+                    (o.Table != null && o.Table.TableNumber.Contains(searchTerm)) ||
+                    (o.Employee != null && o.Employee.FullName.Contains(searchTerm)));
             }
 
             if (!string.IsNullOrWhiteSpace(status))
             {
                 query = query.Where(o => o.OrderStatus == status);
+            }
+
+            if (!string.IsNullOrWhiteSpace(paymentStatus))
+            {
+                query = paymentStatus == "Pending"
+                    ? query.Where(o => o.Payment == null || o.Payment.PaymentStatus == "Pending")
+                    : query.Where(o => o.Payment != null && o.Payment.PaymentStatus == paymentStatus);
             }
 
             if (customerId.HasValue)
@@ -315,7 +346,7 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
 
             if (endDate.HasValue)
             {
-                query = query.Where(o => o.OrderDate <= endDate.Value);
+                query = query.Where(o => o.OrderDate < endDate.Value);
             }
 
             query = sortBy switch
@@ -367,9 +398,10 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
                 .AsNoTracking()
                 .Include(o => o.Customer)
                 .Include(o => o.Table)
+                .Include(o => o.Payment)
                 .Where(o =>
                     !o.IsDeleted &&
-                    o.PaymentID == null)
+                    (o.Payment == null || o.Payment.IsDeleted || o.Payment.PaymentStatus != PaymentStatusConstants.Completed))
                 .OrderByDescending(o => o.OrderDate)
                 .Skip(skip)
                 .Take(pageSize)
@@ -383,7 +415,7 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
                 .Include(o => o.Payment)
                 .Where(o =>
                     !o.IsDeleted &&
-                    o.PaymentID == paymentId)
+                    o.Payment != null && o.Payment.PaymentID == paymentId)
                 .ToListAsync();
         }
 
@@ -392,7 +424,9 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
             var totalOrders = await _context.Orders.CountAsync(o => !o.IsDeleted);
             var completedOrders = await _context.Orders.CountAsync(o => !o.IsDeleted && o.OrderStatus == OrderStatusConstants.Completed);
             var pendingOrders = await _context.Orders.CountAsync(o => !o.IsDeleted && o.OrderStatus != OrderStatusConstants.Completed && o.OrderStatus != OrderStatusConstants.Cancelled);
-            var totalRevenue = await _context.Orders.Where(o => !o.IsDeleted).SumAsync(o => (decimal?)o.TotalAmount) ?? 0m;
+            var totalRevenue = await _context.Payments
+                .Where(payment => !payment.IsDeleted && payment.PaymentStatus == PaymentStatusConstants.Completed)
+                .SumAsync(payment => (decimal?)payment.Amount) ?? 0m;
 
             return new
             {
@@ -407,7 +441,8 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
         {
             var orders = await _context.Orders
                 .AsNoTracking()
-                .Where(o => !o.IsDeleted && o.OrderDate >= startDate && o.OrderDate <= endDate)
+                .Include(o => o.Payment)
+                .Where(o => !o.IsDeleted && o.OrderDate >= startDate && o.OrderDate < endDate)
                 .ToListAsync();
 
             return new
@@ -416,7 +451,10 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
                 EndDate = endDate,
                 TotalOrders = orders.Count,
                 CompletedOrders = orders.Count(o => o.OrderStatus == OrderStatusConstants.Completed),
-                TotalRevenue = orders.Sum(o => o.TotalAmount)
+                TotalRevenue = orders
+                    .Where(o => o.OrderStatus == OrderStatusConstants.Completed &&
+                                o.Payment is { IsDeleted: false, PaymentStatus: PaymentStatusConstants.Completed })
+                    .Sum(o => o.Payment!.Amount)
             };
         }
 
@@ -424,12 +462,14 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
         {
             var revenueByStatus = await _context.Orders
                 .AsNoTracking()
-                .Where(o => !o.IsDeleted)
+                .Where(o => !o.IsDeleted && o.OrderStatus == OrderStatusConstants.Completed &&
+                            o.Payment != null && !o.Payment.IsDeleted &&
+                            o.Payment.PaymentStatus == PaymentStatusConstants.Completed)
                 .GroupBy(o => o.OrderStatus)
                 .Select(g => new
                 {
                     Status = g.Key,
-                    Revenue = g.Sum(o => o.TotalAmount),
+                    Revenue = g.Sum(o => o.Payment!.Amount),
                     OrderCount = g.Count()
                 })
                 .OrderByDescending(x => x.Revenue)
@@ -443,18 +483,22 @@ namespace Quản_lý_quán_cafe.Repository.Implementations
 
         public async Task<dynamic> GetRevenueByDateAsync(DateTime startDate, DateTime endDate)
         {
-            var dailyRevenue = await _context.Orders
+            var payments = await _context.Payments
                 .AsNoTracking()
-                .Where(o => !o.IsDeleted && o.OrderDate >= startDate && o.OrderDate <= endDate)
-                .GroupBy(o => o.OrderDate.Date)
-                .Select(g => new
+                .Where(payment => !payment.IsDeleted && payment.PaymentStatus == PaymentStatusConstants.Completed &&
+                                  payment.PaymentDate >= startDate && payment.PaymentDate < endDate)
+                .Select(payment => new { payment.PaymentDate, payment.Amount })
+                .ToListAsync();
+            var dailyRevenue = payments
+                .GroupBy(payment => Quản_lý_quán_cafe.Models.BusinessClock.FromUtc(payment.PaymentDate).Date)
+                .Select(group => new
                 {
-                    Date = g.Key,
-                    Revenue = g.Sum(o => o.TotalAmount),
-                    OrderCount = g.Count()
+                    Date = group.Key,
+                    Revenue = group.Sum(payment => payment.Amount),
+                    OrderCount = group.Count()
                 })
                 .OrderBy(x => x.Date)
-                .ToListAsync();
+                .ToList();
 
             return new
             {

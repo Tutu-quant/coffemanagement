@@ -4,6 +4,16 @@
     Layout = "~/Views/Shared/_UnifiedLayout.cshtml";
     ViewData["Title"] = "Đặt món";
     ViewData["PageTitle"] = "Menu gọi món";
+    var initialCartJson = "[]";
+    try
+    {
+        var parsedCart = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(Model.CartJson ?? "[]");
+        initialCartJson = System.Text.Json.JsonSerializer.Serialize(parsedCart);
+    }
+    catch (System.Text.Json.JsonException)
+    {
+        initialCartJson = "[]";
+    }
 }
 
 @section Head {
@@ -81,7 +91,7 @@
             </select>
             <span asp-validation-for="TableId" class="text-danger"></span>
             <label asp-for="Notes">Ghi chú chung</label>
-            <textarea asp-for="Notes" class="form-control" rows="2" placeholder="Ít đá, giao món cùng lúc..."></textarea>
+            <textarea asp-for="Notes" class="form-control" rows="2" maxlength="1000" placeholder="Ít đá, giao món cùng lúc..."></textarea>
             <div class="cart-total"><span>Tổng cộng</span><strong id="cartTotal">0đ</strong></div>
             <button type="submit" class="place-order-btn"><i class="bi bi-send"></i> Gửi đơn tới quầy</button>
         </form>
@@ -89,9 +99,10 @@
 </div>
 
 @section Scripts {
+<script type="application/json" id="initialCartData">@Html.Raw(initialCartJson)</script>
 <script>
-    const initialCart = @Html.Raw(string.IsNullOrWhiteSpace(Model.CartJson) ? "[]" : Model.CartJson);
-    const cart = new Map(Array.isArray(initialCart) ? initialCart.map(item => [Number(item.productId ?? item.ProductId), item]) : []);
+    const initialCart = JSON.parse(document.getElementById('initialCartData')?.textContent || '[]');
+    const cart = new Map();
     const money = value => new Intl.NumberFormat('vi-VN').format(value || 0) + 'đ';
 
     function createCartItem(button) {
@@ -115,6 +126,7 @@
 
         existing.quantity += 1;
         cart.set(id, existing);
+        window.BrewPointRealtime?.markDirty();
         renderCart();
     }
 
@@ -134,12 +146,14 @@
         item.quantity += change;
         if (item.quantity <= 0) cart.delete(id);
         else if (item.quantity > item.stock) item.quantity = item.stock;
+        window.BrewPointRealtime?.markDirty();
         renderCart();
     }
 
     function updateNotes(id, value) {
         const item = cart.get(id);
-        if (item) item.notes = value;
+        if (item) item.notes = String(value || '').slice(0, 500);
+        window.BrewPointRealtime?.markDirty();
         syncCart();
     }
 
@@ -151,7 +165,7 @@
             : items.map(item => `<div class="cart-item">
                 <div class="cart-item-head"><strong>${escapeHtml(item.name)}</strong><button type="button" onclick="changeQuantity(${item.productId}, -${item.quantity})"><i class="bi bi-x"></i></button></div>
                 <div class="cart-item-row"><span>${money(item.price)}</span><div class="quantity-control"><button type="button" onclick="changeQuantity(${item.productId},-1)">−</button><b>${item.quantity}</b><button type="button" onclick="changeQuantity(${item.productId},1)">+</button></div></div>
-                <input value="${escapeHtml(item.notes || '')}" onchange="updateNotes(${item.productId},this.value)" placeholder="Ghi chú món..." />
+                <input value="${escapeHtml(item.notes || '')}" maxlength="500" onchange="updateNotes(${item.productId},this.value)" placeholder="Ghi chú món..." />
             </div>`).join('');
         document.getElementById('cartCount').textContent = `${items.reduce((sum, item) => sum + item.quantity, 0)} món`;
         document.getElementById('cartTotal').textContent = money(items.reduce((sum, item) => sum + item.price * item.quantity, 0));
@@ -174,6 +188,18 @@
     }
 
     function initializeOrderPage() {
+        if (Array.isArray(initialCart)) {
+            initialCart.forEach(rawItem => {
+                const id = Number(rawItem.productId ?? rawItem.ProductId);
+                const button = document.querySelector(`.add-product[data-id="${id}"]`);
+                if (!button) return;
+                const item = createCartItem(button);
+                item.quantity = Math.min(item.stock, Math.max(0, Number(rawItem.quantity ?? rawItem.Quantity) || 0));
+                item.notes = String(rawItem.notes ?? rawItem.Notes ?? '').slice(0, 500);
+                if (item.quantity > 0) cart.set(id, item);
+            });
+            if (cart.size > 0) window.BrewPointRealtime?.markDirty();
+        }
         let activeCategory = 'all';
         let searchQuery = '';
 

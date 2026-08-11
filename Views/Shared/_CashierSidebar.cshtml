@@ -16,6 +16,16 @@
                     <span>Tổng quan</span>
                 </a>
             </li>
+            <li class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reservations" ? "active" : "")">
+                <a href="@Url.Action("Index", "Reservations", new { area = "Cashier", status = "Pending" })" class="nav-link">
+                    <i class="bi bi-calendar-check"></i>
+                    <span>Lịch đặt bàn</span>
+                    <span class="staff-sidebar-notification-badge"
+                          data-reservation-notification-count
+                          aria-label="0 lịch đặt bàn đang chờ"
+                          hidden>0</span>
+                </a>
+            </li>
             <li class="nav-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "POS" ? "active" : "")">
                 <a href="@Url.Action("Index", "POS", new { area = "Cashier" })" class="nav-link">
                     <i class="bi bi-shop"></i>
@@ -51,9 +61,11 @@
                 <p class="user-role">Thu ngân</p>
             </div>
         </div>
-        <a href="@Url.Action("Logout", "Account", new { area = "" })" class="btn-logout">
+        <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+        <button type="submit" class="btn-logout">
             <i class="bi bi-box-arrow-right"></i>
             Đăng xuất
-        </a>
+        </button>
+        </form>
     </div>
 </aside>

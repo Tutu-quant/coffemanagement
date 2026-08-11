@@ -1,11 +1,18 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System.ComponentModel.DataAnnotations;
 
 namespace Quản_lý_quán_cafe.Areas.Customer.ViewModels;
 
 public class OrderMenuViewModel
 {
+    [Range(1, int.MaxValue, ErrorMessage = "Vui lòng chọn bàn phục vụ.")]
     public int TableId { get; set; }
+
+    [StringLength(1000, ErrorMessage = "Ghi chú chung không được vượt quá 1000 ký tự.")]
     public string? Notes { get; set; }
+
+    [Required]
+    [StringLength(200000, ErrorMessage = "Giỏ hàng quá lớn.")]
     public string CartJson { get; set; } = "[]";
     public List<SelectListItem> Tables { get; set; } = [];
     public List<MenuCategoryViewModel> Categories { get; set; } = [];

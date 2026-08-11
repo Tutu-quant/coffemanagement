@@ -6,13 +6,11 @@ namespace Quản_lý_quán_cafe.Repository.Interfaces
     {
         Task<Customer?> GetByIdAsync(int id);
         Task<List<Customer>> GetAllAsync();
-        Task<List<Customer>> SearchWithFilterAsync(string searchTerm, string? membershipTier, string sortBy, int skip, int take);
+        Task<List<Customer>> SearchWithFilterAsync(string searchTerm, string sortBy, int skip, int take);
         Task<int> GetCountAsync();
-        Task<int> GetCountByFilterAsync(string searchTerm, string? membershipTier);
-        Task<int> GetCountVIPAsync();
+        Task<int> GetCountByFilterAsync(string searchTerm);
         Task<int> GetCountTodayAsync();
-        Task<long> GetTotalPointsAsync();
-        Task<bool> ExistsByPhoneAsync(string phone, int? excludeId = null);
+        Task<bool> ExistsByPhoneAsync(string? phone, int? excludeId = null);
         Task<Customer?> GetByEmailAsync(string email);
         Task AddAsync(Customer customer);
         Task UpdateAsync(Customer customer);

@@ -20,9 +20,12 @@
 
                 logger?.LogInformation("Response: {StatusCode}", context.Response.StatusCode);
             }
-            catch (Exception)
+            catch (Exception exception)
             {
-                await _next(context);
+                var logger = context.RequestServices.GetService<ILogger<LoggingMiddleware>>();
+                logger?.LogError(exception, "Request failed: {Method} {Path}",
+                    context.Request.Method, context.Request.Path);
+                throw;
             }
         }
     }

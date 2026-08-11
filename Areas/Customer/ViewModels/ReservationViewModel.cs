@@ -12,7 +12,7 @@ public class ReservationViewModel
     public int TableID { get; set; }
 
     [Required(ErrorMessage = "Vui lòng chọn thời gian"), Display(Name = "Thời gian đặt")]
-    public DateTime ReservationDate { get; set; } = DateTime.Now.AddHours(1);
+    public DateTime ReservationDate { get; set; } = Quản_lý_quán_cafe.Models.BusinessClock.Now.AddHours(1);
 
     [Range(1, 50, ErrorMessage = "Số khách phải từ 1 đến 50"), Display(Name = "Số khách")]
     public int NumberOfGuests { get; set; } = 1;

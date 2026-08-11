@@ -1,5 +1,7 @@
 @model CategoryDetailViewModel
 
+@using Quản_lý_quán_cafe.Models
+
 @{
     ViewData["Title"] = "Chi tiết danh mục";
     ViewData["PageTitle"] = "Chi tiết danh mục";
@@ -46,12 +48,12 @@
 
             <div style="margin-bottom: 20px;">
                 <label style="display: block; font-weight: 600; color: var(--text-light); font-size: 12px; margin-bottom: 8px;">Ngày tạo</label>
-                <p style="margin: 0; font-size: 14px;">@Model?.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</p>
+                <p style="margin: 0; font-size: 14px;">@(Model is null ? "-" : BusinessClock.FromUtc(Model.CreatedAt).ToString("dd/MM/yyyy HH:mm:ss"))</p>
             </div>
 
             <div style="margin-bottom: 20px;">
                 <label style="display: block; font-weight: 600; color: var(--text-light); font-size: 12px; margin-bottom: 8px;">Ngày cập nhật</label>
-                <p style="margin: 0; font-size: 14px;">@(Model?.UpdatedAt?.ToString("dd/MM/yyyy HH:mm:ss") ?? "-")</p>
+                <p style="margin: 0; font-size: 14px;">@(Model?.UpdatedAt is DateTime updatedAt ? BusinessClock.FromUtc(updatedAt).ToString("dd/MM/yyyy HH:mm:ss") : "-")</p>
             </div>
         </div>
 

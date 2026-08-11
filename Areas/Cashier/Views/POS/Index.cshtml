@@ -23,17 +23,63 @@
 @section Scripts {
     <script>
         let currentTableId = @(Model.CurrentTable?.TableID ?? 0);
-        let currentDiscountType = 'none';
+        let currentTableStatus = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CurrentTable?.Status ?? string.Empty));
         let currentPaymentMethod = '@(Model.PaymentMethod ?? "cash")';
         let currentQrIntent = null;
-        let currentCustomerId = @(Model.Customer?.CustomerID?.ToString() ?? "null");
-        const subtotal = @Model.Subtotal.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        const currentOrderId = @(Model.CurrentTable?.OrderID?.ToString() ?? "null");
+        const draftStorageKey = `brewpoint:pos-draft:${currentTableId}`;
+        let checkoutInProgress = false;
+        let loyaltyRequestInProgress = false;
+        const selectedLoyaltyAccounts = new Map();
+        const initialCheckoutSummary = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new
+        {
+            orderId = Model.CurrentTable?.OrderID,
+            subtotalAmount = Model.Subtotal,
+            pointDiscountAmount = string.Equals(Model.DiscountMode, "Points", StringComparison.OrdinalIgnoreCase) ? Model.DiscountAmount : 0,
+            voucherDiscountAmount = string.Equals(Model.DiscountMode, "Voucher", StringComparison.OrdinalIgnoreCase) ? Model.DiscountAmount : 0,
+            discountAmount = Model.DiscountAmount,
+            totalAmount = Model.Total,
+            mode = Model.DiscountMode,
+            voucherCode = Model.VoucherCode,
+            earnedPoints = Model.EarnedPoints,
+            accounts = Model.DiscountAccounts.Select(account => new
+            {
+                customerId = account.CustomerID,
+                name = account.Name,
+                username = account.Account,
+                phone = account.Phone,
+                availablePoints = account.AvailablePoints,
+                pointsUsed = account.PointsUsed,
+                discountAmount = account.DiscountAmount
+            })
+        }));
+        const primaryLoyaltyAccount = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Customer?.CustomerID is int customerId
+            ? new
+            {
+                customerId,
+                name = Model.Customer.Name,
+                username = string.Empty,
+                phone = Model.Customer.Phone,
+                availablePoints = Model.Customer.RewardPoints,
+                pointsUsed = 0,
+                discountAmount = 0m
+            }
+            : null));
+        let checkoutSummary = normalizeCheckoutSummary(initialCheckoutSummary);
+        if (primaryLoyaltyAccount) {
+            const primary = normalizeLoyaltyAccount(primaryLoyaltyAccount);
+            if (primary.customerId > 0 && !selectedLoyaltyAccounts.has(primary.customerId)) {
+                selectedLoyaltyAccounts.set(primary.customerId, primary);
+            }
+        }
+        checkoutSummary.accounts.forEach(account => selectedLoyaltyAccounts.set(account.customerId, account));
 
         function selectTable(tableId) {
             window.location.href = `/Cashier/POS?tableId=${tableId}`;
         }
 
         function postForm(url, values) {
+            persistDraft();
             const body = new URLSearchParams(values);
             const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
             if (token) body.set('__RequestVerificationToken', token);
@@ -43,12 +89,48 @@
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
                 body
             }).then(async response => {
-                const data = await response.json();
+                const text = await response.text();
+                let data = {};
+                try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
+                if (response.redirected && response.url.toLowerCase().includes('/account/login')) {
+                    throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+                }
                 if (!response.ok || data.success === false) {
-                    throw new Error(data.message || 'Yêu cầu thất bại');
+                    throw new Error(data.message || `Yêu cầu thất bại (${response.status})`);
                 }
                 return data;
             });
+        }
+
+        function csrfToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        }
+
+        async function readJsonResponse(response) {
+            const text = await response.text();
+            let data = {};
+            try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
+            if (response.redirected && response.url.toLowerCase().includes('/account/login')) {
+                throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+            }
+            if (!response.ok) {
+                throw new Error(data.detail || data.message || data.title || `Yêu cầu thất bại (${response.status})`);
+            }
+            return data;
+        }
+
+        async function loyaltyRequest(method, url, body = null) {
+            window.BrewPointRealtime?.suppressReloadFor(6000);
+            const headers = {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken()
+            };
+            const options = { method, headers, credentials: 'same-origin' };
+            if (body !== null) {
+                headers['Content-Type'] = 'application/json';
+                options.body = JSON.stringify(body);
+            }
+            return readJsonResponse(await fetch(url, options));
         }
 
         function getItemQuantity(orderDetailId) {
@@ -56,76 +138,405 @@
             return Number(item?.querySelector('.qty')?.textContent || 0);
         }
 
-        function addProduct(productId) {
+        function addProduct(productId, button) {
             if (currentTableId === 0) return alert('Vui lòng chọn bàn');
+            if (button?.disabled) return;
+            if (currentTableStatus === 'reserved' && !confirm('Xác nhận khách đã đến và nhận bàn?')) return;
+            if (button) button.disabled = true;
             postForm('/Cashier/POS/AddItem', {
                 tableId: currentTableId,
                 productId,
                 quantity: 1
             }).then(() => {
+                currentTableStatus = 'occupied';
                 try { refreshSidebar(); } catch (e) {}
                 window.location.href = `/Cashier/POS?tableId=${currentTableId}`;
-            }).catch(error => alert(error.message));
+            }).catch(error => {
+                if (button) button.disabled = false;
+                alert(error.message);
+            });
         }
         function increaseQty(orderDetailId) {
+            const item = document.querySelector(`[data-item-id="${orderDetailId}"]`);
+            if (item?.dataset.pending === 'true') return;
+            if (item) item.dataset.pending = 'true';
+            item?.querySelectorAll('button').forEach(button => button.disabled = true);
             postForm('/Cashier/POS/UpdateItem', {
                 orderDetailId,
                 quantity: getItemQuantity(orderDetailId) + 1
-            }).then(() => { try { refreshSidebar(); } catch (e) {} ; window.location.href = `/Cashier/POS?tableId=${currentTableId}`; }).catch(error => alert(error.message));
+            }).then(data => { if (data.orderCancelled) clearDraft(); try { refreshSidebar(); } catch (e) {} ; window.location.href = `/Cashier/POS?tableId=${currentTableId}`; }).catch(error => {
+                if (item) delete item.dataset.pending;
+                item?.querySelectorAll('button').forEach(button => button.disabled = false);
+                alert(error.message);
+            });
         }
 
         function decreaseQty(orderDetailId) {
+            const item = document.querySelector(`[data-item-id="${orderDetailId}"]`);
+            if (item?.dataset.pending === 'true') return;
+            if (item) item.dataset.pending = 'true';
+            item?.querySelectorAll('button').forEach(button => button.disabled = true);
             postForm('/Cashier/POS/UpdateItem', {
                 orderDetailId,
                 quantity: getItemQuantity(orderDetailId) - 1
-            }).then(() => { try { refreshSidebar(); } catch (e) {} ; window.location.href = `/Cashier/POS?tableId=${currentTableId}`; }).catch(error => alert(error.message));
+            }).then(data => { if (data.orderCancelled) clearDraft(); try { refreshSidebar(); } catch (e) {} ; window.location.href = `/Cashier/POS?tableId=${currentTableId}`; }).catch(error => {
+                if (item) delete item.dataset.pending;
+                item?.querySelectorAll('button').forEach(button => button.disabled = false);
+                alert(error.message);
+            });
         }
 
         function removeItem(orderDetailId) {
             if (!confirm('Xóa món này?')) return;
+            const item = document.querySelector(`[data-item-id="${orderDetailId}"]`);
+            if (item?.dataset.pending === 'true') return;
+            if (item) item.dataset.pending = 'true';
+            item?.querySelectorAll('button').forEach(button => button.disabled = true);
             postForm('/Cashier/POS/RemoveItem', { orderDetailId })
-                .then(() => { try { refreshSidebar(); } catch (e) {} ; window.location.href = `/Cashier/POS?tableId=${currentTableId}`; }).catch(error => alert(error.message));
-        }
-
-        function searchCustomer() {
-            const phone = document.getElementById('customerPhone').value.trim();
-            fetch(`/Cashier/POS/SearchCustomer?phone=${encodeURIComponent(phone)}`)
-                .then(r => r.json())
-                .then(data => {
-                    if (data.found) {
-                        currentCustomerId = data.customer.customerID;
-                        alert(`Đã chọn ${data.customer.name} (${data.customer.rewardPoints} điểm)`);
-                    } else {
-                        alert('Không tìm thấy khách hàng');
-                    }
+                .then(data => { if (data.orderCancelled) clearDraft(); try { refreshSidebar(); } catch (e) {} ; window.location.href = `/Cashier/POS?tableId=${currentTableId}`; }).catch(error => {
+                    if (item) delete item.dataset.pending;
+                    item?.querySelectorAll('button').forEach(button => button.disabled = false);
+                    alert(error.message);
                 });
         }
 
-        function setDiscountType(type, button) {
-            currentDiscountType = type;
-            document.querySelectorAll('.discount-btn').forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            calculateTotal();
+        function normalizeLoyaltyAccount(account) {
+            const customerId = Number(account?.customerId ?? account?.CustomerId ?? account?.customerID ?? 0);
+            return {
+                customerId: Number.isInteger(customerId) && customerId > 0 ? customerId : 0,
+                name: String(account?.name ?? account?.Name ?? 'Khách hàng'),
+                username: String(account?.username ?? account?.Username ?? account?.account ?? ''),
+                phone: String(account?.phone ?? account?.Phone ?? ''),
+                availablePoints: Math.max(0, Math.trunc(Number(account?.availablePoints ?? account?.AvailablePoints ?? account?.rewardPoints ?? 0) || 0)),
+                pointsUsed: Math.max(0, Math.trunc(Number(account?.pointsUsed ?? account?.PointsUsed ?? 0) || 0)),
+                discountAmount: Math.max(0, Number(account?.discountAmount ?? account?.DiscountAmount ?? 0) || 0)
+            };
         }
 
-        function getDiscount() {
-            const value = Math.max(0, Number(document.getElementById('discountValue')?.value || 0));
-            if (currentDiscountType === 'percent') return subtotal * Math.min(value, 100) / 100;
-            if (currentDiscountType === 'fixed') return Math.min(value, subtotal);
-            return 0;
+        function normalizeCheckoutSummary(summary) {
+            const source = summary?.summary ?? summary?.Summary ?? summary ?? {};
+            const rawMode = String(source.mode ?? source.Mode ?? 'None').toLowerCase();
+            const mode = rawMode === 'points' || rawMode === 'voucher' ? rawMode : 'none';
+            const accounts = Array.isArray(source.accounts ?? source.Accounts)
+                ? (source.accounts ?? source.Accounts).map(normalizeLoyaltyAccount).filter(account => account.customerId > 0)
+                : [];
+            const subtotalAmount = Math.max(0, Number(source.subtotalAmount ?? source.SubtotalAmount ?? 0) || 0);
+            const discountAmount = Math.max(0, Number(source.discountAmount ?? source.DiscountAmount ?? 0) || 0);
+            return {
+                orderId: Number(source.orderId ?? source.OrderId ?? currentOrderId ?? 0) || null,
+                subtotalAmount,
+                pointDiscountAmount: Math.max(0, Number(source.pointDiscountAmount ?? source.PointDiscountAmount ?? 0) || 0),
+                voucherDiscountAmount: Math.max(0, Number(source.voucherDiscountAmount ?? source.VoucherDiscountAmount ?? 0) || 0),
+                discountAmount,
+                totalAmount: Math.max(0, Number(source.totalAmount ?? source.TotalAmount ?? subtotalAmount - discountAmount) || 0),
+                mode,
+                voucherCode: String(source.voucherCode ?? source.VoucherCode ?? '').trim(),
+                earnedPoints: Math.max(0, Math.trunc(Number(source.earnedPoints ?? source.EarnedPoints ?? 0) || 0)),
+                accounts
+            };
+        }
+
+        function setLoyaltyStatus(message = '', type = '') {
+            const status = document.getElementById('loyaltyAccountSearchStatus');
+            if (!status) return;
+            status.textContent = message;
+            status.dataset.type = type;
+        }
+
+        function refreshLoyaltyButtons() {
+            const pointAccounts = Array.from(selectedLoyaltyAccounts.values())
+                .filter(account => account.customerId > 0 && account.availablePoints > 0);
+            const applyPointsButton = document.getElementById('applyAllPointsButton');
+            const applyVoucherButton = document.getElementById('applyVoucherButton');
+            const searchButton = document.getElementById('searchLoyaltyAccountsButton');
+            const voucherCode = document.getElementById('voucherCode')?.value.trim() || '';
+            const hasSelectedAccount = Array.from(selectedLoyaltyAccounts.values())
+                .some(account => account.customerId > 0);
+            if (applyPointsButton) applyPointsButton.disabled = loyaltyRequestInProgress || !currentOrderId || pointAccounts.length === 0;
+            if (applyVoucherButton) applyVoucherButton.disabled = loyaltyRequestInProgress || !currentOrderId
+                || voucherCode.length === 0 || !hasSelectedAccount;
+            if (searchButton) searchButton.disabled = loyaltyRequestInProgress || !currentOrderId;
+        }
+
+        function renderSelectedLoyaltyAccounts() {
+            const container = document.getElementById('selectedLoyaltyAccounts');
+            const emptyState = document.getElementById('selectedLoyaltyAccountsEmpty');
+            const count = document.getElementById('selectedLoyaltyAccountCount');
+            if (!container) return;
+            container.replaceChildren();
+            const accounts = Array.from(selectedLoyaltyAccounts.values());
+            if (emptyState) emptyState.hidden = accounts.length > 0;
+            if (count) count.textContent = String(accounts.length);
+
+            accounts.forEach((account, index) => {
+                const row = document.createElement('div');
+                row.className = 'loyalty-selected-account';
+
+                const details = document.createElement('div');
+                details.className = 'loyalty-account-details';
+                const name = document.createElement('strong');
+                name.textContent = account.name;
+                const identity = document.createElement('span');
+                identity.textContent = [account.username ? (String.fromCharCode(64) + account.username) : '', account.phone]
+                    .filter(Boolean).join(' · ') || `Tài khoản #${account.customerId}`;
+                const points = document.createElement('span');
+                points.className = 'loyalty-account-points';
+                points.textContent = `${formatNumber(account.availablePoints)} điểm khả dụng`;
+                if (account.pointsUsed > 0) {
+                    points.textContent += ` · đang dùng ${formatNumber(account.pointsUsed)} điểm`;
+                }
+                details.append(name, identity, points);
+
+                const sequence = document.createElement('span');
+                sequence.className = 'loyalty-account-sequence';
+                sequence.textContent = String(index + 1);
+                sequence.title = 'Thứ tự trừ điểm';
+
+                const remove = document.createElement('button');
+                remove.type = 'button';
+                remove.className = 'loyalty-remove-account';
+                remove.setAttribute('aria-label', `Bỏ tài khoản ${account.name}`);
+                remove.innerHTML = '<i class="bi bi-x-lg" aria-hidden="true"></i>';
+                remove.addEventListener('click', () => removeLoyaltyAccount(account.customerId));
+
+                row.append(sequence, details, remove);
+                container.appendChild(row);
+            });
+            refreshLoyaltyButtons();
+        }
+
+        function addLoyaltyAccount(rawAccount) {
+            const account = normalizeLoyaltyAccount(rawAccount);
+            if (!account.customerId) return;
+            selectedLoyaltyAccounts.set(account.customerId, account);
+            renderSelectedLoyaltyAccounts();
+            renderCheckoutSummary();
+            persistDraft();
+            setLoyaltyStatus(`Đã thêm ${account.name}. Tài khoản đầu tiên sẽ nhận điểm mới; nhấn “Áp dụng toàn bộ điểm” nếu khách muốn đổi điểm.`, 'success');
+        }
+
+        function removeLoyaltyAccount(customerId) {
+            const account = selectedLoyaltyAccounts.get(Number(customerId));
+            selectedLoyaltyAccounts.delete(Number(customerId));
+            renderSelectedLoyaltyAccounts();
+            renderCheckoutSummary();
+            persistDraft();
+            if (account) setLoyaltyStatus(`Đã bỏ ${account.name} khỏi danh sách chọn. Nhấn áp dụng để cập nhật hóa đơn.`, 'info');
+        }
+
+        function renderLoyaltySearchResults(accounts) {
+            const container = document.getElementById('loyaltyAccountResults');
+            if (!container) return;
+            container.replaceChildren();
+            container.hidden = accounts.length === 0;
+            accounts.forEach(rawAccount => {
+                const account = normalizeLoyaltyAccount(rawAccount);
+                if (!account.customerId) return;
+                const row = document.createElement('div');
+                row.className = 'loyalty-search-result';
+                row.setAttribute('role', 'listitem');
+
+                const details = document.createElement('div');
+                details.className = 'loyalty-account-details';
+                const name = document.createElement('strong');
+                name.textContent = account.name;
+                const identity = document.createElement('span');
+                identity.textContent = [account.username ? (String.fromCharCode(64) + account.username) : '', account.phone]
+                    .filter(Boolean).join(' · ') || `Tài khoản #${account.customerId}`;
+                const points = document.createElement('span');
+                points.className = 'loyalty-account-points';
+                points.textContent = `${formatNumber(account.availablePoints)} điểm`;
+                details.append(name, identity, points);
+
+                const add = document.createElement('button');
+                add.type = 'button';
+                add.className = 'loyalty-add-account';
+                const alreadySelected = selectedLoyaltyAccounts.has(account.customerId);
+                add.disabled = alreadySelected;
+                add.textContent = alreadySelected ? 'Đã chọn' : 'Thêm';
+                add.addEventListener('click', () => {
+                    addLoyaltyAccount(account);
+                    add.disabled = true;
+                    add.textContent = 'Đã chọn';
+                });
+                row.append(details, add);
+                container.appendChild(row);
+            });
+        }
+
+        async function searchLoyaltyAccounts() {
+            const input = document.getElementById('loyaltyAccountQuery');
+            const query = input?.value.trim() || '';
+            if (query.length < 2) {
+                setLoyaltyStatus('Nhập ít nhất 2 ký tự của số điện thoại hoặc tên tài khoản.', 'error');
+                input?.focus();
+                return;
+            }
+            loyaltyRequestInProgress = true;
+            refreshLoyaltyButtons();
+            setLoyaltyStatus('Đang tìm tài khoản…', 'loading');
+            try {
+                const data = await readJsonResponse(await fetch(`/api/loyalty/accounts?query=${encodeURIComponent(query)}`, {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json' }
+                }));
+                const accounts = Array.isArray(data) ? data : Array.isArray(data.accounts) ? data.accounts : [];
+                renderLoyaltySearchResults(accounts);
+                setLoyaltyStatus(accounts.length > 0
+                    ? `Tìm thấy ${accounts.length} tài khoản.`
+                    : 'Không tìm thấy tài khoản phù hợp.', accounts.length > 0 ? 'success' : 'info');
+            } catch (error) {
+                renderLoyaltySearchResults([]);
+                setLoyaltyStatus(error.message || 'Không thể tìm tài khoản.', 'error');
+            } finally {
+                loyaltyRequestInProgress = false;
+                refreshLoyaltyButtons();
+            }
+        }
+
+        function applyCheckoutSummary(rawSummary) {
+            checkoutSummary = normalizeCheckoutSummary(rawSummary);
+            selectedLoyaltyAccounts.forEach((account, customerId) => {
+                selectedLoyaltyAccounts.set(customerId, { ...account, pointsUsed: 0, discountAmount: 0 });
+            });
+            checkoutSummary.accounts.forEach(account => {
+                const existing = selectedLoyaltyAccounts.get(account.customerId);
+                selectedLoyaltyAccounts.set(account.customerId, { ...existing, ...account });
+            });
+            const voucherInput = document.getElementById('voucherCode');
+            if (voucherInput) voucherInput.value = checkoutSummary.mode === 'voucher' ? checkoutSummary.voucherCode : '';
+            currentQrIntent = null;
+            renderSelectedLoyaltyAccounts();
+            renderCheckoutSummary();
+            persistDraft();
+        }
+
+        async function applySelectedPoints() {
+            if (!currentOrderId || loyaltyRequestInProgress) return;
+            const customerIds = Array.from(selectedLoyaltyAccounts.values())
+                .filter(account => account.customerId > 0 && account.availablePoints > 0)
+                .map(account => account.customerId);
+            if (customerIds.length === 0) {
+                setLoyaltyStatus('Hãy chọn ít nhất một tài khoản còn điểm.', 'error');
+                return;
+            }
+            loyaltyRequestInProgress = true;
+            refreshLoyaltyButtons();
+            setLoyaltyStatus('Đang áp dụng điểm…', 'loading');
+            try {
+                const data = await loyaltyRequest('POST', `/api/orders/${currentOrderId}/discounts/points`, { customerIds });
+                applyCheckoutSummary(data);
+                const usedPoints = checkoutSummary.accounts.reduce((sum, account) => sum + account.pointsUsed, 0);
+                setLoyaltyStatus(`Đã áp dụng ${formatNumber(usedPoints)} điểm, giảm ${formatMoney(checkoutSummary.discountAmount)}.`, 'success');
+            } catch (error) {
+                setLoyaltyStatus(error.message || 'Không thể áp dụng điểm.', 'error');
+            } finally {
+                loyaltyRequestInProgress = false;
+                refreshLoyaltyButtons();
+            }
+        }
+
+        async function applyVoucher() {
+            if (!currentOrderId || loyaltyRequestInProgress) return;
+            const input = document.getElementById('voucherCode');
+            const code = input?.value.trim().toUpperCase() || '';
+            if (!code) {
+                setLoyaltyStatus('Vui lòng nhập mã voucher.', 'error');
+                input?.focus();
+                return;
+            }
+            if (!Array.from(selectedLoyaltyAccounts.values()).some(account => account.customerId > 0)) {
+                setLoyaltyStatus('Hãy tìm và chọn tài khoản khách hàng trước khi áp dụng voucher.', 'error');
+                document.getElementById('loyaltyAccountQuery')?.focus();
+                return;
+            }
+            if (input) input.value = code;
+            loyaltyRequestInProgress = true;
+            refreshLoyaltyButtons();
+            setLoyaltyStatus('Đang kiểm tra voucher…', 'loading');
+            try {
+                const selectedCustomerId = Array.from(selectedLoyaltyAccounts.values())
+                    .map(account => account.customerId)
+                    .find(customerId => customerId > 0) || null;
+                const data = await loyaltyRequest('POST', `/api/orders/${currentOrderId}/discounts/voucher`, {
+                    code,
+                    customerId: selectedCustomerId
+                });
+                applyCheckoutSummary(data);
+                setLoyaltyStatus(`Đã áp dụng voucher ${checkoutSummary.voucherCode}, giảm ${formatMoney(checkoutSummary.discountAmount)}.`, 'success');
+            } catch (error) {
+                setLoyaltyStatus(error.message || 'Không thể áp dụng voucher.', 'error');
+            } finally {
+                loyaltyRequestInProgress = false;
+                refreshLoyaltyButtons();
+            }
+        }
+
+        async function clearOrderDiscount() {
+            if (!currentOrderId || loyaltyRequestInProgress) return;
+            loyaltyRequestInProgress = true;
+            refreshLoyaltyButtons();
+            setLoyaltyStatus('Đang bỏ ưu đãi…', 'loading');
+            try {
+                const data = await loyaltyRequest('DELETE', `/api/orders/${currentOrderId}/discounts`);
+                applyCheckoutSummary(data);
+                setLoyaltyStatus('Đã bỏ ưu đãi khỏi hóa đơn.', 'success');
+            } catch (error) {
+                setLoyaltyStatus(error.message || 'Không thể bỏ ưu đãi.', 'error');
+            } finally {
+                loyaltyRequestInProgress = false;
+                refreshLoyaltyButtons();
+            }
+        }
+
+        function renderCheckoutSummary() {
+            const subtotalDisplay = document.getElementById('subtotalDisplay');
+            const discountDisplay = document.getElementById('discountDisplay');
+            const totalDisplay = document.getElementById('totalDisplay');
+            const earnedPointsDisplay = document.getElementById('earnedPointsDisplay');
+            const modeRow = document.getElementById('discountModeRow');
+            const modeDisplay = document.getElementById('discountModeDisplay');
+            if (subtotalDisplay) subtotalDisplay.textContent = formatMoney(checkoutSummary.subtotalAmount);
+            if (discountDisplay) discountDisplay.textContent = checkoutSummary.discountAmount > 0
+                ? `-${formatMoney(checkoutSummary.discountAmount)}` : formatMoney(0);
+            if (totalDisplay) totalDisplay.textContent = formatMoney(checkoutSummary.totalAmount);
+            const hasLoyaltyAccount = Array.from(selectedLoyaltyAccounts.values())
+                .some(account => account.customerId > 0);
+            const projectedEarnedPoints = hasLoyaltyAccount
+                ? Math.floor(checkoutSummary.subtotalAmount / 10000)
+                : checkoutSummary.earnedPoints;
+            if (earnedPointsDisplay) earnedPointsDisplay.textContent = `+${formatNumber(projectedEarnedPoints)}`;
+
+            if (modeRow) modeRow.hidden = checkoutSummary.mode === 'none';
+            if (modeDisplay) {
+                const usedPoints = checkoutSummary.accounts.reduce((sum, account) => sum + account.pointsUsed, 0);
+                modeDisplay.textContent = checkoutSummary.mode === 'points'
+                    ? `Điểm thưởng (${formatNumber(usedPoints)} điểm)`
+                    : checkoutSummary.mode === 'voucher'
+                        ? `Voucher ${checkoutSummary.voucherCode}`
+                        : 'Chưa áp dụng';
+            }
+            const clearButton = document.getElementById('clearDiscountButton');
+            if (clearButton) clearButton.hidden = checkoutSummary.mode === 'none';
+
+            const isFree = checkoutSummary.totalAmount <= 0 && currentOrderId !== null;
+            const paymentMethodSection = document.getElementById('paymentMethodSection');
+            const cashFields = document.getElementById('cashPaymentFields');
+            const checkoutLabel = document.getElementById('checkoutButtonLabel');
+            if (paymentMethodSection) paymentMethodSection.hidden = isFree;
+            if (cashFields) cashFields.style.display = !isFree && currentPaymentMethod === 'cash' ? 'block' : 'none';
+            if (checkoutLabel) checkoutLabel.textContent = isFree ? 'Hoàn tất và in hóa đơn 0đ' : 'Xác nhận thanh toán';
+            calculateChange();
+            refreshLoyaltyButtons();
         }
 
         function calculateTotal() {
-            const discount = getDiscount();
-            document.getElementById('subtotalDisplay').textContent = formatMoney(subtotal);
-            document.getElementById('discountDisplay').textContent = formatMoney(discount);
-            document.getElementById('totalDisplay').textContent = formatMoney(subtotal - discount);
-            calculateChange();
+            renderCheckoutSummary();
         }
 
         function calculateChange() {
             const paid = Number(document.getElementById('paidAmount')?.value || 0) * 1000;
-            const change = Math.max(0, paid - subtotal + getDiscount());
+            const change = Math.max(0, paid - checkoutSummary.totalAmount);
             const input = document.getElementById('paidAmount');
             if (input) input.title = `Tiền thừa: ${formatMoney(change)}`;
             const changeDisplay = document.getElementById('changeAmountDisplay');
@@ -134,14 +545,71 @@
                 if (changeDisplay.tagName === 'INPUT') changeDisplay.value = formatMoney(change);
                 else changeDisplay.textContent = formatMoney(change);
             }
-            if (changeRow) changeRow.style.display = (currentPaymentMethod === 'cash') ? 'block' : 'none';
+            if (changeRow) changeRow.style.display = checkoutSummary.totalAmount > 0 && currentPaymentMethod === 'cash' ? 'block' : 'none';
         }
 
         function formatMoney(value) {
-            return new Intl.NumberFormat('vi-VN').format(value) + 'đ';
+            return new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(Number(value) || 0) + 'đ';
+        }
+
+        function formatNumber(value) {
+            return new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(Number(value) || 0);
+        }
+
+        function persistDraft() {
+            if (!currentTableId) return;
+            const draft = {
+                orderId: currentOrderId,
+                notes: document.getElementById('orderNotes')?.value ?? '',
+                loyaltyAccounts: Array.from(selectedLoyaltyAccounts.values()),
+                loyaltyQuery: document.getElementById('loyaltyAccountQuery')?.value ?? '',
+                voucherCode: document.getElementById('voucherCode')?.value ?? '',
+                paymentMethod: currentPaymentMethod,
+                paidAmount: document.getElementById('paidAmount')?.value ?? ''
+            };
+            try { sessionStorage.setItem(draftStorageKey, JSON.stringify(draft)); } catch { }
+        }
+
+        function restoreDraft() {
+            if (!currentTableId) return;
+            let draft;
+            try { draft = JSON.parse(sessionStorage.getItem(draftStorageKey) || 'null'); } catch { draft = null; }
+            if (!draft) return;
+            if (draft.orderId != null && draft.orderId !== currentOrderId) {
+                clearDraft();
+                return;
+            }
+            currentPaymentMethod = draft.paymentMethod || 'cash';
+            if (Array.isArray(draft.loyaltyAccounts)) {
+                draft.loyaltyAccounts.map(normalizeLoyaltyAccount)
+                    .filter(account => account.customerId > 0)
+                    .forEach(account => {
+                        const current = selectedLoyaltyAccounts.get(account.customerId);
+                        selectedLoyaltyAccounts.set(account.customerId, { ...account, ...current });
+                    });
+            }
+            const values = {
+                orderNotes: draft.notes,
+                loyaltyAccountQuery: draft.loyaltyQuery,
+                voucherCode: checkoutSummary.mode === 'voucher'
+                    ? checkoutSummary.voucherCode
+                    : checkoutSummary.mode === 'points' ? '' : draft.voucherCode,
+                paidAmount: draft.paidAmount
+            };
+            Object.entries(values).forEach(([id, value]) => {
+                const input = document.getElementById(id);
+                if (input && value != null) input.value = value;
+            });
+            document.querySelectorAll('.method-btn').forEach(btn =>
+                btn.classList.toggle('active', btn.getAttribute('onclick')?.includes(`'${currentPaymentMethod}'`) === true));
+        }
+
+        function clearDraft() {
+            try { sessionStorage.removeItem(draftStorageKey); } catch { }
         }
 
         function selectPaymentMethod(method, button) {
+            if (checkoutSummary.totalAmount <= 0) return;
             currentPaymentMethod = method;
             document.querySelectorAll('.method-btn').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
@@ -151,18 +619,32 @@
                 paidInput.disabled = method === 'qr';
                 if (method === 'qr') paidInput.value = '';
             }
-            if (cashFields) cashFields.style.display = (method === 'cash') ? 'block' : 'none';
+            if (cashFields) cashFields.style.display = method === 'cash' ? 'block' : 'none';
             calculateChange();
+            persistDraft();
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            const cashFields = document.getElementById('cashPaymentFields');
+            restoreDraft();
             const paidInput = document.getElementById('paidAmount');
-            if (cashFields) cashFields.style.display = (currentPaymentMethod === 'cash') ? 'block' : 'none';
             if (paidInput) paidInput.disabled = (currentPaymentMethod === 'qr');
-            calculateTotal();
+            renderSelectedLoyaltyAccounts();
+            renderCheckoutSummary();
+            document.querySelector('.pos-page')?.addEventListener('input', () => persistDraft());
+            document.querySelector('.pos-page')?.addEventListener('change', () => persistDraft());
+            document.getElementById('loyaltyAccountQuery')?.addEventListener('keydown', event => {
+                if (event.key !== 'Enter') return;
+                event.preventDefault();
+                searchLoyaltyAccounts();
+            });
+            document.getElementById('voucherCode')?.addEventListener('keydown', event => {
+                if (event.key !== 'Enter') return;
+                event.preventDefault();
+                applyVoucher();
+            });
         });
         document.addEventListener('input', function(event) {
+            if (event.target?.id === 'voucherCode') refreshLoyaltyButtons();
             if (event.target?.id !== 'searchTable') return;
             const query = event.target.value.trim().toLocaleLowerCase('vi');
             document.querySelectorAll('.tables-list .table-item').forEach(table => {
@@ -170,7 +652,7 @@
             });
         });
       function refreshSidebar() {
-            fetch(`/Cashier/POS/OpenTables?selectedTableId=${currentTableId}`)
+            return fetch(`/Cashier/POS/OpenTables?selectedTableId=${currentTableId}`)
                 .then(async r => {
                     if (!r.ok) throw new Error('Không thể tải sơ đồ bàn');
                     const html = await r.text();
@@ -191,45 +673,64 @@
 
             fetch('/Cashier/Tables/UpdateStatus', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
                 body: formData.toString()
             }).then(async res => {
-                if (res.redirected) {
-                    await refreshSidebar();
-                    window.location.reload();
-                    return;
-                }
                 if (!res.ok) {
-                    const txt = await res.text();
-                    alert('Không thể cập nhật trạng thái: ' + txt);
-                    return;
+                    const error = await res.json().catch(() => null);
+                    throw new Error(error?.message || 'Không thể cập nhật trạng thái bàn');
                 }
                 await refreshSidebar();
-            }).catch(err => { console.error(err); alert('Lỗi khi cập nhật trạng thái'); });
+                if (tableId === currentTableId) {
+                    window.location.href = status === 'Maintenance' ? '/Cashier/POS' : `/Cashier/POS?tableId=${tableId}`;
+                }
+            }).catch(err => { console.error(err); alert(err.message || 'Lỗi khi cập nhật trạng thái'); });
         }
 
         function proceedCheckout() {
-            if (currentTableId === 0) {
-                alert('Vui lòng chọn bàn');
+            if (currentTableId === 0 || !currentOrderId) {
+                alert('Vui lòng chọn bàn có đơn hàng');
+                return;
+            }
+            if (checkoutSummary.totalAmount <= 0) {
+                completeCheckout(0, currentOrderId, 0);
                 return;
             }
             if (currentPaymentMethod === 'qr') {
                 createQrPayment();
                 return;
             }
-            completeCheckout(Number(document.getElementById('paidAmount')?.value || 0) * 1000);
+            const amountReceived = Number(document.getElementById('paidAmount')?.value || 0) * 1000;
+            if (!Number.isFinite(amountReceived) || amountReceived < checkoutSummary.totalAmount) {
+                alert(`Số tiền khách đưa phải từ ${formatMoney(checkoutSummary.totalAmount)}.`);
+                document.getElementById('paidAmount')?.focus();
+                return;
+            }
+            completeCheckout(amountReceived, currentOrderId, checkoutSummary.totalAmount);
         }
 
-        function completeCheckout(paidAmount) {
-            postForm('/Cashier/POS/Checkout', {
+        function completeCheckout(amountReceived, expectedOrderId = currentOrderId, expectedTotal = checkoutSummary.totalAmount) {
+            if (checkoutInProgress) return Promise.resolve();
+            checkoutInProgress = true;
+            const checkoutButton = document.getElementById('btnCheckout');
+            const qrButton = document.getElementById('confirmQrPaymentButton');
+            if (checkoutButton) checkoutButton.disabled = true;
+            if (qrButton) qrButton.disabled = true;
+            return postForm('/Cashier/POS/Checkout', {
                 tableId: currentTableId,
                 paymentMethod: currentPaymentMethod,
-                paidAmount,
-                customerId: currentCustomerId ?? '',
-                discountType: currentDiscountType,
-                discountValue: document.getElementById('discountValue')?.value || 0,
-                notes: document.getElementById('orderNotes')?.value || ''
-        }).then(data => {
+                amountReceived,
+                notes: document.getElementById('orderNotes')?.value || '',
+                expectedOrderId: expectedOrderId ?? '',
+                expectedTotal: expectedTotal ?? '',
+                loyaltyCustomerId: Array.from(selectedLoyaltyAccounts.values())
+                    .map(account => account.customerId)
+                    .find(customerId => customerId > 0) ?? ''
+            }).then(data => {
+                clearDraft();
                 try {
                     const printUrl = `/Cashier/Orders/Print/${data.orderId}?returnUrl=${encodeURIComponent('/Cashier/POS')}`;
                     window.location.href = printUrl;
@@ -237,25 +738,40 @@
                 } catch (e) {  }
                 alert(`Thanh toán thành công. Tiền thừa: ${formatMoney(data.change)}`);
                 window.location.href = '/Cashier/POS';
-            }).catch(error => alert(error.message));
+            }).catch(error => {
+                checkoutInProgress = false;
+                if (checkoutButton) checkoutButton.disabled = false;
+                if (qrButton) qrButton.disabled = false;
+                alert(error.message);
+            });
         }
 
         async function createQrPayment() {
-            if (currentTableId === 0) return alert('Vui lòng chọn bàn');
+            if (currentTableId === 0 || !currentOrderId) return alert('Vui lòng chọn bàn có đơn hàng');
+            if (checkoutSummary.totalAmount <= 0) {
+                completeCheckout(0, currentOrderId, 0);
+                return;
+            }
+            const checkoutButton = document.getElementById('btnCheckout');
+            if (checkoutButton) checkoutButton.disabled = true;
             try {
-                window.BrewPointRealtime?.suppressReloadFor(5000);
                 const response = await fetch('/api/payments/qr/intents', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        tableId: currentTableId,
-                        discountType: currentDiscountType,
-                        discountValue: Number(document.getElementById('discountValue')?.value || 0)
-                    })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken()
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ tableId: currentTableId, expectedOrderId: currentOrderId })
                 });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.detail || data.message || 'Không thể tạo mã QR');
+                const data = await readJsonResponse(response);
+                const qrAmount = Number(data.amount);
+                if (Number(data.orderId) !== Number(currentOrderId)
+                    || !Number.isFinite(qrAmount) || qrAmount !== checkoutSummary.totalAmount) {
+                    throw new Error('Tổng tiền đã thay đổi. Vui lòng tải lại đơn và tạo mã QR mới.');
+                }
                 currentQrIntent = data;
+                document.getElementById('confirmQrPaymentButton').disabled = false;
                 const qrImage = document.getElementById('qrPaymentImage');
                 if (data.qrImageUrl) {
                     qrImage.src = data.qrImageUrl;
@@ -271,6 +787,8 @@
                 document.getElementById('qrPaymentContent').textContent = data.transferContent;
                 bootstrap.Modal.getOrCreateInstance(document.getElementById('qrPaymentModal')).show();
             } catch (error) {
+                currentQrIntent = null;
+                if (checkoutButton) checkoutButton.disabled = false;
                 alert(error.message || 'Không thể kết nối API thanh toán QR');
             }
         }
@@ -280,11 +798,17 @@
             const button = document.getElementById('confirmQrPaymentButton');
             button.disabled = true;
             window.BrewPointRealtime?.suppressReloadFor(5000);
-            completeCheckout(currentQrIntent.amount);
+            completeCheckout(Number(currentQrIntent.amount), Number(currentQrIntent.orderId), Number(currentQrIntent.amount));
         }
 
         function closeTable() {
+            clearDraft();
             window.location.href = '/Cashier/POS';
+        }
+
+        function printCurrentOrder() {
+            if (!currentOrderId) return alert('Bàn chưa có đơn để in.');
+            window.open(`/Cashier/Orders/Print/${currentOrderId}?returnUrl=${encodeURIComponent(`/Cashier/POS?tableId=${currentTableId}`)}`, '_blank');
         }
 
         calculateTotal();

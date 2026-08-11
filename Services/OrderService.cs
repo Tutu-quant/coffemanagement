@@ -8,10 +8,12 @@ namespace Quản_lý_quán_cafe.Services
     public class OrderService : IOrderService
     {
         private readonly IOrderRepository _repository;
+        private readonly ILogger<OrderService> _logger;
 
-        public OrderService(IOrderRepository repository)
+        public OrderService(IOrderRepository repository, ILogger<OrderService> logger)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _logger = logger;
         }
 
         #region Basic Operations
@@ -58,6 +60,15 @@ namespace Quản_lý_quán_cafe.Services
                 if (order.TotalAmount < 0)
                     return (false, "Tổng tiền không hợp lệ", null);
 
+                order.SubtotalAmount = order.OrderDetails.Any(detail => !detail.IsDeleted)
+                    ? order.OrderDetails.Where(detail => !detail.IsDeleted).Sum(detail => detail.Subtotal)
+                    : order.TotalAmount;
+                order.VoucherDiscountAmount = 0;
+                order.PointDiscountAmount = 0;
+                order.VoucherID = null;
+                order.VoucherCode = null;
+                order.TotalAmount = order.SubtotalAmount;
+
 
                 if (string.IsNullOrWhiteSpace(order.OrderStatus))
                     order.OrderStatus = OrderStatusConstants.Pending;
@@ -72,7 +83,8 @@ namespace Quản_lý_quán_cafe.Services
             }
             catch (Exception ex)
             {
-                return (false, $"Lỗi tạo đơn hàng: {ex.Message}", null);
+                _logger.LogError(ex, "Could not create order through OrderService.");
+                return (false, "Không thể tạo đơn hàng. Vui lòng thử lại.", null);
             }
         }
 
@@ -89,7 +101,6 @@ namespace Quản_lý_quán_cafe.Services
 
 
                 existingOrder.Notes = order.Notes;
-                existingOrder.TotalAmount = order.TotalAmount;
                 existingOrder.UpdatedAt = DateTime.UtcNow;
 
                 await _repository.UpdateAsync(existingOrder);
@@ -98,7 +109,8 @@ namespace Quản_lý_quán_cafe.Services
             }
             catch (Exception ex)
             {
-                return (false, $"Lỗi cập nhật đơn hàng: {ex.Message}");
+                _logger.LogError(ex, "Could not update order {OrderId} through OrderService.", order?.OrderID);
+                return (false, "Không thể cập nhật đơn hàng. Vui lòng thử lại.");
             }
         }
 
@@ -119,7 +131,8 @@ namespace Quản_lý_quán_cafe.Services
             }
             catch (Exception ex)
             {
-                return (false, $"Lỗi xóa đơn hàng: {ex.Message}");
+                _logger.LogError(ex, "Could not delete order {OrderId} through OrderService.", id);
+                return (false, "Không thể xóa đơn hàng. Vui lòng thử lại.");
             }
         }
 
@@ -167,7 +180,8 @@ namespace Quản_lý_quán_cafe.Services
             }
             catch (Exception ex)
             {
-                return (false, $"Lỗi cập nhật trạng thái: {ex.Message}");
+                _logger.LogError(ex, "Could not update order {OrderId} to {Status} through OrderService.", orderId, status);
+                return (false, "Không thể cập nhật trạng thái đơn hàng. Vui lòng thử lại.");
             }
         }
 
@@ -219,11 +233,10 @@ namespace Quản_lý_quán_cafe.Services
                 if (pageNumber < 1) pageNumber = 1;
                 if (pageSize < 1 || pageSize > 100) pageSize = 20;
 
-                var skip = (pageNumber - 1) * pageSize;
-                var orders = await _repository.SearchAsync(searchTerm ?? string.Empty, skip, pageSize);
-                var total = await _repository.GetCountAsync();
-
-                return (orders, total);
+                return await _repository.GetFilteredOrdersAsync(
+                    searchTerm: searchTerm,
+                    pageNumber: pageNumber,
+                    pageSize: pageSize);
             }
             catch
             {
@@ -234,6 +247,7 @@ namespace Quản_lý_quán_cafe.Services
         public async Task<(List<Order> Orders, int Total)> FilterOrdersAsync(
             string? searchTerm = null,
             string? status = null,
+            string? paymentStatus = null,
             DateTime? startDate = null,
             DateTime? endDate = null,
             int? customerId = null,
@@ -250,6 +264,7 @@ namespace Quản_lý_quán_cafe.Services
                 return await _repository.GetFilteredOrdersAsync(
                     searchTerm,
                     status,
+                    paymentStatus,
                     startDate,
                     endDate,
                     customerId,

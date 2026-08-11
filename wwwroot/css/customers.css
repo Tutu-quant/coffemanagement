@@ -239,38 +239,6 @@
     text-transform: uppercase;
 }
 
-.badge-points {
-    background-color: #FFF3E0;
-    color: #FF8C42;
-    font-weight: 700;
-    font-size: 12px;
-}
-
-.badge-member {
-    background-color: #D4A574;
-    color: white;
-}
-
-.badge-silver {
-    background-color: #C0C0C0;
-    color: white;
-}
-
-.badge-gold {
-    background-color: #FFD700;
-    color: #333;
-}
-
-.badge-diamond {
-    background-color: #B9E3FF;
-    color: #0066CC;
-}
-
-.badge-vip {
-    background-color: #E1BEE7;
-    color: #6A1B9A;
-}
-
 .btn {
     border-radius: var(--border-radius);
     font-weight: 500;

@@ -26,7 +26,7 @@
 
 
 <div class="row mb-4">
-    <div class="col-lg-3 col-md-6 mb-3">
+    <div class="col-lg-4 col-md-6 mb-3">
         <div class="stat-card">
             <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                 <i class="bi bi-people"></i>
@@ -37,36 +37,25 @@
             </div>
         </div>
     </div>
-    <div class="col-lg-3 col-md-6 mb-3">
-        <div class="stat-card">
-            <div class="stat-icon" style="background: linear-gradient(135deg, #FF6B6B 0%, #FF8E72 100%);">
-                <i class="bi bi-star"></i>
-            </div>
-            <div class="stat-content">
-                <p class="stat-label">Khách VIP</p>
-                <p class="stat-value">@Model?.VIPCustomers</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-md-6 mb-3">
-        <div class="stat-card">
-            <div class="stat-icon" style="background: linear-gradient(135deg, #FFA500 0%, #FFD700 100%);">
-                <i class="bi bi-gift"></i>
-            </div>
-            <div class="stat-content">
-                <p class="stat-label">Tổng điểm tích lũy</p>
-                <p class="stat-value">@Model?.TotalPoints.ToString("N0")</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-md-6 mb-3">
+    <div class="col-lg-4 col-md-6 mb-3">
         <div class="stat-card">
             <div class="stat-icon" style="background: linear-gradient(135deg, #4CAF50 0%, #81C784 100%);">
                 <i class="bi bi-cart"></i>
             </div>
             <div class="stat-content">
-                <p class="stat-label">Khách mua hôm nay</p>
+                <p class="stat-label">Khách mới hôm nay</p>
                 <p class="stat-value">@Model?.CustomersToday</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #6f3f28 0%, #a36d47 100%);">
+                <i class="bi bi-stars"></i>
+            </div>
+            <div class="stat-content">
+                <p class="stat-label">Tổng điểm khả dụng</p>
+                <p class="stat-value">@((Model?.TotalPoints ?? 0).ToString("N0"))</p>
             </div>
         </div>
     </div>
@@ -78,19 +67,8 @@
         <form method="get" class="search-filter-bar">
             <div class="search-input-group">
                 <i class="bi bi-search"></i>
-                <input type="text" class="form-control" name="search" placeholder="Tìm theo tên hoặc số điện thoại..." value="@Model?.SearchTerm">
+                <input type="text" class="form-control" name="search" placeholder="Tìm theo tên, tài khoản hoặc số điện thoại..." value="@Model?.SearchTerm">
             </div>
-
-            <select class="form-select" name="tier">
-                <option value="">Tất cả hạng thành viên</option>
-                @{
-                    var tiers = new[] { "Member", "Silver", "Gold", "Diamond", "VIP" };
-                }
-                @foreach (var tier in tiers)
-                {
-                    <option value="@tier" selected="@(Model?.SelectedMembershipTier == tier)">@tier</option>
-                }
-            </select>
 
             <select class="form-select" name="sort">
                 @{
@@ -98,7 +76,6 @@
                         new { value = "newest", label = "Mới nhất" },
                         new { value = "name_asc", label = "Tên A-Z" },
                         new { value = "name_desc", label = "Tên Z-A" },
-                        new { value = "points_desc", label = "Điểm cao nhất" },
                         new { value = "spent_desc", label = "Tổng chi tiêu" }
                     };
                 }
@@ -125,10 +102,10 @@
                         <tr>
                             <th style="width: 50px;">Avatar</th>
                             <th>Họ tên</th>
+                            <th>Tài khoản</th>
                             <th>Số điện thoại</th>
                             <th>Email</th>
-                            <th style="text-align: center;">Điểm</th>
-                            <th style="text-align: center;">Hạng</th>
+                            <th class="text-end">Điểm</th>
                             <th style="text-align: right;">Tổng chi tiêu</th>
                             <th>Ngày tham gia</th>
                             <th style="text-align: center;">Trạng thái</th>
@@ -145,27 +122,13 @@
                                     </div>
                                 </td>
                                 <td><strong>@customer.Name</strong></td>
+                                <td><span class="text-muted">@(customer.Username ?? "—")</span></td>
                                 <td>
                                     <i class="bi bi-telephone"></i>
                                     @customer.Phone
                                 </td>
                                 <td>@customer.Email</td>
-                                <td style="text-align: center;">
-                                    <span class="badge badge-points">@customer.RewardPoints</span>
-                                </td>
-                                <td style="text-align: center;">
-                                    @{
-                                        var tierClass = customer.MembershipTier switch
-                                        {
-                                            "VIP" => "badge-vip",
-                                            "Diamond" => "badge-diamond",
-                                            "Gold" => "badge-gold",
-                                            "Silver" => "badge-silver",
-                                            _ => "badge-member"
-                                        };
-                                    }
-                                    <span class="badge @tierClass">@GetMembershipLabel(customer.MembershipTier)</span>
-                                </td>
+                                <td class="text-end"><strong style="color: #6f3f28;">@customer.RewardPoints.ToString("N0")</strong></td>
                                 <td style="text-align: right;">
                                     @customer.TotalSpent.ToString("N0")₫
                                 </td>
@@ -207,12 +170,12 @@
                         @if (Model.PageNumber > 1)
                         {
                             <li class="page-item">
-                                <a href="@Url.Action("Index", new { pageNumber = 1, search = Model.SearchTerm, tier = Model.SelectedMembershipTier, sort = Model.SortBy })" class="page-link">
+                                <a href="@Url.Action("Index", new { pageNumber = 1, search = Model.SearchTerm, sort = Model.SortBy })" class="page-link">
                                     <i class="bi bi-chevron-bar-left"></i>
                                 </a>
                             </li>
                             <li class="page-item">
-                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.PageNumber - 1, search = Model.SearchTerm, tier = Model.SelectedMembershipTier, sort = Model.SortBy })">
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.PageNumber - 1, search = Model.SearchTerm, sort = Model.SortBy })">
                                     <i class="bi bi-chevron-left"></i>
                                 </a>
                             </li>
@@ -229,7 +192,7 @@
                             else
                             {
                                 <li class="page-item">
-                                    <a class="page-link" href="@Url.Action("Index", new { pageNumber = i, search = Model.SearchTerm, tier = Model.SelectedMembershipTier, sort = Model.SortBy })">@i</a>
+                                    <a class="page-link" href="@Url.Action("Index", new { pageNumber = i, search = Model.SearchTerm, sort = Model.SortBy })">@i</a>
                                 </li>
                             }
                         }
@@ -237,12 +200,12 @@
                         @if (Model.PageNumber < Model.TotalPages)
                         {
                             <li class="page-item">
-                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.PageNumber + 1, search = Model.SearchTerm, tier = Model.SelectedMembershipTier, sort = Model.SortBy })">
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.PageNumber + 1, search = Model.SearchTerm, sort = Model.SortBy })">
                                     <i class="bi bi-chevron-right"></i>
                                 </a>
                             </li>
                             <li class="page-item">
-                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.TotalPages, search = Model.SearchTerm, tier = Model.SelectedMembershipTier, sort = Model.SortBy })">
+                                <a class="page-link" href="@Url.Action("Index", new { pageNumber = Model.TotalPages, search = Model.SearchTerm, sort = Model.SortBy })">
                                     <i class="bi bi-chevron-bar-right"></i>
                                 </a>
                             </li>
@@ -269,19 +232,4 @@
 
 @section Head {
     <link rel="stylesheet" href="~/css/customers.css" asp-append-version="true" />
-}
-
-@functions {
-    private string GetMembershipLabel(string tier)
-    {
-        return tier switch
-        {
-            "Member" => "Member",
-            "Silver" => "Silver",
-            "Gold" => "Gold",
-            "Diamond" => "Diamond",
-            "VIP" => "VIP",
-            _ => "Member"
-        };
-    }
 }

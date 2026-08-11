@@ -7,60 +7,17 @@
     Layout = "~/Areas/Cashier/Views/Shared/_CashierLayout.cshtml";
 }
 
-<div class="page-header-cashier">
-    <h1 class="page-title">📋 Quản lý đơn hàng</h1>
-</div>
-
-@* Debug / summary panel: show total orders available in DB and recent orders *@
-<div class="mb-3">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <h5>Thông tin Orders</h5>
-        <div class="text-muted">Total in DB: @((ViewData["Debug_TotalOrders"] as int?) ?? 0)</div>
-    </div>
-    @{
-        var recent = ViewData["Debug_RecentOrders"] as List<Quản_lý_quán_cafe.Models.ViewModels.Order.OrderListViewModel> ?? new List<Quản_lý_quán_cafe.Models.ViewModels.Order.OrderListViewModel>();
-    }
-    @if (recent.Any())
-    {
-        <div class="table-responsive mb-2">
-            <table class="table table-sm">
-                <thead>
-                    <tr>
-                        <th>Mã đơn</th>
-                        <th>Bàn</th>
-                        <th>Khách</th>
-                        <th>Trạng thái</th>
-                        <th>Tổng</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var r in recent)
-                    {
-                        <tr>
-                            <td>@r.OrderCode</td>
-                            <td>@r.TableNumber</td>
-                            <td>@r.CustomerName</td>
-                            <td>@r.OrderStatus</td>
-                            <td>@r.TotalAmount.ToString("N0")đ</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
-</div>
-
-<div class="page-header mb-3">
+<div class="container-fluid py-3">
+<div class="page-header-cashier d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
     <div>
+        <h1 class="page-title mb-2">📋 Quản lý đơn hàng</h1>
         <p style="color: var(--text-light); margin: 0; font-size: 14px;">BrewPoint Cafe · Quản lý bán hàng</p>
         <p style="color: var(--text-muted); margin: 0; font-size: 13px;">Người đang thao tác: @(Context.Session.GetString("FullName") ?? Context.User.Identity?.Name ?? "-")</p>
     </div>
-    <div class="d-flex gap-2">
-        <a href="@Url.Action("Index")" class="btn btn-outline-secondary" title="Làm mới trang">
-            <i class="bi bi-arrow-clockwise"></i>
-            Làm mới
-        </a>
-    </div>
+    <a asp-area="Cashier" asp-controller="Orders" asp-action="Index" class="btn btn-outline-secondary align-self-start align-self-md-center" title="Làm mới trang">
+        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+        Làm mới
+    </a>
 </div>
 
 <div class="card orders-card">
@@ -110,10 +67,31 @@
                 </tbody>
             </table>
         </div>
+        @if (Model.TotalPages > 1)
+        {
+            <nav class="p-3" aria-label="Phân trang đơn hàng">
+                <ul class="pagination justify-content-center mb-0">
+                    <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-pageNumber="@(Model.PageNumber - 1)" asp-route-pageSize="@Model.PageSize">Trước</a>
+                    </li>
+                    @for (var pageNumber = Math.Max(1, Model.PageNumber - 2); pageNumber <= Math.Min(Model.TotalPages, Model.PageNumber + 2); pageNumber++)
+                    {
+                        <li class="page-item @(pageNumber == Model.PageNumber ? "active" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-pageNumber="@pageNumber" asp-route-pageSize="@Model.PageSize">@pageNumber</a>
+                        </li>
+                    }
+                    <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-pageNumber="@(Model.PageNumber + 1)" asp-route-pageSize="@Model.PageSize">Sau</a>
+                    </li>
+                </ul>
+            </nav>
+        }
     }
     else
     {
         <div class="p-4 text-center text-muted">Không có đơn hàng</div>
     }
+</div>
+
 </div>
 

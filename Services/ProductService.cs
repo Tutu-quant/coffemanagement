@@ -9,11 +9,16 @@ namespace Quản_lý_quán_cafe.Services
     {
         private readonly IProductRepository _repository;
         private readonly ICategoryRepository _categoryRepository;
+        private readonly IApplicationMutationCoordinator _mutationCoordinator;
 
-        public ProductService(IProductRepository repository, ICategoryRepository categoryRepository)
+        public ProductService(
+            IProductRepository repository,
+            ICategoryRepository categoryRepository,
+            IApplicationMutationCoordinator mutationCoordinator)
         {
             _repository = repository;
             _categoryRepository = categoryRepository;
+            _mutationCoordinator = mutationCoordinator;
         }
 
         public async Task<ProductDetailViewModel?> GetByIdAsync(int id)
@@ -31,6 +36,7 @@ namespace Quản_lý_quán_cafe.Services
                 CategoryId = product.CategoryID,
                 CategoryName = product.Category?.CategoryName,
                 Price = product.Price,
+                Quantity = product.Quantity,
                 SalesCount = salesCount,
                 IsAvailable = product.IsActive,
                 ImageUrl = product.ImageUrl,
@@ -57,6 +63,7 @@ namespace Quản_lý_quán_cafe.Services
                     CategoryName = product.Category?.CategoryName,
                     CategoryId = product.CategoryID,
                     Price = product.Price,
+                    Quantity = product.Quantity,
                     SalesCount = salesCount,
                     IsAvailable = product.IsActive,
                     ImageUrl = product.ImageUrl,
@@ -92,6 +99,7 @@ namespace Quản_lý_quán_cafe.Services
                     CategoryName = product.Category?.CategoryName,
                     CategoryId = product.CategoryID,
                     Price = product.Price,
+                    Quantity = product.Quantity,
                     SalesCount = salesCount,
                     IsAvailable = product.IsActive,
                     ImageUrl = product.ImageUrl,
@@ -128,6 +136,7 @@ namespace Quản_lý_quán_cafe.Services
                     CategoryName = product.Category?.CategoryName,
                     CategoryId = product.CategoryID,
                     Price = product.Price,
+                    Quantity = product.Quantity,
                     SalesCount = salesCount,
                     IsAvailable = product.IsActive,
                     ImageUrl = product.ImageUrl,
@@ -151,12 +160,14 @@ namespace Quản_lý_quán_cafe.Services
 
         public async Task<int> CreateAsync(ProductCreateViewModel model)
         {
+            await using var mutationLock = await _mutationCoordinator.EnterAsync();
             var product = new Product
             {
                 ProductName = model.Name,
                 Description = model.Description,
                 CategoryID = model.CategoryId,
                 Price = model.Price,
+                Quantity = model.Quantity,
                 IsActive = model.IsAvailable,
                 ImageUrl = model.ImageFile?.FileName
             };
@@ -167,6 +178,7 @@ namespace Quản_lý_quán_cafe.Services
 
         public async Task UpdateAsync(ProductEditViewModel model)
         {
+            await using var mutationLock = await _mutationCoordinator.EnterAsync();
             var product = await _repository.GetByIdAsync(model.Id);
             if (product != null)
             {
@@ -174,9 +186,14 @@ namespace Quản_lý_quán_cafe.Services
                 product.Description = model.Description;
                 product.CategoryID = model.CategoryId;
                 product.Price = model.Price;
+                product.Quantity = model.Quantity;
                 product.IsActive = model.IsAvailable;
 
-                if (model.ImageFile != null)
+                if (model.RemoveImage)
+                {
+                    product.ImageUrl = null;
+                }
+                else if (model.ImageFile != null)
                 {
                     product.ImageUrl = model.ImageFile.FileName;
                 }
@@ -187,6 +204,7 @@ namespace Quản_lý_quán_cafe.Services
 
         public async Task DeleteAsync(int id)
         {
+            await using var mutationLock = await _mutationCoordinator.EnterAsync();
             await _repository.DeleteAsync(id);
         }
 
@@ -199,7 +217,7 @@ namespace Quản_lý_quán_cafe.Services
         {
             var categories = await _categoryRepository.GetAllAsync();
             var result = categories
-                .Where(c => !c.IsDeleted)
+                .Where(c => !c.IsDeleted && c.IsActive)
                 .Select(c => new CategorySelectViewModel
                 {
                     Id = c.CategoryID,

@@ -65,6 +65,7 @@ namespace Quản_lý_quán_cafe.Models.ViewModels.RestaurantTable
         public int Capacity { get; set; }
 
         [Required(ErrorMessage = "Trạng thái không được để trống")]
+        [RegularExpression("^(Available|Occupied|WaitingPayment|Maintenance)$", ErrorMessage = "Trạng thái bàn không hợp lệ")]
         [Display(Name = "Trạng thái")]
         public string TableStatus { get; set; } = "Available";
 

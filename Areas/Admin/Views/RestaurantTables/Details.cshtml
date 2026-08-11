@@ -1,4 +1,5 @@
 @using Quản_lý_quán_cafe.Models.ViewModels.RestaurantTable
+@using Quản_lý_quán_cafe.Models
 @model RestaurantTableDetailViewModel
 
 @{
@@ -87,7 +88,7 @@
                         <strong>Ngày tạo:</strong>
                     </div>
                     <div class="col-sm-8">
-                        <p>@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                        <p>@BusinessClock.FromUtc(Model.CreatedAt).ToString("dd/MM/yyyy HH:mm")</p>
                     </div>
                 </div>
 
@@ -98,7 +99,7 @@
                             <strong>Lần sửa cuối:</strong>
                         </div>
                         <div class="col-sm-8">
-                            <p>@Model.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</p>
+                            <p>@BusinessClock.FromUtc(Model.UpdatedAt.Value).ToString("dd/MM/yyyy HH:mm")</p>
                         </div>
                     </div>
                 }

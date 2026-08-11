@@ -8,12 +8,27 @@ using Quản_lý_quán_cafe.Repository.Interfaces;
 using Quản_lý_quán_cafe.Services;
 using Quản_lý_quán_cafe.Services.Interfaces;
 using Quản_lý_quán_cafe.Realtime;
-using Microsoft.Data.Sqlite;
+using Quản_lý_quán_cafe.Areas.Cashier;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddSignalR();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("account-auth", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 8,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        }));
+});
 
 builder.Services.AddAntiforgery(options =>
 {
@@ -35,6 +50,9 @@ builder.Services.AddSession(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
 });
 
 builder.Services.AddHttpContextAccessor();
@@ -57,7 +75,10 @@ builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRestaurantTableService, RestaurantTableService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
+builder.Services.AddScoped<ILoyaltyService, LoyaltyService>();
 builder.Services.AddScoped<CustomerSessionService>();
+builder.Services.AddSingleton<IApplicationMutationCoordinator, ApplicationMutationCoordinator>();
+builder.Services.AddSingleton<IStaffNotificationConnectionRegistry, StaffNotificationConnectionRegistry>();
 
 // Payment
 builder.Services.AddSingleton<PaymentGatewaySecretProtector>();
@@ -69,49 +90,6 @@ builder.Services.AddLogging();
 
 var app = builder.Build();
 
-// Ensure ReservationTime column exists in SQLite DB (for older schemas)
-try
-{
-    var connString = builder.Configuration.GetConnectionString("DefaultConnection");
-    if (!string.IsNullOrEmpty(connString) && connString.Contains("Data Source", StringComparison.OrdinalIgnoreCase))
-    {
-        using var conn = new SqliteConnection(connString);
-        conn.Open();
-        // Check if Reservations table has ReservationTime column
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "PRAGMA table_info('Reservations');";
-        using var reader = cmd.ExecuteReader();
-        var hasReservationTime = false;
-        while (reader.Read())
-        {
-            var name = reader.GetString(1);
-            if (string.Equals(name, "ReservationTime", StringComparison.OrdinalIgnoreCase))
-            {
-                hasReservationTime = true;
-                break;
-            }
-        }
-
-        if (!hasReservationTime)
-        {
-            // Add column and populate from ReservationDate if possible
-            using var addCmd = conn.CreateCommand();
-            addCmd.CommandText = "ALTER TABLE Reservations ADD COLUMN ReservationTime TEXT;";
-            addCmd.ExecuteNonQuery();
-
-            using var updateCmd = conn.CreateCommand();
-            updateCmd.CommandText = "UPDATE Reservations SET ReservationTime = ReservationDate;";
-            updateCmd.ExecuteNonQuery();
-        }
-
-        conn.Close();
-    }
-}
-catch
-{
-    // Ignore errors here; dashboard fallback will handle missing column at runtime
-}
-
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -119,6 +97,7 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseMiddleware<ExceptionMiddleware>();
+    app.UseHttpsRedirection();
     app.UseHsts();
 }
 
@@ -140,12 +119,15 @@ app.Use(async (context, next) =>
 app.UseStaticFiles();
 
 app.UseRouting();
+app.UseRateLimiter();
 
 app.UseSession();
 
 app.UseMiddleware<LoggingMiddleware>();
 
 await app.SeedDatabaseAsync();
+
+app.MapCashierArea();
 
 app.MapControllerRoute(
     name: "areas",

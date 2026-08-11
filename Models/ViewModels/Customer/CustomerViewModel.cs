@@ -8,9 +8,9 @@ namespace Quản_lý_quán_cafe.Models.ViewModels.Customer
         public string Name { get; set; } = string.Empty;
         public string? Phone { get; set; }
         public string? Email { get; set; }
+        public string? Username { get; set; }
         public int RewardPoints { get; set; }
         public decimal TotalSpent { get; set; }
-        public string MembershipTier { get; set; } = "Member";
         public bool IsActive { get; set; } = true;
         public DateTime? LastVisit { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -26,14 +26,12 @@ namespace Quản_lý_quán_cafe.Models.ViewModels.Customer
         public int TotalPages => (TotalItems + PageSize - 1) / PageSize;
 
         public string? SearchTerm { get; set; }
-        public string? SelectedMembershipTier { get; set; }
         public string? SortBy { get; set; }
 
 
         public int TotalCustomers { get; set; }
-        public int VIPCustomers { get; set; }
-        public long TotalPoints { get; set; }
         public int CustomersToday { get; set; }
+        public long TotalPoints { get; set; }
     }
 
     public class CustomerCreateViewModel
@@ -58,16 +56,9 @@ namespace Quản_lý_quán_cafe.Models.ViewModels.Customer
         [Display(Name = "Địa chỉ")]
         public string? Address { get; set; }
 
-        [Range(0, int.MaxValue, ErrorMessage = "Điểm tích lũy không được âm")]
-        [Display(Name = "Điểm tích lũy")]
-        public int RewardPoints { get; set; } = 0;
-
         [Range(0, 999999999.99, ErrorMessage = "Tổng chi tiêu không được âm")]
         [Display(Name = "Tổng chi tiêu")]
         public decimal TotalSpent { get; set; } = 0;
-
-        [Display(Name = "Hạng thành viên")]
-        public string MembershipTier { get; set; } = "Member";
 
         [Display(Name = "Trạng thái")]
         public bool IsActive { get; set; } = true;
@@ -82,11 +73,10 @@ namespace Quản_lý_quán_cafe.Models.ViewModels.Customer
         [Display(Name = "Họ tên")]
         public string Name { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Số điện thoại không được để trống")]
         [Phone(ErrorMessage = "Định dạng số điện thoại không hợp lệ")]
         [StringLength(20, ErrorMessage = "Số điện thoại không quá 20 ký tự")]
         [Display(Name = "Số điện thoại")]
-        public string Phone { get; set; } = string.Empty;
+        public string? Phone { get; set; }
 
         [EmailAddress(ErrorMessage = "Email không hợp lệ")]
         [StringLength(100, ErrorMessage = "Email không quá 100 ký tự")]
@@ -97,16 +87,9 @@ namespace Quản_lý_quán_cafe.Models.ViewModels.Customer
         [Display(Name = "Địa chỉ")]
         public string? Address { get; set; }
 
-        [Range(0, int.MaxValue, ErrorMessage = "Điểm tích lũy không được âm")]
-        [Display(Name = "Điểm tích lũy")]
-        public int RewardPoints { get; set; } = 0;
-
         [Range(0, 999999999.99, ErrorMessage = "Tổng chi tiêu không được âm")]
         [Display(Name = "Tổng chi tiêu")]
         public decimal TotalSpent { get; set; } = 0;
-
-        [Display(Name = "Hạng thành viên")]
-        public string MembershipTier { get; set; } = "Member";
 
         [Display(Name = "Trạng thái")]
         public bool IsActive { get; set; } = true;
@@ -118,15 +101,16 @@ namespace Quản_lý_quán_cafe.Models.ViewModels.Customer
         public string Name { get; set; } = string.Empty;
         public string? Phone { get; set; }
         public string? Email { get; set; }
+        public string? Username { get; set; }
         public string? Address { get; set; }
         public int RewardPoints { get; set; }
         public decimal TotalSpent { get; set; }
-        public string MembershipTier { get; set; } = "Member";
         public bool IsActive { get; set; } = true;
         public DateTime? LastVisit { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public List<OrderDto> RecentOrders { get; set; } = new();
+        public List<PointHistoryItemViewModel> PointHistory { get; set; } = new();
         public string AvatarInitials { get; set; } = string.Empty;
 
         public class OrderDto
@@ -141,8 +125,35 @@ namespace Quản_lý_quán_cafe.Models.ViewModels.Customer
     public class CustomerStatisticsViewModel
     {
         public int TotalCustomers { get; set; }
-        public int VIPCustomers { get; set; }
-        public long TotalPoints { get; set; }
         public int CustomersToday { get; set; }
+        public long TotalPoints { get; set; }
+    }
+
+    public class GiftPointsViewModel
+    {
+        [Range(1, 1_000_000, ErrorMessage = "Số điểm tặng phải từ 1 đến 1.000.000.")]
+        public int Points { get; set; }
+
+        [StringLength(300, ErrorMessage = "Lý do không được vượt quá 300 ký tự.")]
+        public string? Reason { get; set; }
+    }
+
+    public class CustomerPointsViewModel
+    {
+        public int CustomerId { get; set; }
+        public string CustomerName { get; set; } = string.Empty;
+        public int RewardPoints { get; set; }
+        public List<PointHistoryItemViewModel> History { get; set; } = new();
+    }
+
+    public class PointHistoryItemViewModel
+    {
+        public int Id { get; set; }
+        public int Points { get; set; }
+        public int BalanceAfter { get; set; }
+        public string TransactionType { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public int? OrderId { get; set; }
+        public DateTime TransactionDate { get; set; }
     }
 }

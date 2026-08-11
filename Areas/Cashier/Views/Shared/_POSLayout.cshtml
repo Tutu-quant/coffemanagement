@@ -1,5 +1,11 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi"
+      data-brewpoint-area="cashier"
+      data-brewpoint-controller="@((ViewContext.RouteData.Values["controller"]?.ToString() ?? "").ToLowerInvariant())"
+      data-brewpoint-action="@((ViewContext.RouteData.Values["action"]?.ToString() ?? "").ToLowerInvariant())"
+      data-brewpoint-hub-url="@Url.Content("~/hubs/app-state")"
+      data-brewpoint-pending-reservation-url="@Url.Content("~/api/notifications/reservations/pending-count")"
+      data-brewpoint-reservation-details-base="@Url.Content("~/Cashier/Reservations/Details/")">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,6 +14,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.0/dist/sweetalert2.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/staff-notifications.css" asp-append-version="true" />
     <style>
         html, body {
             height: 100%;

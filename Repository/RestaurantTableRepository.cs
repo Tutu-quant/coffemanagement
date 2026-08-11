@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Quản_lý_quán_cafe.Data;
 using Quản_lý_quán_cafe.Models.Entities;
 using Quản_lý_quán_cafe.Repository.Interfaces;
+using TableStatuses = Quản_lý_quán_cafe.Models.Enums.TableStatus;
 
 namespace Quản_lý_quán_cafe.Repository
 {
@@ -136,7 +137,10 @@ namespace Quản_lý_quán_cafe.Repository
         public async Task UpdateAsync(RestaurantTable table)
         {
             table.UpdatedAt = DateTime.UtcNow;
-            _context.RestaurantTables.Update(table);
+            var entry = _context.Entry(table);
+            if (entry.State == EntityState.Detached)
+                _context.RestaurantTables.Attach(table);
+            _context.Entry(table).State = EntityState.Modified;
             await _context.SaveChangesAsync();
         }
 
@@ -153,7 +157,7 @@ namespace Quản_lý_quán_cafe.Repository
         public async Task<bool> ExistsByTableNumberAsync(string tableNumber, int? excludeId = null)
         {
             var query = _context.RestaurantTables
-                .Where(t => !t.IsDeleted && t.TableNumber == tableNumber);
+                .Where(t => t.TableNumber == tableNumber);
 
             if (excludeId.HasValue)
             {
@@ -166,10 +170,13 @@ namespace Quản_lý_quán_cafe.Repository
         public async Task<bool> CanDeleteAsync(int tableId)
         {
             var hasActiveOrders = await _context.Orders
-                .AnyAsync(o => o.TableID == tableId && o.OrderStatus != "Completed" && o.OrderStatus != "Cancelled");
+                .AnyAsync(o => o.TableID == tableId && !o.IsDeleted && o.OrderStatus != "Completed" &&
+                               o.OrderStatus != "Cancelled" && o.OrderDetails.Any(d => !d.IsDeleted));
 
+            var oldestActiveReservation = Models.BusinessClock.Now.AddMinutes(-Models.ReservationPolicy.DurationMinutes);
             var hasActiveReservations = await _context.Reservations
-                .AnyAsync(r => r.TableID == tableId && r.ReservationStatus != "Completed" && r.ReservationStatus != "Cancelled");
+                .AnyAsync(r => r.TableID == tableId && !r.IsDeleted && r.ReservationDate > oldestActiveReservation &&
+                               r.ReservationStatus != "Completed" && r.ReservationStatus != "Cancelled");
 
             return !hasActiveOrders && !hasActiveReservations;
         }
@@ -177,7 +184,7 @@ namespace Quản_lý_quán_cafe.Repository
         public async Task<List<RestaurantTable>> GetAvailableTablesAsync(int minCapacity)
         {
             return await _context.RestaurantTables
-                .Where(t => !t.IsDeleted && t.TableStatus != "Maintenance" && t.Capacity >= minCapacity)
+                .Where(t => !t.IsDeleted && t.TableStatus != TableStatuses.Maintenance && t.Capacity >= minCapacity)
                 .OrderBy(t => t.TableNumber)
                 .ToListAsync();
         }

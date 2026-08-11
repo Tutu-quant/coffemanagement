@@ -14,14 +14,14 @@
         public decimal Subtotal { get; set; }
         public decimal DiscountAmount { get; set; }
         public decimal Total { get; set; }
-        public int PointsToAdd { get; set; }
+        public int EarnedPoints { get; set; }
+        public string DiscountMode { get; set; } = "None";
+        public string? VoucherCode { get; set; }
+        public List<POSDiscountAccountViewModel> DiscountAccounts { get; set; } = new();
 
         public string PaymentMethod { get; set; } = "cash";
         public decimal PaidAmount { get; set; }
         public decimal ChangeAmount { get; set; }
-
-        public string DiscountType { get; set; } = "None";
-        public decimal DiscountValue { get; set; }
     }
 
     public class POSProductViewModel
@@ -36,6 +36,7 @@
     public class POSTableViewModel
     {
         public int? OrderID { get; set; }
+        public string? OrderStatus { get; set; }
         public int TableID { get; set; }
         public string TableNumber { get; set; } = string.Empty;
         public string TableName { get; set; } = string.Empty;
@@ -65,7 +66,17 @@
         public string Email { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public int RewardPoints { get; set; }
-        public string MembershipTier { get; set; } = "Member";
+    }
+
+    public class POSDiscountAccountViewModel
+    {
+        public int CustomerID { get; set; }
+        public string Account { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public int AvailablePoints { get; set; }
+        public int PointsUsed { get; set; }
+        public decimal DiscountAmount { get; set; }
     }
 }
 

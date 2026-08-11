@@ -50,7 +50,7 @@
             </div>
 
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <div class="form-group">
                         <label asp-for="Price" class="form-label">
                             <i class="bi bi-asterisk" style="color: #dc3545; font-size: 8px; margin-right: 4px;"></i>
@@ -62,7 +62,15 @@
                     </div>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label asp-for="Quantity" class="form-label">Tồn kho ban đầu</label>
+                        <input asp-for="Quantity" type="number" class="form-control" min="0" max="1000000" />
+                        <span asp-validation-for="Quantity" class="invalid-feedback d-block"></span>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
                     <div class="form-group">
                         <label class="form-label">Trạng thái</label>
                         <div class="form-check">

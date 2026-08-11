@@ -11,7 +11,11 @@ namespace Quản_lý_quán_cafe.Extensions
             using (var scope = app.ApplicationServices.CreateScope())
             {
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                await SeedData.InitializeAsync(context);
+                var environment = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
+                var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+                var seedDemoData = configuration.GetValue<bool?>("SeedData:EnableDemoData")
+                    ?? environment.IsDevelopment();
+                await SeedData.InitializeAsync(context, seedDemoData);
             }
         }
 

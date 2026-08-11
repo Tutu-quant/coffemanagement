@@ -22,15 +22,25 @@
 
     public class CategoryCreateViewModel
     {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Tên danh mục là bắt buộc")]
+        [System.ComponentModel.DataAnnotations.StringLength(100, MinimumLength = 2, ErrorMessage = "Tên danh mục phải từ 2 đến 100 ký tự")]
         public string Name { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.StringLength(500, ErrorMessage = "Mô tả không được vượt quá 500 ký tự")]
         public string? Description { get; set; }
         public bool IsActive { get; set; } = true;
     }
 
     public class CategoryEditViewModel
     {
+        [System.ComponentModel.DataAnnotations.Range(1, int.MaxValue, ErrorMessage = "Danh mục không hợp lệ")]
         public int Id { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Tên danh mục là bắt buộc")]
+        [System.ComponentModel.DataAnnotations.StringLength(100, MinimumLength = 2, ErrorMessage = "Tên danh mục phải từ 2 đến 100 ký tự")]
         public string Name { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.StringLength(500, ErrorMessage = "Mô tả không được vượt quá 500 ký tự")]
         public string? Description { get; set; }
         public bool IsActive { get; set; }
     }

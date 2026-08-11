@@ -12,11 +12,9 @@ namespace Quản_lý_quán_cafe.Models.Entities
 
         public string? Address { get; set; }
 
-        public int RewardPoints { get; set; } = 0;
+        public int RewardPoints { get; set; }
 
         public decimal TotalSpent { get; set; } = 0;
-
-        public string MembershipTier { get; set; } = "Member";
 
         public bool IsActive { get; set; } = true;
 
@@ -32,6 +30,8 @@ namespace Quản_lý_quán_cafe.Models.Entities
         public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
         public virtual ICollection<Reservation> Reservations { get; set; } = new List<Reservation>();
         public virtual ICollection<PointHistory> PointHistories { get; set; } = new List<PointHistory>();
+        public virtual ICollection<OrderPointRedemption> PointRedemptions { get; set; } = new List<OrderPointRedemption>();
         public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
+        public virtual User? User { get; set; }
     }
 }

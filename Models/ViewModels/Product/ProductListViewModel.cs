@@ -7,6 +7,7 @@
         public string? CategoryName { get; set; }
         public int CategoryId { get; set; }
         public decimal Price { get; set; }
+        public int Quantity { get; set; }
         public int SalesCount { get; set; }
         public bool IsAvailable { get; set; }
         public string? ImageUrl { get; set; }
@@ -35,10 +36,17 @@
 
     public class ProductCreateViewModel
     {
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.StringLength(200, MinimumLength = 2)]
         public string Name { get; set; } = string.Empty;
+        [System.ComponentModel.DataAnnotations.StringLength(1000)]
         public string? Description { get; set; }
+        [System.ComponentModel.DataAnnotations.Range(1, int.MaxValue, ErrorMessage = "Vui lòng chọn danh mục.")]
         public int CategoryId { get; set; }
+        [System.ComponentModel.DataAnnotations.Range(typeof(decimal), "1", "1000000000")]
         public decimal Price { get; set; }
+        [System.ComponentModel.DataAnnotations.Range(0, 1000000, ErrorMessage = "Tồn kho phải từ 0 đến 1.000.000.")]
+        public int Quantity { get; set; }
         public bool IsAvailable { get; set; } = true;
         public IFormFile? ImageFile { get; set; }
     }
@@ -46,13 +54,21 @@
     public class ProductEditViewModel
     {
         public int Id { get; set; }
+        [System.ComponentModel.DataAnnotations.Required]
+        [System.ComponentModel.DataAnnotations.StringLength(200, MinimumLength = 2)]
         public string Name { get; set; } = string.Empty;
+        [System.ComponentModel.DataAnnotations.StringLength(1000)]
         public string? Description { get; set; }
+        [System.ComponentModel.DataAnnotations.Range(1, int.MaxValue, ErrorMessage = "Vui lòng chọn danh mục.")]
         public int CategoryId { get; set; }
+        [System.ComponentModel.DataAnnotations.Range(typeof(decimal), "1", "1000000000")]
         public decimal Price { get; set; }
+        [System.ComponentModel.DataAnnotations.Range(0, 1000000, ErrorMessage = "Tồn kho phải từ 0 đến 1.000.000.")]
+        public int Quantity { get; set; }
         public bool IsAvailable { get; set; }
         public string? ImageUrl { get; set; }
         public IFormFile? ImageFile { get; set; }
+        public bool RemoveImage { get; set; }
     }
 
     public class ProductDetailViewModel
@@ -63,6 +79,7 @@
         public int CategoryId { get; set; }
         public string? CategoryName { get; set; }
         public decimal Price { get; set; }
+        public int Quantity { get; set; }
         public int SalesCount { get; set; }
         public bool IsAvailable { get; set; }
         public string? ImageUrl { get; set; }

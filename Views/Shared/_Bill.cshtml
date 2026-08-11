@@ -1,5 +1,9 @@
 @model Quản_lý_quán_cafe.Models.ViewModels.Order.OrderDetailViewModel
 
+@{
+    var loyaltySubtotal = Model.LoyaltySubtotalAmount > 0 ? Model.LoyaltySubtotalAmount : Model.Subtotal;
+}
+
 <div class="bill-paper" id="billPaper" style="font-family: 'Inter', sans-serif; max-width:420px; margin:0 auto; padding:16px; background:#fff; color:#000;">
     <div style="text-align:center; margin-bottom:8px;">
         <h3 style="margin:0;">BrewPoint Cafe</h3>
@@ -41,6 +45,27 @@
 
     <hr />
 
+    @if (Model.PointDiscountAmount > 0 || Model.VoucherDiscountAmount > 0)
+    {
+        <div style="display:flex; justify-content:space-between; font-size:13px; margin-top:8px;">
+            <div>Tạm tính</div>
+            <div>@loyaltySubtotal.ToString("N0")đ</div>
+        </div>
+    }
+    @if (Model.PointDiscountAmount > 0)
+    {
+        <div style="display:flex; justify-content:space-between; font-size:13px; color:#a33; margin-top:4px;">
+            <div>Đổi @Model.AppliedRewardPoints điểm</div>
+            <div>-@Model.PointDiscountAmount.ToString("N0")đ</div>
+        </div>
+    }
+    @if (Model.VoucherDiscountAmount > 0)
+    {
+        <div style="display:flex; justify-content:space-between; font-size:13px; color:#a33; margin-top:4px;">
+            <div>Voucher @(Model.AppliedVoucherCode ?? string.Empty)</div>
+            <div>-@Model.VoucherDiscountAmount.ToString("N0")đ</div>
+        </div>
+    }
     <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:700; margin-top:8px;">
         <div>TỔNG</div>
         <div>@Model.TotalAmount.ToString("N0")đ</div>
@@ -50,6 +75,10 @@
         <div>Thanh toán: @(Model.PaymentStatus ?? "-")</div>
         <div>Ngày thanh toán: @(Model.PaidDate.HasValue ? Model.PaidDate.Value.ToString("dd/MM/yyyy HH:mm:ss") : "-")</div>
         <div>Nhân viên: @(ViewContext.HttpContext.Session.GetString("FullName") ?? ViewContext.HttpContext.User.Identity?.Name ?? "-")</div>
+        @if (Model.ProjectedEarnedPoints > 0)
+        {
+            <div>Điểm tích lũy từ hóa đơn: +@Model.ProjectedEarnedPoints</div>
+        }
     </div>
 
     <div style="text-align:center; margin-top:12px; font-size:12px; color:#666;">Cảm ơn quý khách! Hẹn gặp lại.</div>

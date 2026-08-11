@@ -48,28 +48,6 @@
                         <span asp-validation-for="Address" class="text-danger small d-block mt-1"></span>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label asp-for="RewardPoints" class="form-label"></label>
-                                <input asp-for="RewardPoints" type="number" class="form-control" placeholder="0">
-                                <span asp-validation-for="RewardPoints" class="text-danger small d-block mt-1"></span>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label asp-for="MembershipTier" class="form-label"></label>
-                                <select asp-for="MembershipTier" class="form-select">
-                                    <option value="Member">Member</option>
-                                    <option value="Silver">Silver</option>
-                                    <option value="Gold">Gold</option>
-                                    <option value="Diamond">Diamond</option>
-                                    <option value="VIP">VIP</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="mb-3">
                         <label asp-for="TotalSpent" class="form-label"></label>
                         <input asp-for="TotalSpent" type="number" step="0.01" class="form-control" placeholder="0">

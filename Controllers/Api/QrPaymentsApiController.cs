@@ -2,23 +2,29 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Quản_lý_quán_cafe.Data;
 using Quản_lý_quán_cafe.Models.Entities;
+using Quản_lý_quán_cafe.Filters;
+using Quản_lý_quán_cafe.Services.Interfaces;
 
 namespace Quản_lý_quán_cafe.Controllers.Api;
 
 [ApiController, Route("api/payments/qr")]
-public class QrPaymentsApiController(ApplicationDbContext context) : ControllerBase
+[SessionAuthorize("Cashier,Admin")]
+public class QrPaymentsApiController(
+    ApplicationDbContext context,
+    ILoyaltyService loyaltyService) : ControllerBase
 {
     [HttpPost("intents")]
+    [ValidateAntiForgeryTokenFromHeader]
     public async Task<IActionResult> CreateIntent([FromBody] CreateQrIntentRequest request)
     {
         if (!IsStaff()) return Unauthorized();
         var gateway = await context.PaymentGatewaySettings.AsNoTracking()
-            .FirstOrDefaultAsync(x => x.IsActive);
+            .FirstOrDefaultAsync(x => x.IsActive && x.Provider == "VietQR");
         if (gateway is null)
             return Problem(
                 statusCode: StatusCodes.Status503ServiceUnavailable,
                 title: "Payment gateway is not connected",
-                detail: "Quán chưa liên kết với MoMo/VietQR");
+                detail: "Quán chưa bật cấu hình VietQR.");
 
         var receiver = await context.PaymentAccountSettings.AsNoTracking()
             .FirstOrDefaultAsync(x => x.Provider == "Placeholder" && x.IsActive);
@@ -28,50 +34,60 @@ public class QrPaymentsApiController(ApplicationDbContext context) : ControllerB
                 title: "QR payment placeholder is not configured",
                 detail: "Admin chưa cấu hình tài khoản nhận tiền cho placeholder QR.");
 
-        var order = await context.Orders
-            .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
+        var activeOrders = await context.Orders
+            .AsNoTracking()
             .Include(o => o.Payment)
-            .FirstOrDefaultAsync(o => o.TableID == request.TableId && !o.IsDeleted &&
-                                      o.OrderStatus != "Completed" && o.OrderStatus != "Cancelled");
-        if (order is null || order.OrderDetails.Count == 0)
+            .Where(o => o.TableID == request.TableId && !o.IsDeleted &&
+                        o.OrderStatus != "Completed" && o.OrderStatus != "Cancelled" &&
+                        o.OrderDetails.Any(d => !d.IsDeleted))
+            .ToListAsync();
+        if (activeOrders.Count > 1)
+            return Conflict(new { message = "Bàn có nhiều đơn đang mở, không thể tạo mã QR tự động." });
+        var order = activeOrders.SingleOrDefault();
+        if (order is null)
             return NotFound(new { message = "Không có đơn hàng để tạo QR." });
+        if (request.ExpectedOrderId.HasValue && request.ExpectedOrderId.Value != order.OrderID)
+            return Conflict(new { message = "Đơn hàng trên bàn đã thay đổi. Vui lòng tải lại POS trước khi tạo QR." });
         if (order.Payment?.PaymentStatus == "Completed")
             return Conflict(new { message = "Đơn hàng đã thanh toán." });
 
-        var subtotal = order.OrderDetails.Sum(d => d.Subtotal);
-        var discount = CalculateDiscount(subtotal, request.DiscountType, request.DiscountValue);
-        var amount = subtotal - discount;
-        if (amount <= 0 || decimal.Truncate(amount) != amount)
-            return BadRequest(new { message = "Placeholder QR yêu cầu số tiền nguyên dương." });
+        LoyaltyQuoteDto quote;
+        try
+        {
+            quote = await loyaltyService.GetOrderQuoteAsync(order.OrderID, HttpContext.RequestAborted);
+        }
+        catch (LoyaltyRuleException ex)
+        {
+            return StatusCode(ex.StatusCode, new { message = ex.Message });
+        }
 
-        var payment = order.Payment ?? new Payment
+        var amount = quote.TotalAmount;
+        if (amount == 0)
+            return Conflict(new
+            {
+                message = "Đơn hàng còn 0 ₫, không cần tạo mã QR. Hãy hoàn tất đơn để in hóa đơn.",
+                zeroAmount = true,
+                orderId = order.OrderID
+            });
+        if (amount < 0 || decimal.Truncate(amount) != amount)
+            return BadRequest(new { message = "VietQR yêu cầu số tiền nguyên không âm." });
+
+        var payment = new Payment
         {
             OrderID = order.OrderID,
-            CreatedAt = DateTime.UtcNow
+            Amount = amount,
+            PaymentMethod = "QRPlaceholder",
+            PaymentStatus = "Pending",
+            PaymentDate = DateTime.UtcNow,
+            TransactionCode = $"BP{order.OrderID}"
         };
-        payment.Amount = amount;
-        payment.PaymentMethod = "QRPlaceholder";
-        payment.PaymentStatus = "Pending";
-        payment.PaymentDate = DateTime.UtcNow;
-        payment.TransactionCode = $"BP{order.OrderID}";
-        payment.UpdatedAt = DateTime.UtcNow;
-        if (order.Payment is null) context.Payments.Add(payment);
 
-        order.TotalAmount = amount;
-        order.OrderStatus = "WaitingPayment";
-        order.UpdatedAt = DateTime.UtcNow;
-        await context.SaveChangesAsync();
-        order.PaymentID = payment.PaymentID;
-        await context.SaveChangesAsync();
-
-        var qrImageUrl = gateway.Provider == "VietQR"
-            ? BuildVietQrQuickLink(gateway.MerchantId, receiver, payment)
-            : null;
+        var qrImageUrl = BuildVietQrQuickLink(gateway.MerchantId, receiver, payment);
 
         return Ok(new
         {
             orderId = order.OrderID,
-            paymentId = payment.PaymentID,
+            paymentId = order.Payment?.PaymentID,
             amount,
             transferContent = payment.TransactionCode,
             qrImageUrl,
@@ -109,13 +125,5 @@ public class QrPaymentsApiController(ApplicationDbContext context) : ControllerB
                $"?amount={payment.Amount:0}&addInfo={content}&accountName={accountName}";
     }
 
-    private static decimal CalculateDiscount(decimal subtotal, string? type, decimal value) =>
-        type?.ToLowerInvariant() switch
-        {
-            "percent" => subtotal * Math.Clamp(value, 0, 100) / 100,
-            "fixed" => Math.Clamp(value, 0, subtotal),
-            _ => 0
-        };
-
-    public sealed record CreateQrIntentRequest(int TableId, string? DiscountType, decimal DiscountValue);
+    public sealed record CreateQrIntentRequest(int TableId, int? ExpectedOrderId = null);
 }

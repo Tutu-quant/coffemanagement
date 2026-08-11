@@ -1,0 +1,70 @@
+@model Quản_lý_quán_cafe.Models.Entities.Reservation
+@{
+    ViewData["Title"] = $"Lịch đặt bàn #{Model.ReservationID}";
+    string BadgeClass(string status) => status switch
+    {
+        "Pending" => "text-bg-warning",
+        "Confirmed" => "text-bg-primary",
+        "CheckedIn" => "text-bg-info",
+        "Completed" => "text-bg-success",
+        "Cancelled" => "text-bg-secondary",
+        _ => "text-bg-light"
+    };
+    string StatusLabel(string status) => status switch
+    {
+        "Pending" => "Chờ xác nhận",
+        "Confirmed" => "Đã xác nhận",
+        "CheckedIn" => "Đã nhận bàn",
+        "Completed" => "Hoàn tất",
+        "Cancelled" => "Đã hủy",
+        _ => status
+    };
+}
+
+<div class="container-fluid p-3 p-lg-4">
+    <div class="mb-3">
+        <a asp-action="Index" class="text-decoration-none">
+            <i class="fas fa-arrow-left" aria-hidden="true"></i> Quay lại danh sách
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+                <div>
+                    <p class="text-muted mb-1">Yêu cầu đặt bàn</p>
+                    <h1 class="h3 mb-0">Lịch #@Model.ReservationID</h1>
+                </div>
+                <span class="badge @BadgeClass(Model.ReservationStatus) fs-6">@StatusLabel(Model.ReservationStatus)</span>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6 col-xl-3">
+                    <small class="text-uppercase text-muted">Khách hàng</small>
+                    <div class="fw-semibold mt-1">@(Model.Customer?.CustomerName ?? "Khách hàng")</div>
+                    <div class="text-muted">@(Model.Customer?.Phone ?? Model.Customer?.Email ?? "Chưa có liên hệ")</div>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <small class="text-uppercase text-muted">Bàn</small>
+                    <div class="fw-semibold mt-1">@(Model.Table?.TableNumber ?? "N/A")</div>
+                    <div class="text-muted">@(Model.Table?.Location ?? "Chưa cập nhật")</div>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <small class="text-uppercase text-muted">Thời gian</small>
+                    <div class="fw-semibold mt-1">@Model.ReservationDate.ToString("HH:mm · dd/MM/yyyy")</div>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <small class="text-uppercase text-muted">Số khách</small>
+                    <div class="fw-semibold mt-1">@Model.NumberOfGuests người</div>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(Model.Notes))
+            {
+                <div class="alert alert-light border mt-4 mb-0">
+                    <strong>Ghi chú của khách:</strong> @Model.Notes
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -33,8 +33,20 @@ namespace Quản_lý_quán_cafe.Models.ViewModels.Order
         public decimal PaidAmount { get; set; }
         public DateTime? PaidDate { get; set; }
 
+        public decimal LoyaltySubtotalAmount { get; set; }
+        public decimal PointDiscountAmount { get; set; }
+        public decimal VoucherDiscountAmount { get; set; }
+        public string LoyaltyDiscountMode { get; set; } = "None";
+        public string? AppliedVoucherCode { get; set; }
+        public int AvailableRewardPoints { get; set; }
+        public int AppliedRewardPoints { get; set; }
+        public int ProjectedEarnedPoints { get; set; }
+        public bool CanApplyLoyaltyDiscount { get; set; }
+
 
         public decimal RemainingAmount => TotalAmount - PaidAmount;
+        public decimal Subtotal => Items.Sum(item => item.TotalPrice);
+        public decimal DiscountAmount => Math.Max(0, Subtotal - TotalAmount);
         public int ItemCount => Items.Count;
         public string StatusBadgeClass { get; set; } = string.Empty;
 

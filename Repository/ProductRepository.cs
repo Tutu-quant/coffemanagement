@@ -148,7 +148,8 @@ namespace Quản_lý_quán_cafe.Repository
         public async Task<int> GetSalesCountAsync(int productId)
         {
             return await _context.OrderDetails
-                .Where(od => od.ProductID == productId)
+                .Where(od => od.ProductID == productId && !od.IsDeleted && od.Order != null
+                    && !od.Order.IsDeleted && od.Order.OrderStatus == "Completed")
                 .SumAsync(od => od.Quantity);
         }
 
@@ -163,7 +164,10 @@ namespace Quản_lý_quán_cafe.Repository
         public async Task UpdateAsync(Product product)
         {
             product.UpdatedAt = DateTime.UtcNow;
-            _context.Products.Update(product);
+            var entry = _context.Entry(product);
+            if (entry.State == EntityState.Detached)
+                _context.Products.Attach(product);
+            _context.Entry(product).State = EntityState.Modified;
             await _context.SaveChangesAsync();
         }
 

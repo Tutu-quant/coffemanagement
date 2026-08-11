@@ -33,7 +33,7 @@
                     <tr>
                         <td>@reservation.ReservationID</td>
                         <td>@(reservation.Table?.TableNumber ?? reservation.TableID.ToString())</td>
-                        <td>@reservation.ReservationDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@reservation.ReservationDate.ToString("dd/MM/yyyy HH:mm")</td>
                         <td>@reservation.NumberOfGuests</td>
                         <td><span class="badge @StatusClass(reservation.ReservationStatus)">@StatusText(reservation.ReservationStatus)</span></td>
                         <td class="text-end"><a asp-action="Details" asp-route-id="@reservation.ReservationID" class="btn btn-sm btn-outline-primary">Chi tiết</a></td>

@@ -8,11 +8,23 @@ namespace Quản_lý_quán_cafe.Models.Entities
 
         public int? CustomerID { get; set; }
 
+        public bool IsLoyaltyCustomerAssigned { get; set; }
+
         public int? EmployeeID { get; set; }
 
         public int? TableID { get; set; }
 
+        public decimal SubtotalAmount { get; set; }
+
+        public decimal VoucherDiscountAmount { get; set; }
+
+        public decimal PointDiscountAmount { get; set; }
+
         public decimal TotalAmount { get; set; }
+
+        public int? VoucherID { get; set; }
+
+        public string? VoucherCode { get; set; }
 
         public string OrderStatus { get; set; } = OrderStatusConstants.Pending;
 
@@ -35,6 +47,8 @@ namespace Quản_lý_quán_cafe.Models.Entities
         public virtual Customer? Customer { get; set; }
         public virtual RestaurantTable? Table { get; set; }
         public virtual Payment? Payment { get; set; }
+        public virtual Voucher? Voucher { get; set; }
         public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
+        public virtual ICollection<OrderPointRedemption> PointRedemptions { get; set; } = new List<OrderPointRedemption>();
     }
 }

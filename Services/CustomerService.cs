@@ -11,11 +11,16 @@ namespace Quản_lý_quán_cafe.Services
     {
         private readonly ICustomerRepository _repository;
         private readonly ApplicationDbContext _context;
+        private readonly IApplicationMutationCoordinator _mutationCoordinator;
 
-        public CustomerService(ICustomerRepository repository, ApplicationDbContext context)
+        public CustomerService(
+            ICustomerRepository repository,
+            ApplicationDbContext context,
+            IApplicationMutationCoordinator mutationCoordinator)
         {
             _repository = repository;
             _context = context;
+            _mutationCoordinator = mutationCoordinator;
         }
 
         private string GetAvatarInitials(string name)
@@ -34,8 +39,8 @@ namespace Quản_lý_quán_cafe.Services
                 Name = customer.CustomerName,
                 Phone = customer.Phone,
                 Email = customer.Email,
+                Username = customer.User?.Username,
                 RewardPoints = customer.RewardPoints,
-                MembershipTier = customer.MembershipTier,
                 TotalSpent = customer.TotalSpent,
                 IsActive = customer.IsActive,
                 LastVisit = customer.LastVisit,
@@ -58,9 +63,9 @@ namespace Quản_lý_quán_cafe.Services
                 Name = customer.CustomerName,
                 Phone = customer.Phone,
                 Email = customer.Email,
+                Username = customer.User?.Username,
                 Address = customer.Address,
                 RewardPoints = customer.RewardPoints,
-                MembershipTier = customer.MembershipTier,
                 TotalSpent = totalSpent,
                 IsActive = customer.IsActive,
                 CreatedAt = customer.CreatedAt,
@@ -80,7 +85,7 @@ namespace Quản_lý_quán_cafe.Services
         {
             var totalItems = await _repository.GetCountAsync();
             var skip = (pageNumber - 1) * pageSize;
-            var customers = await _repository.SearchWithFilterAsync(string.Empty, null, "newest", skip, pageSize);
+            var customers = await _repository.SearchWithFilterAsync(string.Empty, "newest", skip, pageSize);
 
             var stats = await GetStatisticsAsync();
 
@@ -91,17 +96,16 @@ namespace Quản_lý_quán_cafe.Services
                 PageSize = pageSize,
                 TotalItems = totalItems,
                 TotalCustomers = stats.TotalCustomers,
-                VIPCustomers = stats.VIPCustomers,
-                TotalPoints = stats.TotalPoints,
-                CustomersToday = stats.CustomersToday
+                CustomersToday = stats.CustomersToday,
+                TotalPoints = stats.TotalPoints
             };
         }
 
-        public async Task<CustomerListViewModel> SearchWithFilterAsync(string searchTerm, string? membershipTier, string sortBy, int pageNumber = 1, int pageSize = 10)
+        public async Task<CustomerListViewModel> SearchWithFilterAsync(string searchTerm, string sortBy, int pageNumber = 1, int pageSize = 10)
         {
-            var totalItems = await _repository.GetCountByFilterAsync(searchTerm, membershipTier);
+            var totalItems = await _repository.GetCountByFilterAsync(searchTerm);
             var skip = (pageNumber - 1) * pageSize;
-            var customers = await _repository.SearchWithFilterAsync(searchTerm, membershipTier, sortBy, skip, pageSize);
+            var customers = await _repository.SearchWithFilterAsync(searchTerm, sortBy, skip, pageSize);
 
             var stats = await GetStatisticsAsync();
 
@@ -112,25 +116,25 @@ namespace Quản_lý_quán_cafe.Services
                 PageSize = pageSize,
                 TotalItems = totalItems,
                 SearchTerm = searchTerm,
-                SelectedMembershipTier = membershipTier,
                 SortBy = sortBy,
                 TotalCustomers = stats.TotalCustomers,
-                VIPCustomers = stats.VIPCustomers,
-                TotalPoints = stats.TotalPoints,
-                CustomersToday = stats.CustomersToday
+                CustomersToday = stats.CustomersToday,
+                TotalPoints = stats.TotalPoints
             };
         }
 
         public async Task<int> CreateAsync(CustomerCreateViewModel model)
         {
+            await using var mutationLock = await _mutationCoordinator.EnterAsync();
+            var normalizedEmail = string.IsNullOrWhiteSpace(model.Email) ? null : model.Email.Trim().ToLowerInvariant();
+            if (normalizedEmail is not null && await _context.Customers.AnyAsync(customer => customer.Email == normalizedEmail))
+                throw new InvalidOperationException("Email đã được sử dụng.");
             var customer = new Customer
             {
-                CustomerName = model.Name,
-                Phone = model.Phone,
-                Email = model.Email,
-                Address = model.Address,
-                RewardPoints = model.RewardPoints,
-                MembershipTier = model.MembershipTier,
+                CustomerName = model.Name.Trim(),
+                Phone = model.Phone.Trim(),
+                Email = normalizedEmail,
+                Address = string.IsNullOrWhiteSpace(model.Address) ? null : model.Address.Trim(),
                 TotalSpent = model.TotalSpent,
                 IsActive = model.IsActive
             };
@@ -141,50 +145,81 @@ namespace Quản_lý_quán_cafe.Services
 
         public async Task UpdateAsync(CustomerEditViewModel model)
         {
-            var customer = await _repository.GetByIdAsync(model.Id);
+            await using var mutationLock = await _mutationCoordinator.EnterAsync();
+            var customer = await _context.Customers
+                .Include(item => item.User)
+                .FirstOrDefaultAsync(item => item.CustomerID == model.Id && !item.IsDeleted);
             if (customer != null)
             {
-                customer.CustomerName = model.Name;
-                customer.Phone = model.Phone;
-                customer.Email = model.Email;
-                customer.Address = model.Address;
-                customer.RewardPoints = model.RewardPoints;
-                customer.MembershipTier = model.MembershipTier;
+                var normalizedEmail = string.IsNullOrWhiteSpace(model.Email) ? null : model.Email.Trim().ToLowerInvariant();
+                if (normalizedEmail is not null && await _context.Customers.AnyAsync(item =>
+                        item.CustomerID != model.Id && item.Email == normalizedEmail))
+                    throw new InvalidOperationException("Email đã được sử dụng.");
+                customer.CustomerName = model.Name.Trim();
+                customer.Phone = string.IsNullOrWhiteSpace(model.Phone) ? null : model.Phone.Trim();
+                customer.Email = normalizedEmail;
+                customer.Address = string.IsNullOrWhiteSpace(model.Address) ? null : model.Address.Trim();
                 customer.TotalSpent = model.TotalSpent;
                 customer.IsActive = model.IsActive;
-
-                await _repository.UpdateAsync(customer);
+                customer.UpdatedAt = DateTime.UtcNow;
+                if (customer.User is not null)
+                {
+                    customer.User.IsActive = model.IsActive;
+                    customer.User.UpdatedAt = DateTime.UtcNow;
+                }
+                await _context.SaveChangesAsync();
             }
         }
 
         public async Task DeleteAsync(int id)
         {
-            await _repository.DeleteAsync(id);
+            await using var mutationLock = await _mutationCoordinator.EnterAsync();
+            var hasOpenOrder = await _context.Orders.AnyAsync(order => order.CustomerID == id && !order.IsDeleted
+                && order.OrderStatus != "Completed" && order.OrderStatus != "Cancelled"
+                && order.OrderDetails.Any(detail => !detail.IsDeleted));
+            if (hasOpenOrder)
+                throw new InvalidOperationException("Không thể xóa khách hàng đang có đơn mở.");
+            var hasActiveReservation = await _context.Reservations.AnyAsync(reservation => reservation.CustomerID == id
+                && !reservation.IsDeleted && reservation.ReservationStatus != "Cancelled"
+                && reservation.ReservationStatus != "Completed");
+            if (hasActiveReservation)
+                throw new InvalidOperationException("Không thể xóa khách hàng đang có lượt đặt bàn chưa hoàn thành.");
+
+            var customer = await _context.Customers.Include(item => item.User)
+                .FirstOrDefaultAsync(item => item.CustomerID == id && !item.IsDeleted);
+            if (customer is null) return;
+            customer.IsDeleted = true;
+            customer.IsActive = false;
+            customer.UpdatedAt = DateTime.UtcNow;
+            if (customer.User is not null)
+            {
+                customer.User.IsActive = false;
+                customer.User.UpdatedAt = DateTime.UtcNow;
+            }
+            await _context.SaveChangesAsync();
         }
 
-        public async Task<bool> ValidatePhoneAsync(string phone, int? excludeId = null)
+        public async Task<bool> ValidatePhoneAsync(string? phone, int? excludeId = null)
         {
-            return !await _repository.ExistsByPhoneAsync(phone, excludeId);
+            if (string.IsNullOrWhiteSpace(phone))
+                return true;
+
+            return !await _repository.ExistsByPhoneAsync(phone.Trim(), excludeId);
         }
 
         public async Task<CustomerStatisticsViewModel> GetStatisticsAsync()
         {
             var totalCustomers = await _repository.GetCountAsync();
-            var vipCustomers = await _repository.GetCountAsync();
-            var totalPoints = await _repository.GetTotalPointsAsync();
             var customersToday = await _repository.GetCountTodayAsync();
-
-
-            var vipCount = await _context.Customers
-                .Where(c => !c.IsDeleted && (c.MembershipTier == "VIP" || c.MembershipTier == "Diamond"))
-                .CountAsync();
+            var totalPoints = await _context.Customers
+                .Where(customer => !customer.IsDeleted)
+                .SumAsync(customer => (long)customer.RewardPoints);
 
             return new CustomerStatisticsViewModel
             {
                 TotalCustomers = totalCustomers,
-                VIPCustomers = vipCount,
-                TotalPoints = totalPoints,
-                CustomersToday = customersToday
+                CustomersToday = customersToday,
+                TotalPoints = totalPoints
             };
         }
     }

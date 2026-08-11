@@ -14,6 +14,12 @@
     --border-radius: 12px;
     --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     --transition: all 0.3s ease;
+    --coffee-dark: #5D4037;
+    --coffee-brown: #8B6F47;
+    --cream: #F8F4E8;
+    --border-color: #E8E6E1;
+    --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-medium: 0 5px 16px rgba(0, 0, 0, 0.12);
 
     /* Status Colors */
     --status-empty: #22c55e;
@@ -338,6 +344,10 @@ body {
     background-color: var(--status-overdue);
 }
 
+.legend-maintenance {
+    background-color: #6b7280;
+}
+
 /* ========================================
    QUICK ACTIONS
    ======================================== */
@@ -363,6 +373,7 @@ body {
     gap: 8px;
     min-height: 44px;
     font-size: 14px;
+    text-decoration: none;
 }
 
 .btn-primary {
@@ -509,13 +520,62 @@ body {
     background-color: var(--status-serving);
 }
 
-.table-card-pendinypayment {
+.table-card-pendingpayment {
     border-color: var(--status-pending);
     background: linear-gradient(135deg, rgba(168, 85, 247, 0.02) 0%, transparent 100%);
 }
 
-.table-card-pendinypayment::before {
+.table-card-pendingpayment::before {
     background-color: var(--status-pending);
+}
+
+.table-card-overdue {
+    border-color: var(--status-overdue);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), transparent);
+}
+
+.table-card-overdue::before {
+    background-color: var(--status-overdue);
+}
+
+.page-header-cashier {
+    padding: 18px 20px;
+    margin-bottom: 20px;
+    background: var(--white);
+    border-bottom: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-light);
+}
+
+.page-header-cashier .page-title {
+    margin: 0;
+    color: var(--coffee-dark);
+    font-size: clamp(1.35rem, 2.5vw, 2rem);
+}
+
+.table-card-maintenance {
+    border-color: #6b7280;
+    background: #f3f4f6;
+}
+
+.table-card-maintenance::before {
+    background-color: #6b7280;
+}
+
+.status-maintenance {
+    color: #4b5563;
+}
+
+.reservation-state-label {
+    display: block;
+    width: 100%;
+    padding: 5px 8px;
+    text-align: center;
+    color: #704d30;
+    background: #f3e7d5;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
 }
 
 .table-header {

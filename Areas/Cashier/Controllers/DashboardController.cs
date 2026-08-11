@@ -8,6 +8,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Quản_lý_quán_cafe.Models;
 
 namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
 {
@@ -16,17 +17,19 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
     public class DashboardController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<DashboardController> _logger;
 
-        public DashboardController(ApplicationDbContext context)
+        public DashboardController(ApplicationDbContext context, ILogger<DashboardController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            var todayUtcStart = DateTime.UtcNow.Date;
-            var todayUtcEnd = todayUtcStart.AddDays(1);
+            var todayUtcStart = BusinessClock.StartOfTodayUtc;
+            var todayUtcEnd = BusinessClock.StartOfTomorrowUtc;
             var model = new CashierDashboardViewModel();
 
             try
@@ -36,38 +39,47 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                     .ToListAsync();
 
                 var todayOrders = await _context.Orders
-                    .Where(o => o.OrderDate >= todayUtcStart && o.OrderDate < todayUtcEnd && o.OrderStatus != "Cancelled")
+                    .Where(o => !o.IsDeleted && o.OrderDate >= todayUtcStart && o.OrderDate < todayUtcEnd && o.OrderStatus != "Cancelled")
                     .Include(o => o.Table)
                     .ToListAsync();
 
-                List<Reservation> todayReservations;
-                try
-                {
-                    // Try to query by ReservationTime (preferred)
-                    todayReservations = await _context.Reservations
-                        .Where(r => r.ReservationTime >= DateTime.Today && r.ReservationStatus != "Cancelled")
-                        .Include(r => r.Table)
-                        .Include(r => r.Customer)
-                        .OrderBy(r => r.ReservationTime)
-                        .ToListAsync();
-                }
-                catch (Exception ex)
-                {
-                    // Fallback: some DBs may not have ReservationTime column (older schema). Use ReservationDate instead.
-                    // Log exception to ModelState for visibility in dev
-                    ModelState.AddModelError("", "Reservation time column unavailable in DB, falling back to ReservationDate. " + ex.Message);
-                    todayReservations = await _context.Reservations
-                        .Where(r => r.ReservationDate >= DateTime.Today && r.ReservationStatus != "Cancelled")
-                        .Include(r => r.Table)
-                        .Include(r => r.Customer)
-                        .OrderBy(r => r.ReservationDate)
-                        .ToListAsync();
-                }
+                var now = BusinessClock.Now;
+                var reservationHoldCutoff = now.AddMinutes(ReservationPolicy.HoldBeforeMinutes);
+                var localToday = BusinessClock.Today;
+                var localTomorrow = localToday.AddDays(1);
+                var todayReservations = await _context.Reservations
+                    .Where(r => !r.IsDeleted && r.ReservationDate >= localToday.AddMinutes(-ReservationPolicy.DurationMinutes) &&
+                                r.ReservationDate < localTomorrow && r.ReservationStatus != "Cancelled" &&
+                                r.ReservationStatus != "Completed" && r.ReservationStatus != "CheckedIn")
+                    .Include(r => r.Table)
+                    .Include(r => r.Customer)
+                    .OrderBy(r => r.ReservationDate)
+                    .ToListAsync();
+                var todayReservationCount = await _context.Reservations.CountAsync(r => !r.IsDeleted &&
+                    r.ReservationDate >= localToday && r.ReservationDate < localTomorrow && r.ReservationStatus != "Cancelled");
+                var upcomingReservations = await _context.Reservations.AsNoTracking()
+                    .Where(r => !r.IsDeleted && r.ReservationDate > now && r.ReservationStatus != "Cancelled" &&
+                                r.ReservationStatus != "Completed" && r.ReservationStatus != "CheckedIn")
+                    .Include(r => r.Table)
+                    .Include(r => r.Customer)
+                    .OrderBy(r => r.ReservationDate)
+                    .Take(5)
+                    .ToListAsync();
 
                 var todayPayments = await _context.Payments
-                    .Where(p => p.CreatedAt >= todayUtcStart && p.CreatedAt < todayUtcEnd && p.PaymentStatus == "Completed")
+                    .Where(p => !p.IsDeleted && p.PaymentDate >= todayUtcStart && p.PaymentDate < todayUtcEnd && p.PaymentStatus == "Completed")
                     .ToListAsync();
                 model.TodayRevenue = todayPayments.Sum(p => p.Amount);
+
+                var activeOrdersByTable = (await _context.Orders
+                    .AsNoTracking()
+                    .Where(o => o.TableID.HasValue && !o.IsDeleted && o.OrderStatus != "Completed" &&
+                                o.OrderStatus != "Cancelled" && o.OrderDetails.Any(d => !d.IsDeleted))
+                    .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
+                    .OrderByDescending(o => o.OrderDate)
+                    .ToListAsync())
+                    .GroupBy(o => o.TableID!.Value)
+                    .ToDictionary(group => group.Key, group => group.First());
 
                 foreach (var table in tables)
                 {
@@ -90,35 +102,30 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                         _ => "Empty"
                     };
 
-                    var reservation = todayReservations.FirstOrDefault(r => r.TableID == table.TableID);
+                    var reservation = todayReservations.FirstOrDefault(r =>
+                        r.TableID == table.TableID &&
+                        r.ReservationDate <= reservationHoldCutoff &&
+                        r.ReservationDate.AddMinutes(ReservationPolicy.DurationMinutes) > now);
                     if (reservation != null)
                     {
-                        // Normalize reservation time as UTC then convert to server local time
-                        var resUtc = DateTime.SpecifyKind(reservation.ReservationTime, DateTimeKind.Utc);
-                        var resLocal = resUtc.ToLocalTime();
-                        if (resLocal > DateTime.Now)
-                        {
-                            tableItem.ReservationCustomerName = reservation.Customer?.CustomerName ?? "N/A";
-                            tableItem.ReservationTime = resLocal;
-                            tableItem.ReservationGuestCount = reservation.NumberOfGuests;
-                        }
+                        tableItem.ReservationCustomerName = reservation.Customer?.CustomerName ?? "N/A";
+                        tableItem.ReservationTime = reservation.ReservationDate;
+                        tableItem.ReservationGuestCount = reservation.NumberOfGuests;
+                        if (tableItem.TableStatus == "Empty") tableItem.TableStatus = "Reserved";
                     }
 
-                    var order = await _context.Orders
-                        .Where(o => o.TableID == table.TableID && !o.IsDeleted && o.OrderStatus != "Completed" && o.OrderStatus != "Cancelled")
-                        .Include(o => o.OrderDetails.Where(d => !d.IsDeleted))
-                        .OrderByDescending(o => o.OrderDate)
-                        .FirstOrDefaultAsync();
+                    activeOrdersByTable.TryGetValue(table.TableID, out var order);
 
                     if (order != null)
                     {
                         tableItem.OrderID = order.OrderID;
                         tableItem.OrderStatus = order.OrderStatus;
                         tableItem.OrderTotalAmount = order.TotalAmount;
-                        tableItem.OrderCreatedAt = order.CreatedAt != default(DateTime) ? order.CreatedAt : order.OrderDate;
+                        var createdAt = order.CreatedAt != default(DateTime) ? order.CreatedAt : order.OrderDate;
+                        tableItem.OrderCreatedAt = BusinessClock.FromUtc(createdAt);
                         tableItem.OrderItemCount = order.OrderDetails?.Count ?? 0;
 
-                        if (order.OrderStatus == "PendingPayment")
+                        if (order.OrderStatus == "WaitingPayment")
                         {
                             tableItem.TableStatus = "PendingPayment";
                         }
@@ -140,13 +147,11 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 model.ActiveTablesCount = model.ServingTables + model.PendingPaymentTables + model.ReservedTables;
                 model.WaitingPaymentCount = model.PendingPaymentTables;
 
-                model.UpcomingReservations = todayReservations
-                    .Where(r => r.ReservationTime > DateTime.Now)
-                    .Take(5)
+                model.UpcomingReservations = upcomingReservations
                     .Select(r => new UpcomingReservationViewModel
                     {
                         ReservationID = r.ReservationID,
-                        ReservationTime = r.ReservationTime,
+                        ReservationTime = r.ReservationDate,
                         TableNumber = r.Table?.TableNumber ?? "N/A",
                         CustomerName = r.Customer?.CustomerName ?? "N/A",
                         GuestCount = r.NumberOfGuests,
@@ -154,13 +159,14 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                     })
                     .ToList();
 
-                model.TodayReservations = todayReservations.Count;
+                model.TodayReservations = todayReservationCount;
 
                 model.Notifications = BuildNotifications(model, todayOrders, todayReservations);
             }
             catch (Exception ex)
             {
-                ModelState.AddModelError("", $"Lỗi tải dữ liệu: {ex.Message}");
+                _logger.LogError(ex, "Could not load cashier dashboard.");
+                ModelState.AddModelError("", "Không thể tải dữ liệu tổng quan. Vui lòng thử lại.");
             }
 
             return View(model);
@@ -172,7 +178,7 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
             List<Reservation> todayReservations)
         {
             var notifications = new List<DashboardNotificationViewModel>();
-            var now = DateTime.Now;
+            var now = BusinessClock.Now;
 
             if (model.PendingPaymentTables > 0)
             {
@@ -195,24 +201,20 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.Controllers
                 }
             }
 
-            // Normalize reservation times to UTC/local consistently when building notifications
-            var nowUtc = DateTime.UtcNow;
             var soonReservations = todayReservations
-                .Select(r => new { Res = r, Utc = DateTime.SpecifyKind(r.ReservationTime, DateTimeKind.Utc) })
-                .Where(x => x.Utc > nowUtc && x.Utc <= nowUtc.AddMinutes(15))
+                .Where(r => r.ReservationDate > now && r.ReservationDate <= now.AddMinutes(15))
                 .ToList();
 
-            foreach (var x in soonReservations)
+            foreach (var reservation in soonReservations)
             {
-                var minutesLeft = (int)(x.Utc - nowUtc).TotalMinutes;
-                // Display minutes relative to server local time but computed from UTC consistency
+                var minutesLeft = (int)(reservation.ReservationDate - now).TotalMinutes;
                 notifications.Add(new DashboardNotificationViewModel
                 {
                     Title = "⏰ Khách Sắp Đến",
-                    Message = $"Bàn {x.Res.Table?.TableNumber} - {x.Res.Customer?.CustomerName} ({x.Res.NumberOfGuests} người) - Còn {minutesLeft} phút",
+                    Message = $"Bàn {reservation.Table?.TableNumber} - {reservation.Customer?.CustomerName} ({reservation.NumberOfGuests} người) - Còn {minutesLeft} phút",
                     Type = "warning",
                     Icon = "fa-clock",
-                    CreatedAt = DateTime.Now,
+                    CreatedAt = now,
                     IsRead = false
                 });
             }

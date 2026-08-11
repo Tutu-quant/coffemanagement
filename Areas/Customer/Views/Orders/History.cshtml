@@ -1,4 +1,5 @@
 @model List<Quản_lý_quán_cafe.Models.Entities.Order>
+@using Quản_lý_quán_cafe.Models
 
 @{
     ViewData["Title"] = "Đơn của tôi";
@@ -7,7 +8,7 @@
     // Tính toán thống kê
     var totalOrders = Model?.Count ?? 0;
     var completedOrders = Model?.Count(o => o.OrderStatus.ToLower() == "completed") ?? 0;
-    var pendingOrders = Model?.Count(o => o.OrderStatus.ToLower() == "pending") ?? 0;
+    var pendingOrders = Model?.Count(o => o.OrderStatus is "Pending" or "Preparing" or "Ready" or "WaitingPayment") ?? 0;
     var cancelledOrders = Model?.Count(o => o.OrderStatus.ToLower() == "cancelled") ?? 0;
 
     // Lấy trạng thái từ query string
@@ -296,6 +297,11 @@
     .status-pending {
         background: #FFF3E0;
         color: #E65100;
+    }
+
+    .status-preparing, .status-ready, .status-waitingpayment {
+        background-color: #DDEAF7;
+        color: #24547A;
     }
 
     .status-completed {
@@ -656,10 +662,19 @@
                     <div class="order-id-section">
                         <span class="order-id">Đơn #@order.OrderID</span>
                         <span class="order-table">@(order.Table?.TableNumber ?? "Mang đi")</span>
-                        <span class="order-time">@order.OrderDate.ToLocalTime().ToString("HH:mm · dd/MM/yyyy")</span>
+                        <span class="order-time">@BusinessClock.FromUtc(order.OrderDate).ToString("HH:mm · dd/MM/yyyy")</span>
                     </div>
                     <span class="order-status-badge status-@order.OrderStatus.ToLowerInvariant()">
-                        @order.OrderStatus
+                        @(order.OrderStatus.ToLowerInvariant() switch
+                        {
+                            "pending" => "Đang chờ",
+                            "preparing" => "Đang chuẩn bị",
+                            "ready" => "Sẵn sàng",
+                            "waitingpayment" => "Chờ thanh toán",
+                            "completed" => "Đã hoàn thành",
+                            "cancelled" => "Đã hủy",
+                            _ => order.OrderStatus
+                        })
                     </span>
                 </div>
 

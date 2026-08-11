@@ -21,10 +21,6 @@
             <i class="bi bi-arrow-clockwise"></i>
             Làm mới
         </a>
-        <button class="btn btn-outline-secondary" title="Xuất Excel" onclick="alert('Chức năng này sẽ được cập nhật')">
-            <i class="bi bi-file-earmark-excel"></i>
-            Xuất Excel
-        </button>
     </div>
 </div>
 
@@ -36,7 +32,7 @@
         </div>
         <div class="stat-card-compact-content">
             <p class="stat-card-compact-label">Đơn hôm nay</p>
-            <p class="stat-card-compact-value">@Model.Orders.Count(o => o.OrderDate.Date == DateTime.Now.Date)</p>
+            <p class="stat-card-compact-value">@((int?)ViewBag.TodayCount ?? 0)</p>
         </div>
     </div>
     <div class="stat-card-compact">
@@ -45,7 +41,7 @@
         </div>
         <div class="stat-card-compact-content">
             <p class="stat-card-compact-label">Đang pha chế</p>
-            <p class="stat-card-compact-value">@Model.Orders.Count(o => o.OrderStatus == "Preparing")</p>
+            <p class="stat-card-compact-value">@((int?)ViewBag.PreparingCount ?? 0)</p>
         </div>
     </div>
     <div class="stat-card-compact">
@@ -54,7 +50,7 @@
         </div>
         <div class="stat-card-compact-content">
             <p class="stat-card-compact-label">Sẵn sàng phục vụ</p>
-            <p class="stat-card-compact-value">@Model.Orders.Count(o => o.OrderStatus == "Ready")</p>
+            <p class="stat-card-compact-value">@((int?)ViewBag.ReadyCount ?? 0)</p>
         </div>
     </div>
     <div class="stat-card-compact">
@@ -63,7 +59,7 @@
         </div>
         <div class="stat-card-compact-content">
             <p class="stat-card-compact-label">Chờ thanh toán</p>
-            <p class="stat-card-compact-value">@Model.Orders.Count(o => o.PaymentStatus == "Pending")</p>
+            <p class="stat-card-compact-value">@((int?)ViewBag.WaitingPaymentCount ?? 0)</p>
         </div>
     </div>
     <div class="stat-card-compact">
@@ -72,14 +68,14 @@
         </div>
         <div class="stat-card-compact-content">
             <p class="stat-card-compact-label">Đã hoàn thành</p>
-            <p class="stat-card-compact-value">@Model.Orders.Count(o => o.OrderStatus == "Completed")</p>
+            <p class="stat-card-compact-value">@((int?)ViewBag.CompletedCount ?? 0)</p>
         </div>
     </div>
 </div>
 
 
 <div class="filter-bar-compact mb-3">
-    <form method="get" class="filter-form-compact">
+    <form method="get" asp-action="Index" class="filter-form-compact">
         <div class="filter-input-group">
             <i class="bi bi-search"></i>
             <input type="text" class="form-control-compact" name="keyword" placeholder="Mã đơn, khách, nhân viên..." value="@ViewBag.Keyword">
@@ -102,6 +98,9 @@
             <option value="Completed" selected="@(ViewBag.PaymentStatus == "Completed" ? "selected" : null)">Đã thanh toán</option>
             <option value="Failed" selected="@(ViewBag.PaymentStatus == "Failed" ? "selected" : null)">Thất bại</option>
         </select>
+
+        <input type="date" class="form-control-compact" name="dateFrom" value="@ViewBag.DateFrom" title="Từ ngày" />
+        <input type="date" class="form-control-compact" name="dateTo" value="@ViewBag.DateTo" title="Đến ngày" />
 
         <button type="submit" class="btn btn-primary-compact">
             <i class="bi bi-search"></i> Tìm
@@ -187,9 +186,9 @@
                                     <a href="@Url.Action("Details", new { id = order.OrderId })" class="btn-action btn-view" title="Xem chi tiết">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <button class="btn-action btn-print" title="Xem hóa đơn" onclick="alert('Chức năng này sẽ được cập nhật')">
+                                    <a class="btn-action btn-print" title="Xem hóa đơn" href="@Url.Action("Print", new { id = order.OrderId, returnUrl = Url.Action("Index") })" target="_blank">
                                         <i class="bi bi-printer"></i>
-                                    </button>
+                                    </a>
                                 </div>
                             </td>
                         </tr>
@@ -204,7 +203,7 @@
             <div class="pagination-compact mt-3">
                 @if (Model.HasPreviousPage)
                 {
-                    <a href="@Url.Action("Index", new { pageNumber = Model.PageNumber - 1 })" class="page-link-compact">
+                    <a href="@Url.Action("Index", new { pageNumber = Model.PageNumber - 1, keyword = ViewBag.Keyword, status = ViewBag.Status, paymentStatus = ViewBag.PaymentStatus, dateFrom = ViewBag.DateFrom, dateTo = ViewBag.DateTo })" class="page-link-compact">
                         <i class="bi bi-chevron-left"></i> Trước
                     </a>
                 }
@@ -221,7 +220,7 @@
 
                 @if (Model.HasNextPage)
                 {
-                    <a href="@Url.Action("Index", new { pageNumber = Model.PageNumber + 1 })" class="page-link-compact">
+                    <a href="@Url.Action("Index", new { pageNumber = Model.PageNumber + 1, keyword = ViewBag.Keyword, status = ViewBag.Status, paymentStatus = ViewBag.PaymentStatus, dateFrom = ViewBag.DateFrom, dateTo = ViewBag.DateTo })" class="page-link-compact">
                         Tiếp <i class="bi bi-chevron-right"></i>
                     </a>
                 }

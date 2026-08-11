@@ -45,20 +45,6 @@
                             <p class="mb-2">
                                 <strong>Email:</strong> @Model?.Email
                             </p>
-                            <p class="mb-0">
-                                <strong>Hạng thành viên:</strong>
-                                @{
-                                    var tierClass = Model?.MembershipTier switch
-                                    {
-                                        "VIP" => "badge-vip",
-                                        "Diamond" => "badge-diamond",
-                                        "Gold" => "badge-gold",
-                                        "Silver" => "badge-silver",
-                                        _ => "badge-member"
-                                    };
-                                }
-                                <span class="badge @tierClass">@Model?.MembershipTier</span>
-                            </p>
                         </div>
                     </div>
                 </div>
@@ -67,7 +53,7 @@
                     Bạn có chắc chắn muốn xóa khách hàng này không?
                 </p>
 
-                <form method="post" asp-action="DeleteConfirmed" class="d-inline">
+                <form method="post" asp-action="Delete" class="d-inline">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="id" value="@Model?.Id">
 

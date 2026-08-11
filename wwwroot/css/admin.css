@@ -793,7 +793,7 @@ html, body {
 @media (max-width: 768px) {
     .admin-sidebar {
         position: fixed;
-        left: 0;
+        left: -240px;
         top: 0;
         height: 100vh;
         z-index: 999;

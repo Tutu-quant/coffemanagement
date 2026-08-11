@@ -273,7 +273,7 @@ RestaurantTables
 Customers
 ├─ CustomerID (PK)
 ├─ CustomerName, Phone, Email, Address
-├─ RewardPoints, TotalSpent, MembershipTier
+├─ RewardPoints, TotalSpent
 ├─ IsActive, LastVisit
 ├─ CreatedAt, UpdatedAt, IsDeleted
 ```

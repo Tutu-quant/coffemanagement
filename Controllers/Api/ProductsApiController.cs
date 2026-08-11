@@ -11,7 +11,8 @@ public class ProductsApiController(ApplicationDbContext context) : ControllerBas
     public async Task<IActionResult> GetAll([FromQuery] int? categoryId, [FromQuery] string? search)
     {
         IQueryable<Models.Entities.Product> query = context.Products.AsNoTracking()
-            .Where(p => p.IsActive && !p.IsDeleted);
+            .Where(p => p.IsActive && !p.IsDeleted && p.Quantity > 0 && p.Category != null
+                && p.Category.IsActive && !p.Category.IsDeleted);
         if (categoryId.HasValue) query = query.Where(p => p.CategoryID == categoryId);
         if (!string.IsNullOrWhiteSpace(search)) query = query.Where(p => p.ProductName.Contains(search.Trim()));
         return Ok(await query.OrderBy(p => p.ProductName).Select(p => new { p.ProductID, p.ProductName, p.Price, p.Quantity, p.Description, p.ImageUrl, p.CategoryID, Category = p.Category!.CategoryName }).ToListAsync());

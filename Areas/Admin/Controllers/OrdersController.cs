@@ -2,17 +2,22 @@ using Microsoft.AspNetCore.Mvc;
 using Quản_lý_quán_cafe.Models.ViewModels.Order;
 using Quản_lý_quán_cafe.Services.Interfaces;
 using Quản_lý_quán_cafe.Models.Enums;
+using Quản_lý_quán_cafe.Filters;
+using Quản_lý_quán_cafe.Models;
 
 namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [SessionAuthorize("Admin")]
     public class OrdersController : Controller
     {
         private readonly IOrderService _orderService;
+        private readonly ILogger<OrdersController> _logger;
 
-        public OrdersController(IOrderService orderService)
+        public OrdersController(IOrderService orderService, ILogger<OrdersController> logger)
         {
             _orderService = orderService ?? throw new ArgumentNullException(nameof(orderService));
+            _logger = logger;
         }
 
         public async Task<IActionResult> Print(int id, string? returnUrl = null)
@@ -29,20 +34,63 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 var viewModel = MapToOrderDetailViewModel(order);
                 return View(viewModel);
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Could not print admin order {OrderId}.", id);
                 return RedirectToAction(nameof(Index));
             }
         }
 
-        public async Task<IActionResult> Index(int pageNumber = 1, int pageSize = 20)
+        public async Task<IActionResult> Index(
+            string? keyword,
+            string? status,
+            string? paymentStatus,
+            DateTime? dateFrom,
+            DateTime? dateTo,
+            int pageNumber = 1,
+            int pageSize = 20)
         {
             try
             {
-                if (pageNumber < 1) pageNumber = 1;
+                pageNumber = Math.Clamp(pageNumber, 1, 1_000_000);
                 if (pageSize < 1 || pageSize > 100) pageSize = 20;
 
-                var (orders, totalCount) = await _orderService.GetOrdersAsync(pageNumber, pageSize);
+                var hasFilters = !string.IsNullOrWhiteSpace(keyword) || !string.IsNullOrWhiteSpace(status)
+                    || !string.IsNullOrWhiteSpace(paymentStatus) || dateFrom.HasValue || dateTo.HasValue;
+                DateTime? startUtc = dateFrom.HasValue ? BusinessClock.ToUtc(dateFrom.Value.Date) : null;
+                DateTime? endUtc = dateTo.HasValue ? BusinessClock.ToUtc(dateTo.Value.Date.AddDays(1)) : null;
+                var (orders, totalCount) = hasFilters
+                    ? await _orderService.FilterOrdersAsync(keyword, status, paymentStatus, startUtc, endUtc,
+                        pageNumber: pageNumber, pageSize: pageSize)
+                    : await _orderService.GetOrdersAsync(pageNumber, pageSize);
+                var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+                if (totalPages > 0 && pageNumber > totalPages)
+                    return RedirectToAction(nameof(Index), new
+                    {
+                        pageNumber = totalPages,
+                        pageSize,
+                        keyword,
+                        status,
+                        paymentStatus,
+                        dateFrom = dateFrom?.ToString("yyyy-MM-dd"),
+                        dateTo = dateTo?.ToString("yyyy-MM-dd")
+                    });
+
+                ViewBag.Keyword = keyword;
+                ViewBag.Status = status;
+                ViewBag.PaymentStatus = paymentStatus;
+                ViewBag.DateFrom = dateFrom?.ToString("yyyy-MM-dd");
+                ViewBag.DateTo = dateTo?.ToString("yyyy-MM-dd");
+                var (_, todayCount) = await _orderService.FilterOrdersAsync(
+                    startDate: BusinessClock.StartOfTodayUtc,
+                    endDate: BusinessClock.StartOfTomorrowUtc,
+                    pageNumber: 1,
+                    pageSize: 1);
+                ViewBag.TodayCount = todayCount;
+                ViewBag.PreparingCount = await _orderService.GetOrderCountByStatusAsync(OrderStatusConstants.Preparing);
+                ViewBag.ReadyCount = await _orderService.GetOrderCountByStatusAsync(OrderStatusConstants.Ready);
+                ViewBag.WaitingPaymentCount = await _orderService.GetOrderCountByStatusAsync(OrderStatusConstants.WaitingPayment);
+                ViewBag.CompletedCount = await _orderService.GetOrderCountByStatusAsync(OrderStatusConstants.Completed);
 
                 var viewModel = new OrderListContainerViewModel
                 {
@@ -56,7 +104,8 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Lỗi khi tải danh sách: {ex.Message}";
+                _logger.LogError(ex, "Could not load admin order list.");
+                TempData["Error"] = "Không thể tải danh sách đơn hàng. Vui lòng thử lại.";
                 return View(new OrderListContainerViewModel());
             }
         }
@@ -83,79 +132,23 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Lỗi khi tải chi tiết: {ex.Message}";
+                _logger.LogError(ex, "Could not load admin order {OrderId}.", id);
+                TempData["Error"] = "Không thể tải chi tiết đơn hàng. Vui lòng thử lại.";
                 return RedirectToAction(nameof(Index));
             }
         }
 
-        public async Task<IActionResult> Search(string? keyword, int pageNumber = 1, int pageSize = 20)
-        {
-            try
-            {
-                if (pageNumber < 1) pageNumber = 1;
-                if (pageSize < 1 || pageSize > 100) pageSize = 20;
+        public IActionResult Search(string? keyword, int pageNumber = 1, int pageSize = 20) =>
+            RedirectToAction(nameof(Index), new { keyword, pageNumber, pageSize });
 
-                var (orders, totalCount) = await _orderService.SearchOrdersAsync(keyword ?? string.Empty, pageNumber, pageSize);
-
-                var viewModel = new OrderListContainerViewModel
-                {
-                    Orders = MapToOrderListViewModels(orders),
-                    TotalCount = totalCount,
-                    PageNumber = pageNumber,
-                    PageSize = pageSize
-                };
-
-                return View(nameof(Index), viewModel);
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Lỗi khi tìm kiếm: {ex.Message}";
-                return RedirectToAction(nameof(Index));
-            }
-        }
-
-        public async Task<IActionResult> Filter(
+        public IActionResult Filter(
             string? status,
             DateTime? dateFrom,
             DateTime? dateTo,
             string? keyword,
             int pageNumber = 1,
             int pageSize = 20)
-        {
-            try
-            {
-                if (pageNumber < 1) pageNumber = 1;
-                if (pageSize < 1 || pageSize > 100) pageSize = 20;
-
-                var (orders, totalCount) = await _orderService.FilterOrdersAsync(
-                    searchTerm: keyword,
-                    status: status,
-                    startDate: dateFrom,
-                    endDate: dateTo,
-                    pageNumber: pageNumber,
-                    pageSize: pageSize);
-
-                var viewModel = new OrderFilterViewModel
-                {
-                    Keyword = keyword,
-                    Status = status,
-                    DateFrom = dateFrom,
-                    DateTo = dateTo,
-                    Page = pageNumber,
-                    PageSize = pageSize,
-                    Results = MapToOrderListViewModels(orders),
-                    TotalCount = totalCount,
-                    StatusOptions = GetStatusOptions(status)
-                };
-
-                return View(viewModel);
-            }
-            catch (Exception ex)
-            {
-                TempData["Error"] = $"Lỗi khi lọc: {ex.Message}";
-                return RedirectToAction(nameof(Index));
-            }
-        }
+            => RedirectToAction(nameof(Index), new { status, dateFrom, dateTo, keyword, pageNumber, pageSize });
 
         #region Helper Methods
         private List<OrderListViewModel> MapToOrderListViewModels(List<Models.Entities.Order> orders)
@@ -166,11 +159,11 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 OrderCode = $"#{o.OrderID:D6}",
                 CustomerName = o.Customer?.CustomerName ?? "N/A",
                 TableNumber = o.Table?.TableNumber ?? "N/A",
-                EmployeeName = "N/A",
+                EmployeeName = o.Employee?.FullName ?? "-",
                 OrderStatus = o.OrderStatus ?? "Unknown",
                 PaymentStatus = o.Payment?.PaymentStatus ?? "Pending",
                 TotalAmount = o.TotalAmount,
-                OrderDate = o.OrderDate.ToLocalTime(),
+                OrderDate = BusinessClock.FromUtc(o.OrderDate),
                 ItemCount = o.OrderDetails?.Count ?? 0,
                 StatusBadgeClass = GetStatusBadgeClass(o.OrderStatus)
             }).ToList();
@@ -181,9 +174,9 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             {
                 OrderId = order.OrderID,
                 OrderCode = $"#{order.OrderID:D6}",
-                OrderDate = order.OrderDate.ToLocalTime(),
+                OrderDate = BusinessClock.FromUtc(order.OrderDate),
                 OrderStatus = order.OrderStatus ?? "Unknown",
-                CompletedDate = order.CompletedDate?.ToLocalTime(),
+                CompletedDate = order.CompletedDate.HasValue ? BusinessClock.FromUtc(order.CompletedDate.Value) : null,
                 Notes = order.Notes,
                 CustomerId = order.CustomerID,
                 CustomerName = order.Customer?.CustomerName,
@@ -192,11 +185,27 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
                 TableId = order.TableID,
                 TableNumber = order.Table?.TableNumber,
                 TableCapacity = order.Table?.Capacity,
-                PaymentId = order.PaymentID,
+                PaymentId = order.Payment?.PaymentID ?? order.PaymentID,
                 PaymentStatus = order.Payment?.PaymentStatus ?? "Pending",
                 TotalAmount = order.TotalAmount,
-                PaidAmount = order.Payment?.Amount ?? 0,
-                PaidDate = order.Payment != null ? order.Payment.CreatedAt.ToLocalTime() : (DateTime?)null,
+                PaidAmount = order.Payment?.PaymentStatus == "Completed" ? order.Payment.Amount : 0,
+                PaidDate = order.Payment?.PaymentStatus == "Completed" ? BusinessClock.FromUtc(order.Payment.PaymentDate) : null,
+                LoyaltySubtotalAmount = order.SubtotalAmount > 0
+                    ? order.SubtotalAmount
+                    : order.OrderDetails.Where(detail => !detail.IsDeleted).Sum(detail => detail.Subtotal),
+                PointDiscountAmount = order.PointDiscountAmount,
+                VoucherDiscountAmount = order.VoucherDiscountAmount,
+                LoyaltyDiscountMode = order.VoucherDiscountAmount > 0
+                    ? LoyaltyDiscountModes.Voucher
+                    : order.PointDiscountAmount > 0 ? LoyaltyDiscountModes.Points : LoyaltyDiscountModes.None,
+                AppliedVoucherCode = order.VoucherCode,
+                AppliedRewardPoints = order.PointRedemptions.Sum(redemption => redemption.PointsUsed),
+                ProjectedEarnedPoints = order.CustomerID.HasValue
+                    ? (int)decimal.Floor((order.SubtotalAmount > 0
+                        ? order.SubtotalAmount
+                        : order.OrderDetails.Where(detail => !detail.IsDeleted).Sum(detail => detail.Subtotal))
+                        / LoyaltyRules.VndPerEarnedPoint)
+                    : 0,
                 Items = order.OrderDetails?.Select(od => new OrderItemViewModel
                 {
                     OrderDetailId = od.OrderDetailID,
@@ -233,7 +242,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             {
                 new OrderTimelineEventViewModel
                 {
-                    EventDate = order.OrderDate.ToLocalTime(),
+                    EventDate = BusinessClock.FromUtc(order.OrderDate),
                     EventType = "Created",
                     EventDescription = "Đơn hàng được tạo",
                     EventDetails = $"Order #{order.OrderID:D6}"
@@ -244,7 +253,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             {
                 timeline.Add(new OrderTimelineEventViewModel
                 {
-                    EventDate = order.CompletedDate.Value.ToLocalTime(),
+                    EventDate = BusinessClock.FromUtc(order.CompletedDate.Value),
                     EventType = "Completed",
                     EventDescription = "Đơn hàng hoàn thành",
                     EventDetails = $"Tổng tiền: {order.TotalAmount:N0}đ"
@@ -255,7 +264,7 @@ namespace Quản_lý_quán_cafe.Areas.Admin.Controllers
             {
                 timeline.Add(new OrderTimelineEventViewModel
                 {
-                    EventDate = order.Payment.CreatedAt.ToLocalTime(),
+                    EventDate = BusinessClock.FromUtc(order.Payment.PaymentDate),
                     EventType = "Payment",
                     EventDescription = "Thanh toán",
                     EventDetails = $"Trạng thái: {order.Payment.PaymentStatus}, Số tiền: {order.Payment.Amount:N0}đ"

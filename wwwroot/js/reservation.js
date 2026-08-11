@@ -2,6 +2,8 @@ const ReservationManager = {
     selectedTableId: null,
     selectedTableNumber: null,
     selectedTableCapacity: 0,
+    selectedTableLocation: null,
+    searchSequence: 0,
 
     init() {
         this.setupEventListeners();
@@ -14,6 +16,7 @@ const ReservationManager = {
 
         if (dateInput) {
             dateInput.addEventListener('change', () => {
+                this.clearSelection();
                 this.validateForm();
                 this.updateSummary();
             });
@@ -21,6 +24,7 @@ const ReservationManager = {
 
         if (guestInput) {
             guestInput.addEventListener('change', () => {
+                this.clearSelection();
                 this.validateForm();
                 this.updateSummary();
             });
@@ -41,6 +45,18 @@ const ReservationManager = {
                 }
             });
         }
+    },
+
+    clearSelection() {
+        this.selectedTableId = null;
+        this.selectedTableNumber = null;
+        this.selectedTableCapacity = 0;
+        this.selectedTableLocation = null;
+        const tableInput = document.getElementById('TableID');
+        if (tableInput) tableInput.value = '';
+        document.querySelectorAll('.table-card.active').forEach(card => card.classList.remove('active'));
+        this.validateForm();
+        this.updateSummary();
     },
 
     validateForm() {
@@ -91,7 +107,11 @@ const ReservationManager = {
         const loadingEl = document.getElementById('tablesLoading');
         const resultsEl = document.getElementById('tablesResults');
         const errorEl = document.getElementById('tablesError');
+        const searchButton = document.getElementById('searchTablesBtn');
+        const sequence = ++this.searchSequence;
 
+        this.clearSelection();
+        if (searchButton) searchButton.disabled = true;
         if (loadingEl) loadingEl.classList.remove('d-none');
         if (resultsEl) resultsEl.innerHTML = '';
         if (errorEl) errorEl.classList.add('d-none');
@@ -117,29 +137,43 @@ const ReservationManager = {
             }
 
             const data = await response.json();
+            if (sequence !== this.searchSequence) return;
 
             if (loadingEl) loadingEl.classList.add('d-none');
 
-            if (data.success && data.data.tables.length > 0) {
-                this.renderAvailableTables(data.data.tables);
+            const tables = Array.isArray(data?.data?.tables) ? data.data.tables : [];
+            if (data.success && tables.length > 0) {
+                this.renderAvailableTables(tables);
             } else {
                 if (resultsEl) {
                     resultsEl.innerHTML = `<div class="alert alert-info mb-0">
                         <i class="bi bi-info-circle"></i> 
-                        ${data.data.tables.length === 0 ? 'Không có bàn còn trống cho khung giờ này.' : data.message || 'Không tìm thấy bàn.'}
+                        ${this.escapeHtml(data.success && tables.length === 0 ? 'Không có bàn còn trống cho khung giờ này.' : data.message || 'Không tìm thấy bàn.')}
                     </div>`;
                 }
             }
         } catch (error) {
+            if (sequence !== this.searchSequence) return;
             console.error('Lỗi:', error);
             if (loadingEl) loadingEl.classList.add('d-none');
             if (resultsEl) {
                 resultsEl.innerHTML = `<div class="alert alert-danger mb-0">
                     <i class="bi bi-exclamation-circle"></i> 
-                    Lỗi: ${error.message}
+                    Lỗi: ${this.escapeHtml(error.message || 'Không thể tìm bàn trống.')}
                 </div>`;
             }
+        } finally {
+            if (sequence === this.searchSequence) {
+                if (loadingEl) loadingEl.classList.add('d-none');
+                if (searchButton) searchButton.disabled = false;
+            }
         }
+    },
+
+    escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>'"]/g, character => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+        })[character]);
     },
 
     renderAvailableTables(tables) {
@@ -148,6 +182,10 @@ const ReservationManager = {
 
         let html = '';
         tables.forEach(table => {
+            const tableId = Number(table.tableID);
+            const tableNumber = this.escapeHtml(table.tableNumber);
+            const tableLocation = this.escapeHtml(table.location || 'Tầng 1');
+            const tableCapacity = Number(table.capacity);
             const isSelected = this.selectedTableId === table.tableID;
             const isAvailable = !table.isBooked;
             const statusIcon = isAvailable ? '<i class="bi bi-check-circle-fill" style="color: #4CAF50;"></i>' : '<i class="bi bi-x-circle-fill" style="color: #dc3545;"></i>';
@@ -155,16 +193,17 @@ const ReservationManager = {
             const statusClass = isAvailable ? 'available' : 'booked';
 
             // Extract floor number from location if available
-            const floorText = table.location || 'Tầng 1';
+            const floorText = tableLocation;
 
             html += `
-                <div class="table-card ${isSelected ? 'active' : ''}" 
-                     data-table-id="${table.tableID}" 
-                     data-table-number="${table.tableNumber}" 
-                     data-table-capacity="${table.capacity}">
+                <div class="table-card ${isSelected ? 'active' : ''}"
+                     data-table-id="${tableId}"
+                     data-table-number="${tableNumber}"
+                     data-table-capacity="${tableCapacity}"
+                     data-table-location="${tableLocation}">
                     <div class="table-card-icon"><i class="bi bi-cup-hot" style="font-size: 2rem; color: #8B6F47;"></i></div>
-                    <h6 class="table-card-title">Bàn ${table.tableNumber}</h6>
-                    <p class="table-card-info"><i class="bi bi-people-fill" style="font-size: 0.9rem; margin-right: 0.3rem;"></i>${table.capacity} khách</p>
+                    <h6 class="table-card-title">Bàn ${tableNumber}</h6>
+                    <p class="table-card-info"><i class="bi bi-people-fill" style="font-size: 0.9rem; margin-right: 0.3rem;"></i>${tableCapacity} khách</p>
                     <p class="table-card-info"><i class="bi bi-building" style="font-size: 0.9rem; margin-right: 0.3rem;"></i>${floorText}</p>
                     <div class="table-card-status ${statusClass}">
                         ${statusIcon} ${statusText}
@@ -180,10 +219,12 @@ const ReservationManager = {
         const tableId = parseInt(cardElement.getAttribute('data-table-id'));
         const tableNumber = cardElement.getAttribute('data-table-number');
         const capacity = parseInt(cardElement.getAttribute('data-table-capacity'));
+        const location = cardElement.getAttribute('data-table-location') || 'Tầng 1';
 
         this.selectedTableId = tableId;
         this.selectedTableNumber = tableNumber;
         this.selectedTableCapacity = capacity;
+        this.selectedTableLocation = location;
 
         document.getElementById('TableID').value = tableId;
 
@@ -227,7 +268,7 @@ const ReservationManager = {
         let html = `
             <div class="summary-item">
                 <span class="label">Bàn:</span>
-                <span class="value">Bàn ${this.selectedTableNumber}</span>
+                <span class="value">Bàn ${this.escapeHtml(this.selectedTableNumber)}</span>
             </div>
             <div class="summary-item">
                 <span class="label">Sức chứa:</span>
@@ -235,7 +276,7 @@ const ReservationManager = {
             </div>
             <div class="summary-item">
                 <span class="label">Tầng:</span>
-                <span class="value">Tầng 1</span>
+                <span class="value">${this.escapeHtml(this.selectedTableLocation || 'Tầng 1')}</span>
             </div>
             <div class="summary-item">
                 <span class="label">Ngày:</span>

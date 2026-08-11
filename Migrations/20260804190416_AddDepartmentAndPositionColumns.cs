@@ -39,9 +39,7 @@ namespace Quản_lý_quán_cafe.Migrations
                     Phone = table.Column<string>(type: "TEXT", maxLength: 20, nullable: true),
                     Email = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
                     Address = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
-                    RewardPoints = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 0),
                     TotalSpent = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false, defaultValue: 0m),
-                    MembershipTier = table.Column<string>(type: "TEXT", maxLength: 30, nullable: false, defaultValue: "Member"),
                     IsActive = table.Column<bool>(type: "INTEGER", nullable: false, defaultValue: true),
                     LastVisit = table.Column<DateTime>(type: "TEXT", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
@@ -390,39 +388,6 @@ namespace Quản_lý_quán_cafe.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "PointHistories",
-                columns: table => new
-                {
-                    PointHistoryID = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    CustomerID = table.Column<int>(type: "INTEGER", nullable: false),
-                    Points = table.Column<int>(type: "INTEGER", nullable: false),
-                    TransactionType = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    Description = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
-                    OrderID = table.Column<int>(type: "INTEGER", nullable: true),
-                    TransactionDate = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
-                    IsDeleted = table.Column<bool>(type: "INTEGER", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_PointHistories", x => x.PointHistoryID);
-                    table.ForeignKey(
-                        name: "FK_PointHistories_Customers_CustomerID",
-                        column: x => x.CustomerID,
-                        principalTable: "Customers",
-                        principalColumn: "CustomerID",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_PointHistories_Orders_OrderID",
-                        column: x => x.OrderID,
-                        principalTable: "Orders",
-                        principalColumn: "OrderID",
-                        onDelete: ReferentialAction.SetNull);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Promotions",
                 columns: table => new
                 {
@@ -508,16 +473,6 @@ namespace Quản_lý_quán_cafe.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_PointHistories_CustomerID",
-                table: "PointHistories",
-                column: "CustomerID");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_PointHistories_OrderID",
-                table: "PointHistories",
-                column: "OrderID");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Products_CategoryID",
                 table: "Products",
                 column: "CategoryID");
@@ -587,9 +542,6 @@ namespace Quản_lý_quán_cafe.Migrations
 
             migrationBuilder.DropTable(
                 name: "PaymentGatewaySettings");
-
-            migrationBuilder.DropTable(
-                name: "PointHistories");
 
             migrationBuilder.DropTable(
                 name: "Promotions");

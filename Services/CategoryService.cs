@@ -8,10 +8,12 @@ namespace Quản_lý_quán_cafe.Services
     public class CategoryService : ICategoryService
     {
         private readonly ICategoryRepository _repository;
+        private readonly IApplicationMutationCoordinator _mutationCoordinator;
 
-        public CategoryService(ICategoryRepository repository)
+        public CategoryService(ICategoryRepository repository, IApplicationMutationCoordinator mutationCoordinator)
         {
             _repository = repository;
+            _mutationCoordinator = mutationCoordinator;
         }
 
         public async Task<CategoryDetailViewModel?> GetByIdAsync(int id)
@@ -79,6 +81,7 @@ namespace Quản_lý_quán_cafe.Services
 
         public async Task<int> CreateAsync(CategoryCreateViewModel model)
         {
+            await using var mutationLock = await _mutationCoordinator.EnterAsync();
             var category = new Category
             {
                 CategoryName = model.Name,
@@ -92,6 +95,7 @@ namespace Quản_lý_quán_cafe.Services
 
         public async Task UpdateAsync(CategoryEditViewModel model)
         {
+            await using var mutationLock = await _mutationCoordinator.EnterAsync();
             var category = await _repository.GetByIdAsync(model.Id);
             if (category != null)
             {
@@ -104,6 +108,7 @@ namespace Quản_lý_quán_cafe.Services
 
         public async Task DeleteAsync(int id)
         {
+            await using var mutationLock = await _mutationCoordinator.EnterAsync();
             await _repository.DeleteAsync(id);
         }
 

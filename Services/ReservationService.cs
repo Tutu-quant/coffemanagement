@@ -1,6 +1,7 @@
 using Quản_lý_quán_cafe.Models.Entities;
 using Quản_lý_quán_cafe.Repository.Interfaces;
 using Quản_lý_quán_cafe.Services.Interfaces;
+using Quản_lý_quán_cafe.Models;
 
 namespace Quản_lý_quán_cafe.Services
 {
@@ -9,19 +10,22 @@ namespace Quản_lý_quán_cafe.Services
         private readonly IReservationRepository _reservationRepository;
         private readonly IRestaurantTableRepository _tableRepository;
         private readonly ICustomerRepository _customerRepository;
+        private readonly IApplicationMutationCoordinator _mutationCoordinator;
 
-        private const int ReservationDurationMinutes = 120;
+        private const int ReservationDurationMinutes = ReservationPolicy.DurationMinutes;
         private const int BufferMinutesBefore = 0;
         private const int BufferMinutesAfter = 0;
 
         public ReservationService(
             IReservationRepository reservationRepository,
             IRestaurantTableRepository tableRepository,
-            ICustomerRepository customerRepository)
+            ICustomerRepository customerRepository,
+            IApplicationMutationCoordinator mutationCoordinator)
         {
             _reservationRepository = reservationRepository;
             _tableRepository = tableRepository;
             _customerRepository = customerRepository;
+            _mutationCoordinator = mutationCoordinator;
         }
 
         public async Task<List<RestaurantTable>> GetAvailableTablesAsync(
@@ -32,10 +36,13 @@ namespace Quản_lý_quán_cafe.Services
             if (numberOfGuests <= 0)
                 return new List<RestaurantTable>();
 
-            if (reservationDate <= DateTime.UtcNow)
+            if (reservationDate <= BusinessClock.Now)
                 return new List<RestaurantTable>();
 
             var allTables = await _tableRepository.GetAvailableTablesAsync(numberOfGuests);
+            var currentUseCutoff = BusinessClock.Now.AddMinutes(ReservationPolicy.DurationMinutes);
+            if (reservationDate <= currentUseCutoff)
+                allTables = allTables.Where(t => t.TableStatus is not ("Occupied" or "WaitingPayment")).ToList();
 
             var availableTables = new List<RestaurantTable>();
 
@@ -71,8 +78,14 @@ namespace Quản_lý_quán_cafe.Services
             if (numberOfGuests <= 0 || numberOfGuests > 50)
                 return ReservationCreateResult.FailureResult("Số khách phải từ 1 đến 50.", "INVALID_GUEST_COUNT");
 
-            if (reservationDate <= DateTime.UtcNow)
+            notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
+            if (notes?.Length > 500)
+                return ReservationCreateResult.FailureResult("Ghi chú không được vượt quá 500 ký tự.", "INVALID_NOTES");
+
+            if (reservationDate <= BusinessClock.Now)
                 return ReservationCreateResult.FailureResult("Thời gian đặt phải ở tương lai.", "INVALID_DATE");
+
+            await using var mutationLock = await _mutationCoordinator.EnterAsync();
 
             var customer = await _customerRepository.GetByIdAsync(customerId);
             if (customer == null || customer.IsDeleted)
@@ -84,6 +97,10 @@ namespace Quản_lý_quán_cafe.Services
 
             if (table.TableStatus == "Maintenance")
                 return ReservationCreateResult.FailureResult("Bàn đang bảo trì.", "TABLE_MAINTENANCE");
+
+            if (reservationDate <= BusinessClock.Now.AddMinutes(ReservationPolicy.DurationMinutes) &&
+                (table.TableStatus is "Occupied" or "WaitingPayment"))
+                return ReservationCreateResult.FailureResult("Bàn đang được sử dụng hoặc chờ thanh toán.", "TABLE_IN_USE");
 
             if (numberOfGuests > table.Capacity)
                 return ReservationCreateResult.FailureResult(
@@ -104,6 +121,7 @@ namespace Quản_lý_quán_cafe.Services
                 CustomerID = customerId,
                 TableID = tableId,
                 ReservationDate = reservationDate,
+                ReservationTime = reservationDate,
                 NumberOfGuests = numberOfGuests,
                 ReservationStatus = "Pending",
                 Notes = notes,
@@ -124,6 +142,7 @@ namespace Quản_lý_quán_cafe.Services
             if (reservationId <= 0)
                 return ReservationOperationResult.FailureResult("Mã đặt bàn không hợp lệ.", "INVALID_RESERVATION");
 
+            await using var mutationLock = await _mutationCoordinator.EnterAsync();
             var reservation = await _reservationRepository.GetByIdAsync(reservationId);
             if (reservation == null)
                 return ReservationOperationResult.FailureResult("Đặt bàn không tồn tại.", "RESERVATION_NOT_FOUND");
@@ -131,7 +150,7 @@ namespace Quản_lý_quán_cafe.Services
             if (reservation.CustomerID != customerId)
                 return ReservationOperationResult.FailureResult("Bạn không có quyền hủy đặt bàn này.", "UNAUTHORIZED");
 
-            if (reservation.ReservationStatus is "Cancelled" or "Completed")
+            if (reservation.ReservationStatus is "Cancelled" or "Completed" or "CheckedIn")
                 return ReservationOperationResult.FailureResult(
                     "Không thể hủy đặt bàn ở trạng thái hiện tại.",
                     "INVALID_STATUS");
@@ -149,6 +168,7 @@ namespace Quản_lý_quán_cafe.Services
             if (reservationId <= 0)
                 return ReservationOperationResult.FailureResult("Mã đặt bàn không hợp lệ.", "INVALID_RESERVATION");
 
+            await using var mutationLock = await _mutationCoordinator.EnterAsync();
             var reservation = await _reservationRepository.GetByIdAsync(reservationId);
             if (reservation == null)
                 return ReservationOperationResult.FailureResult("Đặt bàn không tồn tại.", "RESERVATION_NOT_FOUND");
@@ -194,7 +214,7 @@ namespace Quản_lý_quán_cafe.Services
             DateTime reservationDate,
             int durationMinutes = 120)
         {
-            if (tableId <= 0 || reservationDate <= DateTime.UtcNow)
+            if (tableId <= 0 || reservationDate <= BusinessClock.Now)
                 return false;
 
             return await _reservationRepository.HasConflictAsync(

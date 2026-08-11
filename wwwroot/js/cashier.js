@@ -7,7 +7,7 @@
 const DASHBOARD_CONFIG = {
     REFRESH_INTERVAL: 30000, // 30 seconds
     NOTIFICATION_TIMEOUT: 5000, // 5 seconds
-    AUTO_REFRESH: true
+    AUTO_REFRESH: false
 };
 
 // ================================================
@@ -19,6 +19,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeDashboard() {
+    if (!document.querySelector('.cashier-dashboard')) return;
+
     console.log('🎯 Initializing Cashier Dashboard...');
 
     // Add event listeners
@@ -42,6 +44,7 @@ function setupTableCardListeners() {
     const tableCards = document.querySelectorAll('.table-card');
 
     tableCards.forEach(card => {
+        if (card.hasAttribute('onclick')) return;
         // Hover effects
         card.addEventListener('mouseenter', function() {
             this.style.animation = 'pulse 1s ease-out';
@@ -64,23 +67,13 @@ function handleTableClick(tableId, status) {
 
     switch (status) {
         case 'Empty':
-            // Tạo order mới cho bàn trống
-            redirectTo(`${areaUrl}/Orders/Create?tableId=${tableId}`);
-            break;
-
         case 'Reserved':
-            // Xem chi tiết reservation
-            redirectTo(`${areaUrl}/Orders/Details?tableId=${tableId}`);
-            break;
-
         case 'Serving':
-            // Xem và chỉnh sửa order đang phục vụ
-            redirectTo(`${areaUrl}/Orders/Details?tableId=${tableId}`);
+        case 'PendingPayment':
+            redirectTo(`${areaUrl}/POS?tableId=${tableId}`);
             break;
-
-        case 'Pendinypayment':
-            // Xử lý thanh toán
-            redirectTo(`${areaUrl}/Payments/Index?tableId=${tableId}`);
+        case 'Maintenance':
+            redirectTo(`${areaUrl}/Tables`);
             break;
     }
 }
@@ -90,7 +83,7 @@ function capitalizeStatus(status) {
         'empty': 'Empty',
         'reserved': 'Reserved',
         'serving': 'Serving',
-        'pendinypayment': 'PendingPayment'
+        'pendingpayment': 'PendingPayment'
     };
     return statusMap[status.toLowerCase()] || status;
 }
@@ -111,8 +104,10 @@ function setupNotificationListeners() {
 }
 
 function toggleNotificationPanel() {
-    // Implementation để bật/tắt panel thông báo
-    console.log('Toggle notification panel');
+    const panel = document.getElementById('dashboardNotifications');
+    if (!panel) return;
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    panel.focus({ preventScroll: true });
 }
 
 function showNotification(title, message, type = 'info') {
@@ -158,35 +153,8 @@ function manualRefresh() {
 }
 
 function updateDashboardData() {
-    // Gọi API để lấy dữ liệu mới
-    // Có thể sử dụng AJAX/Fetch API
-    console.log('Updating dashboard data...');
-
-    // TODO: Implement API call
-    // fetch('/Cashier/Dashboard/GetData')
-    //     .then(response => response.json())
-    //     .then(data => {
-    //         updateStatistics(data);
-    //         updateTables(data);
-    //         updateNotifications(data);
-    //     });
-}
-
-// ================================================
-// TABLE ACTIONS
-// ================================================
-
-function handlePayment(orderId) {
-    console.log(`Processing payment for order: ${orderId}`);
-    window.location.href = `/Cashier/Payments/Index?orderId=${orderId}`;
-}
-
-function handlePrepareTable(reservationId) {
-    console.log(`Preparing table for reservation: ${reservationId}`);
-
-    if (confirm('Xác nhận chuẩn bị bàn?')) {
-        // TODO: Gọi API để cập nhật trạng thái preparation
-        showNotification('✅ Thành công', 'Bàn đã được chuẩn bị', 'success');
+    if (document.visibilityState === 'visible' && document.querySelector('.cashier-dashboard')) {
+        location.reload();
     }
 }
 
@@ -277,9 +245,9 @@ function updateTableCard(card, data) {
                     <i class="fas fa-hourglass-end"></i> Chờ Thanh Toán
                 </div>
                 <p class="table-amount">${data.orderAmount}đ</p>
-                <button class="btn btn-small btn-payment" onclick="handlePayment(${data.orderId})">
+                <a class="btn btn-small btn-payment" href="/Cashier/POS?tableId=${encodeURIComponent(data.tableId)}">
                     Thanh Toán
-                </button>`;
+                </a>`;
                 break;
         }
 
@@ -367,8 +335,6 @@ function log(message, type = 'info') {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         handleTableClick,
-        handlePayment,
-        handlePrepareTable,
         updateDashboardData
     };
 }

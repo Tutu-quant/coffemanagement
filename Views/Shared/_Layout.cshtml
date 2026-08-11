@@ -1,5 +1,8 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="en"
+      data-brewpoint-controller="@((ViewContext.RouteData.Values["controller"]?.ToString() ?? "").ToLowerInvariant())"
+      data-brewpoint-action="@((ViewContext.RouteData.Values["action"]?.ToString() ?? "").ToLowerInvariant())"
+      data-brewpoint-hub-url="@Url.Content("~/hubs/app-state")">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

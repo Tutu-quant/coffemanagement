@@ -1,5 +1,19 @@
+@{
+    var currentArea = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    var reservationDetailsBase = currentArea == "Admin"
+        ? Url.Content("~/Admin/Reservations/Details/")
+        : Url.Content("~/Cashier/Reservations/Details/");
+}
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi"
+      data-brewpoint-area="@currentArea.ToLowerInvariant()"
+      data-brewpoint-controller="@currentController.ToLowerInvariant()"
+      data-brewpoint-action="@currentAction.ToLowerInvariant()"
+      data-brewpoint-hub-url="@Url.Content("~/hubs/app-state")"
+      data-brewpoint-pending-reservation-url="@Url.Content("~/api/notifications/reservations/pending-count")"
+      data-brewpoint-reservation-details-base="@reservationDetailsBase">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -29,14 +43,14 @@
           href="~/css/customer-order.css"
           asp-append-version="true" />
 
+    <link rel="stylesheet"
+          href="~/css/staff-notifications.css"
+          asp-append-version="true" />
+
     @RenderSection("Head", required: false)
 </head>
 <body>
     <div class="admin-wrapper">
-
-        @{
-            var currentArea = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
-        }
 
         @if (currentArea == "Cashier")
         {
@@ -89,6 +103,22 @@
                     </div>
                 </div>
                 <div class="header-right">
+                    @if (currentArea == "Admin" || currentArea == "Cashier")
+                    {
+                        var notificationTarget = currentArea == "Admin"
+                            ? Url.Action("Index", "Reservations", new { area = "Admin" })
+                            : Url.Action("Index", "Reservations", new { area = "Cashier", status = "Pending" });
+                        <a class="staff-notification-shortcut"
+                           href="@notificationTarget"
+                           title="Lịch đặt bàn đang chờ"
+                           aria-label="Mở danh sách lịch đặt bàn đang chờ">
+                            <i class="bi bi-calendar2-check-fill" aria-hidden="true"></i>
+                            <span class="staff-reservation-count"
+                                  data-reservation-notification-count
+                                  aria-label="0 lịch đặt bàn đang chờ"
+                                  hidden>0</span>
+                        </a>
+                    }
                     <div class="header-user">
                         <div class="user-avatar-small">@avatarInitial</div>
                         <div class="user-info-small">

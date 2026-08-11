@@ -41,14 +41,3 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     });
 });
-
-document.addEventListener('keydown', function(e) {
-
-    if (e.key === 'Enter') {
-        const form = document.getElementById('loginForm');
-        if (form && !e.shiftKey && !e.ctrlKey) {
-            e.preventDefault();
-            form.submit();
-        }
-    }
-});

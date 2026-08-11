@@ -17,5 +17,6 @@ namespace Quản_lý_quán_cafe.Areas.Cashier.ViewModels
         public string PaymentMethod { get; set; } = "";
         public decimal Amount { get; set; }
         public DateTime Time { get; set; }
+        public string PaymentStatus { get; set; } = "";
     }
 }
